@@ -1,0 +1,396 @@
+/* Shared Applicant Navbar Stylesheet */
+
+.dashboard-navbar {
+  box-sizing: border-box;
+  background: #000000;
+  width: 100%;
+  height: 75px;
+  padding: 0 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Brand Section */
+.dashboard-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.dashboard-navbar-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.dashboard-navbar-brand-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.brand-name {
+  font-family: 'Montserrat', sans-serif;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.brand-platform {
+  font-family: 'Inter', sans-serif;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* Navbar Center Nav Links */
+.dashboard-navbar-nav {
+  display: flex;
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: center;
+}
+
+.nav-link-item {
+  color: #cbd5e1;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  padding: 6px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link-item:hover {
+  color: #e6007e;
+}
+
+.nav-link-item.active {
+  color: #e6007e;
+  border-bottom: 2.5px solid #e6007e;
+}
+
+/* Navbar Right Controls */
+.dashboard-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Guest Sign In Button */
+.nav-signin-btn {
+  color: #e6007e;
+  font-family: 'Montserrat', 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  text-decoration: none;
+  border: 1.5px solid #e6007e;
+  padding: 7px 20px;
+  border-radius: 20px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-signin-btn:hover {
+  background: #e6007e;
+  color: #ffffff;
+}
+
+/* Notification Bell */
+.notification-bell-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  position: relative;
+  padding: 0;
+}
+
+.notification-bell-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.notification-badge-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+  display: flex;
+  font-style: normal;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  border: 1.5px solid #000000;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Notification Dropdown */
+.navbar-notifications-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e2e8f0;
+  z-index: 1200;
+  overflow: hidden;
+  animation: navDropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Avatar Button */
+.avatar-profile-btn {
+  background: transparent;
+  border: 2px solid #e6007e;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.avatar-profile-btn:hover {
+  transform: scale(1.05);
+  border-color: #ff008c;
+}
+
+.avatar-silhouette-svg {
+  width: 22px;
+  height: 22px;
+  color: #e6007e;
+}
+
+/* Profile Dropdown Menu */
+.profile-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  background: rgba(12, 10, 15, 0.97);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  width: 248px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  text-align: left;
+  animation: navDropdownFade 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes navDropdownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-user-info {
+  margin-bottom: 12px;
+}
+
+.dropdown-user-name {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.dropdown-user-email {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #94a3b8;
+  word-break: break-all;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 10px 0;
+}
+
+.dropdown-logout-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ef4444;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  text-align: left;
+}
+
+.dropdown-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Mobile Burger Menu Button ── */
+.mobile-burger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mobile-burger-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Mobile Nav Dropdown (Locked directly underneath the sticky header) ── */
+.mobile-nav-dropdown {
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  background: #000000 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 1050 !important;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.6) !important;
+  animation: navDropdownFade 0.2s ease-out forwards;
+  box-sizing: border-box !important;
+  display: block !important;
+}
+
+.mobile-nav-item {
+  padding: 14px 24px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #cbd5e1 !important;
+  cursor: pointer !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 0 !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+  display: block !important;
+  text-decoration: none !important;
+  background: transparent;
+  text-align: left !important;
+}
+
+.mobile-nav-item:last-child {
+  border-bottom: none !important;
+}
+
+.mobile-nav-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.mobile-nav-item.active {
+  color: #e6007e !important;
+  background: rgba(230, 0, 126, 0.1) !important;
+  border-left: 4px solid #e6007e !important;
+  padding-left: 20px !important;
+}
+
+/* ── Responsive Breakpoints ── */
+@media (max-width: 768px) {
+  .dashboard-navbar {
+    height: 64px;
+    padding: 0 16px;
+  }
+
+  .dashboard-navbar nav {
+    display: none;
+  }
+
+  .mobile-burger-btn {
+    display: flex;
+  }
+
+  .brand-name {
+    font-size: 15px;
+  }
+
+  .brand-platform {
+    font-size: 10px;
+  }
+
+  .dashboard-navbar-logo-img {
+    height: 32px;
+  }
+
+  .dashboard-navbar-right {
+    gap: 12px;
+  }
+
+  .profile-dropdown-menu {
+    top: calc(100% + 8px);
+    right: 8px;
+    width: 220px;
+  }
+
+  .navbar-notifications-menu {
+    top: calc(100% + 8px);
+    right: -50px;
+    width: 290px;
+  }
+}

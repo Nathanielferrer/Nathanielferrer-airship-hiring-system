@@ -1,0 +1,1040 @@
+/* Applicant Dashboard Stylesheet */
+
+.dashboard-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  /* Clean background for the portal section */
+  position: relative;
+  overflow-x: clip;
+  box-sizing: border-box;
+}
+
+/* 1. Header/Navbar styling - Solid black */
+.dashboard-navbar {
+  box-sizing: border-box;
+  background: #000000;
+  width: 100%;
+  height: 75px;
+  padding: 0 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.dashboard-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard-navbar-logo-img {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.dashboard-navbar-brand-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.brand-name {
+  font-family: 'Montserrat', sans-serif;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 900; /* Montserrat Black */
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.brand-platform {
+  font-family: 'Inter', sans-serif;
+  color: #cbd5e1; /* Light grey */
+  font-size: 12px;
+  font-weight: 400; /* Inter Regular */
+  letter-spacing: 0.5px;
+}
+
+/* Navbar Center / Navigation links */
+.dashboard-navbar-nav {
+  display: flex;
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: center;
+}
+
+.nav-link-item {
+  color: #cbd5e1; /* Light grey */
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600; /* Inter Semi-Bold */
+  text-decoration: none;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  cursor: pointer;
+  padding: 6px 0;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-link-item:hover {
+  color: #e6007e;
+}
+
+.nav-link-item.active {
+  color: #e6007e; /* Highlighted with magenta text */
+  border-bottom: 2px solid #e6007e; /* Thin magenta underline */
+}
+
+/* Navbar Right / Profile + Notifications */
+.dashboard-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.notification-bell-btn {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.notification-bell-btn:hover {
+  opacity: 0.8;
+}
+
+.avatar-profile-btn {
+  background: transparent;
+  border: 2px solid #e6007e; /* Magenta circular user profile outline */
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.avatar-profile-btn:hover {
+  transform: scale(1.05);
+  border-color: #ff008c;
+}
+
+.avatar-silhouette-svg {
+  width: 24px;
+  height: 24px;
+  color: #e6007e; /* Magenta user outline */
+}
+
+/* Interactive Dropdown Styles */
+.profile-dropdown-menu {
+  position: fixed;
+  top: 75px;
+  right: 20px;
+  background: rgba(12, 10, 15, 0.97);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  width: 248px;
+  padding: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  z-index: 1200;
+  text-align: left;
+  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dropdownFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-user-info {
+  margin-bottom: 12px;
+}
+
+.dropdown-user-name {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.dropdown-user-email {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #94a3b8;
+  word-break: break-all;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 12px 0;
+}
+
+.dropdown-logout-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ef4444;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  text-align: left;
+}
+
+.dropdown-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* 2. Hero Section */
+.hero-section {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 75px);
+  min-height: 500px;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+}
+
+.hero-image-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(12, 10, 15, 0.85) 0%, rgba(12, 10, 15, 0.55) 50%, rgba(0, 0, 0, 0.2) 100%);
+  /* Subtle dark gradient overlay for high text legibility */
+  z-index: 2;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  padding: 0 48px;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.hero-text-block {
+  max-width: 800px;
+}
+
+.hero-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 72px;
+  font-weight: 800; /* Montserrat Extra Bold */
+  color: #ffffff;
+  line-height: 1.15;
+  margin: 0 0 16px 0;
+  letter-spacing: -1.5px;
+}
+
+.hero-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  font-weight: 400; /* Inter Regular */
+  line-height: 1.5;
+  color: #e2e8f0; /* White / light grey */
+  margin: 0 0 36px 0;
+}
+
+/* Dynamic Double-Chevron Arrow CTA Button Wrapper */
+.hero-cta-btn {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 0; /* Remove block gap so we can nest the shapes with negative margin */
+  background: transparent;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+  filter: drop-shadow(0 4px 14px rgba(230, 0, 126, 0.35));
+}
+
+.hero-cta-btn:hover {
+  transform: translateX(6px); /* Drives user's attention forward! */
+  filter: drop-shadow(0 6px 20px rgba(230, 0, 126, 0.55));
+}
+
+.hero-cta-btn:active {
+  transform: translateX(2px);
+}
+
+/* Main Body: Left inward V-notch, Right outward arrowhead point */
+.hero-cta-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e6007e; /* Hot pink brand color */
+  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 16px 36px 16px 42px; /* Extra left padding to clear inward V-notch */
+  clip-path: polygon(0% 0%, 91% 0%, 100% 50%, 91% 100%, 0% 100%, 9% 50%);
+  transition: background-color 0.2s ease;
+  z-index: 1;
+}
+
+/* Accent Shape: Secondary smaller chevron pointing right */
+.hero-cta-accent {
+  width: 42px;
+  margin-left: -8px; /* Balanced negative margin creating a clean, comfortable 8px diagonal gap! */
+  background: #e6007e; /* Same hot pink color */
+  clip-path: polygon(0% 0%, 62% 0%, 100% 50%, 62% 100%, 0% 100%, 38% 50%);
+  transition: background-color 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2;
+}
+
+/* Hover effects for inner shapes */
+.hero-cta-btn:hover .hero-cta-main,
+.hero-cta-btn:hover .hero-cta-accent {
+  background: #ff008c; /* Brighter electric hot pink on hover */
+}
+
+.hero-cta-btn:hover .hero-cta-accent {
+  transform: translateX(3px); /* Accent shape slides further forward on hover! */
+}
+
+
+/* 4. Portal Main Workspace (Scrollable content below the fold) */
+.portal-main-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px;
+  box-sizing: border-box;
+}
+
+.portal-section-header {
+  margin-bottom: 32px;
+  text-align: left;
+}
+
+.portal-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 6px 0;
+}
+
+.portal-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.portal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.portal-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  text-align: left;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.portal-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+.portal-card-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+}
+
+.portal-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 0;
+  color: #64748b;
+  text-align: center;
+}
+
+.portal-empty-icon {
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.portal-empty-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14.5px;
+  margin: 0 0 16px 0;
+}
+
+.portal-action-btn {
+  background: #ec4899;
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.portal-action-btn:hover {
+  background: #db2777;
+}
+
+/* Mobile burger menu styling */
+.mobile-burger-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 6px;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mobile-burger-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .portal-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .hero-title {
+    font-size: 42px;
+  }
+
+  .dashboard-navbar {
+    padding: 0 24px;
+  }
+
+  .hero-content {
+    padding: 0 24px;
+  }
+
+  .portal-main-container {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-navbar-nav {
+    display: none;
+  }
+
+  .mobile-burger-btn {
+    display: flex;
+  }
+
+  .dashboard-navbar {
+    padding: 0 16px;
+  }
+
+  .dashboard-navbar-right {
+    gap: 10px;
+  }
+
+  .hero-content {
+    padding: 0 20px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+  }
+
+  .hero-text-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin: 0 auto;
+  }
+
+  .hero-title {
+    font-size: 36px;
+    text-align: center;
+  }
+
+  .hero-subtitle {
+    font-size: 17px;
+    text-align: center;
+  }
+
+  .hero-cta-btn {
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-name {
+    font-size: 16px;
+  }
+  .brand-platform {
+    font-size: 11px;
+  }
+  .dashboard-navbar-logo-img {
+    height: 34px;
+  }
+  .dashboard-navbar-left {
+    gap: 10px;
+  }
+  .dashboard-navbar-right {
+    gap: 10px;
+  }
+  .hero-title {
+    font-size: 32px;
+    line-height: 1.25;
+  }
+  .hero-subtitle {
+    font-size: 15.5px;
+  }
+}
+
+/* How to Apply Section Styles */
+.how-to-apply-section {
+  background: #ffffff;
+  padding: 72px 48px 84px 48px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.section-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 800; /* Montserrat Extra Bold */
+  color: #0f172a; /* Dark slate */
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+}
+
+.section-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 16.5px;
+  font-weight: 400; /* Inter Regular */
+  color: #64748b; /* Medium grey */
+  margin: 0 0 56px 0; /* Plenty of whitespace */
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 36px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.step-icon-circle {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: #f8fafc; /* Light grey circular placeholder */
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a; /* Dark minimalist line icon */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px auto;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.step-item:hover .step-icon-circle {
+  transform: translateY(-5px);
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.step-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 700; /* Montserrat Bold */
+  color: #0f172a; /* Dark slate */
+  margin: 0 0 10px 0;
+}
+
+.step-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400; /* Inter Regular */
+  color: #64748b; /* Medium / light grey */
+  line-height: 1.6;
+  margin: 0 auto;
+  max-width: 240px;
+}
+
+/* Featured Jobs Section Styles */
+.featured-jobs-section {
+  background: #e2e8f0;
+  padding: 80px 48px;
+  box-sizing: border-box;
+}
+
+.featured-jobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto 40px auto;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.job-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.job-tab-btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  background: transparent;
+  border: 1.5px solid transparent;
+  padding: 8px 24px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.job-tab-btn:hover {
+  color: #1e293b;
+}
+
+.job-tab-btn.active {
+  background: #f8fafc;
+  color: #ec4899;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  border-color: #cbd5e1;
+}
+
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.job-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.job-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.job-card-content {
+  text-align: left;
+}
+
+.job-card-title-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.job-card-type {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.job-apply-btn {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #ec4899;
+  border: none;
+  padding: 8px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.job-apply-btn:hover {
+  background: #db2777;
+  transform: scale(1.02);
+}
+
+.job-apply-btn:active {
+  transform: scale(1);
+}
+
+
+
+/* Responsive updates for new sections */
+@media (max-width: 960px) {
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .jobs-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .how-to-apply-section,
+  .featured-jobs-section {
+    padding: 60px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .steps-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .featured-jobs-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .job-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .job-tab-btn {
+    padding: 6px 16px;
+    font-size: 13px;
+    flex-grow: 1;
+    text-align: center;
+  }
+}
+
+/* Brand Logos Carousel Section (Positioned right below Hero Background) */
+.brand-carousel-section {
+  width: 100%;
+  background: #ffffff;
+  padding: 64px 0;
+  box-sizing: border-box;
+  border-bottom: 1px solid #f1f5f9; /* Thin, faint horizontal divider line separating from Section 2 */
+  overflow: hidden;
+  text-align: center;
+}
+
+.brand-carousel-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 800; /* Montserrat Extra Bold */
+  color: #0f172a; /* Dark slate */
+  margin: 0 0 36px 0;
+  letter-spacing: -0.5px;
+}
+
+.brand-carousel-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  z-index: 10;
+  padding: 4px 0;
+  background: transparent;
+  mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+.brand-carousel-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: scrollMarquee 30s linear infinite;
+  align-items: center;
+}
+
+.brand-carousel-container:hover .brand-carousel-track {
+  animation-play-state: paused;
+}
+
+@keyframes scrollMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.brand-card {
+  width: 160px;
+  height: 80px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03); /* Very subtle, soft drop shadow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 20px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.brand-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
+}
+
+.brand-card-img {
+  max-width: 100%;
+  max-height: 44px;
+  object-fit: contain;
+  filter: opacity(0.95);
+  transition: filter 0.2s ease;
+}
+
+.brand-card:hover .brand-card-img {
+  filter: opacity(1);
+}
+
+@media (max-width: 768px) {
+  .brand-card {
+    width: 110px;
+    height: 60px;
+    padding: 8px 12px;
+    border-radius: 12px;
+  }
+  .brand-card-img {
+    max-height: 34px;
+  }
+}
+
+/* ── Mobile Burger Menu Button ── */
+.mobile-burger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 6px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mobile-burger-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+
+/* ── Responsive Breakpoints ── */
+@media (max-width: 768px) {
+  /* Navbar */
+  .dashboard-navbar {
+    height: 64px;
+    padding: 0 16px;
+  }
+
+  /* Hide desktop nav links, show burger */
+  .dashboard-navbar nav {
+    display: none;
+  }
+
+  .mobile-burger-btn {
+    display: flex;
+  }
+
+  /* Reduce brand text size on mobile */
+  .brand-name {
+    font-size: 15px;
+  }
+
+  .brand-platform {
+    font-size: 10px;
+  }
+
+  .dashboard-navbar-logo-img {
+    height: 32px;
+  }
+
+  .dashboard-navbar-right {
+    gap: 12px;
+  }
+
+  /* Profile dropdown on mobile */
+  .profile-dropdown-menu {
+    top: 64px;
+    right: 12px;
+    width: 220px;
+  }
+
+  /* Mobile nav dropdown height synced to shorter navbar */
+  .mobile-nav-dropdown {
+    top: 64px;
+  }
+
+  /* Hero section */
+  .hero-content {
+    padding: 0 20px;
+  }
+
+  .hero-title {
+    font-size: 40px;
+    letter-spacing: -0.5px;
+  }
+
+  .hero-subtitle {
+    font-size: 16px;
+    margin-bottom: 28px;
+  }
+
+  /* How to apply steps */
+  .steps-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .how-to-apply-section,
+  .featured-jobs-section {
+    padding: 40px 16px;
+  }
+
+  /* Featured jobs header */
+  .featured-jobs-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .job-tabs {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .job-tab-btn {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* Job cards */
+  .jobs-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Partners carousel */
+  .brand-carousel-section {
+    padding: 40px 0;
+  }
+
+  .brand-carousel-title {
+    font-size: 22px;
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-navbar {
+    padding: 0 12px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+  }
+
+  .hero-section {
+    min-height: 400px;
+  }
+}

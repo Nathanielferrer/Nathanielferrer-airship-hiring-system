@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Nathaniel Ferrer\",\n    \"contact\": \"nathaniel.ferrer@email.com\",\n    \"location\": \"Bagong Barrio, Caloocan City, 1400\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Software Development (Currently in 3rd Year)\",\n      \"year_graduated\": \"Expected Graduation: 2027\"\n    }\n  ],\n  \"extracted_work_history\": [],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"HTML5\",\n      \"CSS3\",\n      \"JavaScript (ES6+)\",\n      \"React.js\",\n      \"PHP\",\n      \"MySQL\",\n      \"SQL\",\n      \"Cloud Firestore / Firebase\",\n      \"Android Studio\",\n      \"Git/GitHub\",\n      \"Agile Development Methodologies\"\n    ],\n    \"missing_skills\": [\n      \"Logistic experience\",\n      \"Computer literate\",\n      \"Administrative work\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 0,\n    \"review_flag\": false,\n    \"review_reason\": \"Candidate failed multiple core requirements: does not possess a college degree (currently an undergraduate in 3rd year, violating the minimum 'College Graduate' requirement), has no professional work experience in logistics or administrative work, and has a completely irrelevant background in software development. Penalty A (Missing Minimum Education) and Penalty C (Completely Irrelevant Experience) apply, resulting in a Zero Match per Penalty D.\"\n  },\n  \"summary\": [\n    \"Overall score is 0 due to a complete lack of matching experience, missing the mandatory college degree requirement, and having entirely irrelevant technical skills.\",\n    \"The candidate's experience is strictly in front-end and software development, which has zero relevance to the required logistics and administrative roles.\",\n    \"Key unmet requirements include failing the minimum education level (College Graduate), having no logistics or administrative work experience, and lacking required core competencies.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPqlapUr9UuKwyN5DBkKZ/kUqjtosNV3PSR6tdGuk54wG3deesPwNdE6A4+eiDxdUy9mp676YbbtBCSepiXqGbxC0/fHN6bsKkgHq0JsO9ez2pdJBfG2GM"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1764,
+    "candidatesTokenCount": 469,
+    "totalTokenCount": 2233,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1764
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "wEqFaqf7B4u-1e8P-tOyoQk"
+}

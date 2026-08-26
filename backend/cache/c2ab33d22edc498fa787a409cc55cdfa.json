@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"345 C. Cordero St. Barangay 67, Caloocan City\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    },\n    {\n      \"degree\": \"Senior High: STEM Science, Technology, Engineering, and Mathematics\",\n      \"year_graduated\": \"2021 - 2023\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work – IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Internship – United Asia Int’l Plastic Corp. (Accounting Intern)\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"relevant experience in logistics\",\n      \"J&T experience\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 60,\n    \"review_flag\": true,\n    \"review_reason\": \"The candidate has a college education (currently pursuing a degree, making her not yet a full college graduate) and administrative/inventory experience that translates well to office work, but lacks explicit logistics work experience or J&T experience. Experience points are partially awarded due to administrative and inventory-related internship tasks, and education is partially credited since she is still currently enrolled.\"\n  },\n  \"summary\": [\n    \"The candidate scored 60 points based on strong foundational administrative and inventory skills, though she lacks direct logistics industry experience.\",\n    \"Her internship experience includes inventory tracking, documentation, and record management which partially align with administrative and supply-related tasks.\",\n    \"Key unmet requirements include being a full college graduate (currently a student) and having specific logistics or J&T experience.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPh11qZmvOy8mAOex1lf6IEbKyee4GAIxOQLqIgVYXC4mm/mwtbv+6D4q5zN1dfQa2/RVp6oq3mZvzl/cAwpkdLZMYGYoZ7DDAs9pn8E85T+JHXPNykyFT"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1958,
+    "candidatesTokenCount": 677,
+    "totalTokenCount": 2635,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1958
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "jEqFap3CKMSy1e8P2sCBoQg"
+}

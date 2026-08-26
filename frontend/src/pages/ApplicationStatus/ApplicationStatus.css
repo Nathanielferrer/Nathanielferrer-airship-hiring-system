@@ -1,0 +1,152 @@
+.status-page-wrapper {
+  background-color: #f8fafc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+}
+
+.status-main-container {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 24px 80px 24px;
+}
+
+.status-section-header {
+  margin-bottom: 32px;
+}
+
+.status-page-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.status-page-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 992px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.status-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+}
+
+.status-card-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Mobile Responsive ── */
+@media (max-width: 768px) {
+  .status-main-container {
+    padding: 24px 16px 60px 16px;
+  }
+
+  .status-page-title {
+    font-size: 22px;
+  }
+
+  .status-page-subtitle {
+    font-size: 13.5px;
+  }
+
+  .status-card {
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .status-card-title {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-main-container {
+    padding: 16px 12px 40px 12px;
+  }
+
+  .status-page-title {
+    font-size: 20px;
+  }
+}
+
+/* ── ApplicationsList ── */
+.applications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.apps-loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.apps-loading .spinner {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+}
+
+.apps-empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.apps-empty__icon {
+  font-size: 48px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.apps-empty__text {
+  color: #64748b;
+  margin: 0 0 16px 0;
+  font-size: 14px;
+}
+
+.apps-empty__btn {
+  background: #e6007e;
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.apps-empty__btn:hover {
+  background: #c4006b;
+}

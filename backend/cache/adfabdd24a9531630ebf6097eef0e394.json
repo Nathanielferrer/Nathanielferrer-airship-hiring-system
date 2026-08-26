@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"normalized_resume_text\": \"Bianca C. Isanan\\nbianca.isanan01@gmail.com\\n345 C. Cordero St. Barangay 67, Caloocan City\\n09948700665\\n\\nOBJECTIVE\\nA motivated and dependable individual seeking an opportunity to gain hands-on experience and further develop professional skills. Willing to apply my knowledge, work collaboratively with others, and continue developing my skills in a professional environment.\\n\\nPERSONAL INFORMATION\\nAge: 21 years old\\nBirthday: November 6, 2004\\nGender: Female\\nCivil Status: Single\\nHeight: 4’11 (149 cm)\\nReligion: Catholic\\nWeight: 56 kg\\n\\nSKILLS\\n• Basic computer skills\\n• Basic Excel Skills\\n• Attention to detail\\n• Multi-tasking\\n• Time Management\\n• Data Entry and Record Management\\n\\nEXPERIENCE\\nWork Immersion - Caloocan City Hall (Office-Based Work – IT Department) (2023)\\nInternship – United Asia Int’l Plastic Corp. (Accounting Intern) (May 2026)\\n• Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\\n• Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\\n• Managed documents by photocopying, filing, organizing, and maintaining company records.\\n• Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\\n\\nEDUCATION\\nCOLLEGE: University of Caloocan City – South - Bachelor of Science in Accounting Information System (2023 – present)\\nSENIOR HIGH: Electron College of Technical Education (STEM) Science, Technology, Engineering, and Mathematics (2021 - 2023)\\nJUNIOR HIGH: Caloocan High School (2017 - 2021)\\nELEMENTARY: Gregoria De Jesus Elementary School (2011 – 2017)\\n\\nREFERENCES\\nAlvin Abelardo (Professor at UCC – South Caloocan) +639175460409\\nSherylcion B. Sambrano (Professor at UCC – South Caloocan) +639455097969\\nRaniel Kim Sioco (Professor at UCC – South Caloocan) +639936740990\\n\\nI hereby certify that the above information is true and correct\\nBianca C. Isanan\\nSignature over Printed Name\",\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"Caloocan City, Philippines\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - IT Department\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": [\n        \"Office-Based Work\"\n      ]\n    },\n    {\n      \"job_title\": \"Accounting Intern\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": []\n  },\n  \"ranking_logic\": {\n    \"match_score\": 65,\n    \"review_flag\": true,\n    \"review_reason\": \"Candidate has a relevant ongoing business-related degree (Accounting Information System) and appropriate basic computer/Excel skills, yielding partial points for work experience and skills. However, the candidate is currently an undergraduate (not yet a graduate of a 4-year course) and resides in Caloocan City instead of the preferred Tondo/Binondo area, triggering the location mismatch penalty.\"\n  },\n  \"summary\": [\n    \"The candidate scored moderately well on skills and partial work experience, but points were reduced due to incomplete education (undergraduate status) and a location mismatch.\",\n    \"Experience includes relevant office internships and administrative tasks involving data entry, record management, and basic Excel utilization.\",\n    \"The candidate fails to meet the exact minimum education requirement of being a college graduate and does not reside in the preferred Tondo or Binondo location.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPKpvqGEY7srgRsP7WOeeO51M+GmKMez8lCH2SvXIiJOZamXJKGozBVlr0b06XFebU96pCBbpK+bYkfLlHDtVo/vAaBsgzc1fct84pkw2G4hymvA5NNxhA"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1974,
+    "candidatesTokenCount": 1206,
+    "totalTokenCount": 3180,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1974
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "DlGFasfkIILl1e8Pz8f7-Ag"
+}

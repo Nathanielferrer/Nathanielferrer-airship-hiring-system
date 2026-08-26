@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Nathaniel Ferrer\",\n    \"contact\": \"nathaniel.ferrer@email.com\",\n    \"location\": \"Bagong Barrio, Caloocan City, 1400\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Software Development (Currently in 3rd Year)\",\n      \"year_graduated\": \"Expected Graduation: 2027\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Full-Stack Developer\",\n      \"duration\": \"Feb 2026 – Present\",\n      \"key_responsibilities\": [\n        \"Architected a comprehensive applicant tracking and hiring management platform utilizing React.js, PHP, and MySQL.\",\n        \"Engineered an automated face-to-face interview scheduling algorithm with dual administrative and applicant dashboard interfaces.\",\n        \"Integrated a custom applicant-facing chatbot designed specifically to handle and route predefined system hiring information and FAQs.\",\n        \"Developed automated resume parsing modules to streamline the administrative review process and match candidates to predefined requirements.\"\n      ]\n    },\n    {\n      \"job_title\": \"Lead Developer\",\n      \"duration\": \"Feb 2026\",\n      \"key_responsibilities\": [\n        \"Designed a complete business-to-consumer online retail platform.\",\n        \"Integrated machine learning patterns to generate personalized product recommendations based on user browsing and purchase data.\",\n        \"Built an automated inventory tracking module to synchronize front-end product availability with backend MySQL databases in real-time.\"\n      ]\n    },\n    {\n      \"job_title\": \"Front-End Developer\",\n      \"duration\": \"Jan 2026\",\n      \"key_responsibilities\": [\n        \"Developed a responsive, interactive coffee-themed website using native HTML and CSS.\",\n        \"Resolved complex UI layout constraints and optimized background image displays across multiple viewport sizes.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"HTML5\",\n      \"CSS3\",\n      \"JavaScript (ES6+)\",\n      \"React.js\",\n      \"PHP\",\n      \"MySQL\",\n      \"SQL\",\n      \"Cloud Firestore / Firebase\",\n      \"Android Studio\",\n      \"Git/GitHub\",\n      \"Agile Development Methodologies\"\n    ],\n    \"missing_skills\": [\n      \"Microsoft Excel\",\n      \"Microsoft Word\",\n      \"Google Sheets\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 0,\n    \"review_flag\": false,\n    \"review_reason\": \"Candidate failed the minimum education requirement (requires a 4-year business-related course, candidate is in 3rd year of Software Development), failed the location requirement (resides in Caloocan, job prefers Tondo/Binondo), has completely irrelevant work experience (software/front-end development instead of business administration/office tasks), and has no matching skills (lacks Microsoft Excel, Word, and Google Sheets).\"\n  },\n  \"summary\": [\n    \"The candidate received a score of 0 due to completely failing the education, location, experience, and skill requirements.\",\n    \"The candidate's work history is strictly in software and front-end development, which is completely irrelevant to the business-related administrative requirements.\",\n    \"Key unmet requirements include lacking a 4-year business-related degree, residing in the wrong location (Caloocan instead of Tondo/Binondo), having no office/administrative skills, and missing essential tool proficiencies such as Microsoft Excel, Word, and Google Sheets.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPV18i7lffPJqx9GYZbNCq+GePsLqTE8WEWDT8Ya1FKT+vYSzmfVHAfwO4kXXihHshbMZHbxnJMrZBenL9YfU5lI4a1usuet6ox0dwFWwwG8FstWiSdDav"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1803,
+    "candidatesTokenCount": 823,
+    "totalTokenCount": 2626,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1803
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "9kqFatLwA_G-1e8PtaPFyAg"
+}

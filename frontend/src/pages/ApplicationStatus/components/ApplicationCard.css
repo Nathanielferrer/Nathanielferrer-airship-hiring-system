@@ -1,0 +1,689 @@
+/* ── ApplicationCard.css ─────────────────────────────────────────────── */
+
+/* Card wrapper */
+.app-card {
+  border: none;
+  border-radius: 14px;
+  padding: 24px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+/* ── Card Header ── */
+.app-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.app-card__header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.app-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-card__title-icon {
+  font-size: 18px;
+  color: #475569;
+}
+
+.app-card__job-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.app-card__applied-date {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 26px;
+}
+
+.app-card__badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ── Status Notice Panels ── */
+.app-card__notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.app-card__notice--pending {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.app-card__notice--passed {
+  background: #f0fdf4;
+  border: 1px solid #a7f3d0;
+}
+
+.app-card__notice--rescheduling {
+  background: #f8fafc;
+  border: none;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+  align-items: center;
+}
+
+.app-card__notice-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.app-card__notice-icon i {
+  font-size: 18px;
+}
+
+.app-card__notice-icon--pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.app-card__notice-icon--passed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.app-card__notice-icon--rescheduling {
+  font-size: 16px;
+  color: #64748b;
+  margin-top: 0;
+  width: auto;
+  height: auto;
+  background: none;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+
+.app-card__notice-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.app-card__notice-title--passed {
+  color: #065f46;
+}
+
+.app-card__notice-body {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.app-card__notice-body--passed {
+  color: #1e293b;
+}
+
+/* ── Letter / Decision Panels ── */
+.app-card__letter {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 22px 24px;
+  border: 1.5px solid #fee2e2;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.app-card__letter-subject {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #fecaca;
+}
+
+.app-card__letter-subject-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #991b1b;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.app-card__letter-subject-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.app-card__letter-body {
+  font-size: 13.5px;
+  color: #334155;
+  line-height: 1.65;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-card__letter-body p {
+  margin: 0;
+}
+
+.app-card__letter-greeting {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.app-card__letter-regards {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.app-card__letter-regards p {
+  margin: 0;
+}
+
+.app-card__letter-sender {
+  font-weight: 700;
+  color: #334155;
+}
+
+/* ── Interview Action Card ── */
+.app-card__action-panel {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-card__action-heading {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-card__action-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.app-card__action-subtitle {
+  margin: 3px 0 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* Schedule detail rows */
+.app-card__details {
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+  color: #0f172a;
+  padding: 2px 0 4px 0;
+}
+
+.app-card__detail-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.app-card__detail-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 95px;
+  color: #475569;
+  font-weight: 700;
+}
+
+.app-card__detail-label i {
+  font-size: 14px;
+}
+
+.app-card__detail-value--bold {
+  font-weight: 600;
+}
+
+/* Action Buttons */
+.app-card__action-btns {
+  display: flex;
+  gap: 12px;
+}
+
+.app-card__btn {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'Montserrat', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.app-card__btn--accept {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+}
+
+.app-card__btn--accept:hover:not(:disabled) {
+  background: #059669;
+}
+
+.app-card__btn--accept:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.app-card__btn--reschedule {
+  background: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1 !important;
+}
+
+.app-card__btn--reschedule:hover:not(:disabled) {
+  background: #f8fafc;
+}
+
+.app-card__btn--reschedule:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* ── Feedback Banner ── */
+.app-card__feedback {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-card__feedback--confirm {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.app-card__feedback--confirm i {
+  font-size: 16px;
+  color: #15803d;
+}
+
+.app-card__feedback--default {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.app-card__feedback--default i {
+  font-size: 16px;
+  color: #64748b;
+}
+
+/* ── Confirmed Card ── */
+.app-card__confirmed-panel {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-card__confirmed-header {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-card__confirmed-header i {
+  font-size: 16px;
+}
+
+/* ── Hired Panel ── */
+.app-card__hired-panel {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-radius: 14px;
+  border: 1.5px solid #a7f3d0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+}
+
+.app-card__hired-headline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.app-card__hired-emoji {
+  font-size: 18px;
+}
+
+.app-card__hired-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #065f46;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: -0.2px;
+}
+
+.app-card__hired-welcome {
+  margin: 6px 0 0 0;
+  font-size: 13.5px;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
+.app-card__hired-steps {
+  border-top: 1px solid #d1fae5;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-card__hired-steps-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #047857;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.app-card__hired-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-card__hired-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #ffffff;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #bbf7d0;
+}
+
+.app-card__hired-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.app-card__hired-step-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.app-card__hired-step-body strong {
+  color: #0f172a;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* ── Passed Final Interview Notice ── */
+.app-card__notice--passed-interview {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.04);
+}
+
+.app-card__notice-icon--passed-interview {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.app-card__notice-title--passed-interview {
+  color: #166534;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.app-card__notice-body--passed-interview {
+  color: #14532d;
+  line-height: 1.55;
+}
+
+/* ── Hired Requirements Deadline Banner (Clean & Subtle) ── */
+.app-card__hired-deadline-banner {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 16px 0;
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.04);
+}
+
+.app-card__hired-badge-icon {
+  font-size: 22px;
+  color: #059669;
+}
+
+.app-card__hired-deadline-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.app-card__hired-deadline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-card__hired-deadline-title {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.app-card__hired-deadline-target {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #065f46;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.app-card__hired-deadline-note {
+  margin: 3px 0 0 0;
+  font-size: 12px;
+  color: #166534;
+  line-height: 1.5;
+}
+
+/* ── Clean Numbered List of Requirements (No Box Tables) ── */
+.app-card__requirements-list-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin: 16px 0;
+}
+
+.app-card__requirements-list-heading {
+  margin: 0 0 12px 0;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  font-family: 'Montserrat', sans-serif;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.app-card__requirements-clean-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-card__requirements-clean-item {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.app-card__requirements-clean-item strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.app-card__hired-footer-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* ── Candidate Withdrew Notice ── */
+.app-card__notice--withdrawn {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.app-card__notice-icon--withdrawn {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.app-card__notice-title--withdrawn {
+  color: #334155;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.app-card__notice-body--withdrawn {
+  color: #475569;
+  line-height: 1.55;
+}
+
+/* ── Incomplete Requirements Notice ── */
+.app-card__notice--incomplete-req {
+  background: #fff1f2;
+  border: 1.5px solid #fecdd3;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.03);
+}
+
+.app-card__notice-icon--incomplete-req {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
+.app-card__notice-title--incomplete-req {
+  color: #9f1239;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.app-card__notice-body--incomplete-req {
+  color: #881337;
+  line-height: 1.55;
+}
+
+/* ── Failed Pre-Employment Notice ── */
+.app-card__notice--failed-pre-emp {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.03);
+}
+
+.app-card__notice-icon--failed-pre-emp {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.app-card__notice-title--failed-pre-emp {
+  color: #991b1b;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.app-card__notice-body--failed-pre-emp {
+  color: #7f1d1d;
+  line-height: 1.55;
+}
+

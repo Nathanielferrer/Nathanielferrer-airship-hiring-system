@@ -1,0 +1,2 @@
+# Deny direct HTTP web access to private resume files
+Require all denied

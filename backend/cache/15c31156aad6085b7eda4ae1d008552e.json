@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"345 C. Cordero St. Barangay 67, Caloocan City\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    },\n    {\n      \"degree\": \"Senior High: STEM (Science, Technology, Engineering, and Mathematics)\",\n      \"year_graduated\": \"2021 - 2023\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work – IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Internship – United Asia Int’l Plastic Corp. (Accounting Intern)\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"Graduate of Marketing, Business, or a related field\",\n      \"Basic knowledge of social media platforms\",\n      \"Good communication skills (English/Taglish)\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 50,\n    \"review_flag\": true,\n    \"review_reason\": \"The candidate has a partial educational alignment (Accounting Information System vs preferred Marketing/Business) and lacks explicit mention of social media knowledge or communication skills in the resume text, though she possesses multi-tasking and basic office skills.\"\n  },\n  \"summary\": [\n    \"The candidate scored moderately: full points for education (pursuing a related business/accounting degree), partial points for experience (administrative and accounting internships rather than direct marketing), and partial points for skills (possesses multi-tasking and basic computer skills, but lacks social media skills).\",\n    \"Experience is tangentially related as an accounting/office intern involving administrative tasks, but lacks direct marketing or social media execution responsibilities.\",\n    \"Key unmet requirements include a specific Marketing or Business degree (she is in Accounting Information System), basic knowledge of social media platforms, and explicit mention of communication skills.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPahQw7XYbTB3x5fgbdv/5NnMa0GGe1VgDhaAf5M6ndkuvVP2WBrm1e9dU+D7H7xIcFB8hNmxo+evf9Vgm6J7D8PG0QPEcVp8UicXJCT71ZWbmFR0umUNx"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1888,
+    "candidatesTokenCount": 715,
+    "totalTokenCount": 2603,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1888
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "zUeFatr8OtSM1e8PxrrW4AM"
+}

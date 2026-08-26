@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"345 C. Cordero St. Barangay 67, Caloocan City\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 \\u2013 present\"\n    },\n    {\n      \"degree\": \"Senior High: STEM Science, Technology, Engineering, and Mathematics\",\n      \"year_graduated\": \"2021 - 2023\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work \\u2013 IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Internship \\u2013 United Asia Int\\u2019l Plastic Corp. (Accounting Intern)\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"Microsoft Word\",\n      \"Google Sheets\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 75,\n    \"review_flag\": true,\n    \"review_reason\": \"The candidate has a relevant degree (Bachelor of Science in Accounting Information System) and partial computer skills (Basic Excel Skills, but lacks explicit Microsoft Word and Google Sheets mentions). A location mismatch penalty was applied as the candidate resides in Caloocan City instead of the preferred Tondo/Binondo areas. Education is currently in-progress ('2023 \\u2013 present'), but fits the business-related course requirement.\"\n  },\n  \"summary\": [\n    \"The candidate scored well on education (related business/accounting course) and demonstrated relevant internship experience, but lost points due to a location mismatch and missing specific software mentions (Microsoft Word and Google Sheets).\",\n    \"Experience as an Accounting Intern provides moderate relevance to administrative and data-focused business roles.\",\n    \"Unmet requirements include residing in the preferred Tondo/Binondo areas and lacking explicit verbatim mentions of Microsoft Word and Google Sheets in the skills section.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPSA3cJitkzc1yaNw/eUF3Sk0glRLeDIqsVxrFOF+zcn3RuCdcoXf6cd7MMELm8SZMyVKNpDOPzEIp/b4/RJ7HYyWMMCKKU1oSmRjElUS5JjnMBunbHuZI"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1812,
+    "candidatesTokenCount": 726,
+    "totalTokenCount": 2538,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1812
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "0UyFarz1MfCk2roPmZD08Qg"
+}

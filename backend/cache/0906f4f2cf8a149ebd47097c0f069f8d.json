@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"Caloocan City, Philippines\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    },\n    {\n      \"degree\": \"Senior High: STEM Science, Technology, Engineering, and Mathematics\",\n      \"year_graduated\": \"2021 - 2023\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work – IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Accounting Intern – United Asia Int’l Plastic Corp.\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"GRADUATE OF ANY 4-YEAR BUSINESS COURSE-RELATED\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 65,\n    \"review_flag\": true,\n    \"review_reason\": \"The candidate is currently a college undergraduate (BS Accounting Information System, 2023-present) and therefore does not meet the strict requirement of being a graduate of a 4-year business course (-15 points Penalty A). Additionally, the candidate resides in Caloocan City, failing the preferred Tondo/Binondo location requirement (-10 points Penalty B). Work experience and skills received partial matching points.\"\n  },\n  \"summary\": [\n    \"The final score of 65 reflects strong foundational office and computer skills alongside relevant internship experience, offset by penalties for not yet holding a completed 4-year degree and not residing in the preferred location.\",\n    \"The candidate's experience as an Accounting Intern provides directly relevant administrative, data entry, and record management background aligning well with general business operations.\",\n    \"Key unmet requirements include the completion of a 4-year business degree (currently an undergraduate) and the preferred work location in Tondo or Binondo.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIP/vny0x6XVIARAEJWJ4XdtFC2v5ZiKT7v7sIFN7Z78MnMwn48A4fEW+Ic1/GkIGztrneL5aGpvDJT8KktWy4Aas5kPG3UWWV66BsF0/9sBJcglXMy0fN8"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1891,
+    "candidatesTokenCount": 705,
+    "totalTokenCount": 2596,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1891
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "Q02FaoKaEamo0-kP8rrAsQg"
+}

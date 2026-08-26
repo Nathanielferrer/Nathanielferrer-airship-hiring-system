@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"Caloocan City\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    },\n    {\n      \"degree\": \"Senior High School (STEM)\",\n      \"year_graduated\": \"2021 - 2023\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work – IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Accounting Intern – United Asia Int’l Plastic Corp.\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"Microsoft Word\",\n      \"Google Sheets\",\n      \"Able to work with minimal supervision\",\n      \"Eager to learn and hardworking\",\n      \"Honest, loyal, and responsible\",\n      \"Fast learner\",\n      \"Willing to work from 1:00 PM to 10:00 PM\",\n      \"Willing to render overtime when needed\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 60,\n    \"review_flag\": true,\n    \"review_reason\": \"Candidate meets the education requirement (currently pursuing a business/accounting-related 4-year course) and has relevant administrative/accounting internship experience. However, points were deducted due to a location mismatch (resides in Caloocan City instead of the preferred Tondo/Binondo areas) and partial skill alignment (lacks explicit mentions of Microsoft Word, Google Sheets, and other required traits).\"\n  },\n  \"summary\": [\n    \"The candidate earned moderate scores across categories: 30/50 for relevant office and accounting internship experience, 15/30 for partially matching computer skills, and 15/20 for education (currently enrolled in a 4-year business-related degree).\",\n    \"Experience is directly relevant, featuring administrative support, record management, and data entry tasks from internships.\",\n    \"Unmet requirements include the preferred residency location (Caloocan City vs. Tondo/Binondo) and specific software mentions such as Microsoft Word and Google Sheets.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPRy/MOtWjVhrS8KECuFOR3eB7wL97GqXWntHuQEZ/ixSh5yoxE2drQNih1mfqmNwmXN9dtYQuZZ20vTn7JKsDPD7g9I1vuAb1XSBtxXaW2ilKACOpwWfT"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1997,
+    "candidatesTokenCount": 767,
+    "totalTokenCount": 2764,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1997
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "0EmFavHrBu7Q2roPvpO0WA"
+}

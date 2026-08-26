@@ -1,0 +1,715 @@
+/* About Us Page Stylesheet - Airship Express */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+.about-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  overflow-x: clip;
+}
+
+/* Header Navbar - Consistent with dark header in previous interfaces */
+.about-navbar {
+  box-sizing: border-box;
+  background: #000000;
+  width: 100%;
+  height: 75px;
+  padding: 0 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.about-logo-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+}
+
+.about-logo-img {
+  height: 44px;
+  width: auto;
+  object-fit: contain;
+}
+
+.about-brand-text {
+  display: flex;
+  flex-direction: column;
+  font-family: 'Montserrat', sans-serif;
+  text-align: left;
+  line-height: 1.1;
+}
+
+.about-brand-name {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.about-brand-platform {
+  color: #e6007e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Navigation Links */
+.about-navbar-nav {
+  display: flex;
+  list-style: none;
+  gap: 36px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.about-nav-link {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.1s ease;
+  position: relative;
+  padding: 4px 0;
+}
+
+.about-nav-link:hover {
+  color: #ffffff;
+}
+
+.about-nav-link.active {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.about-nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: #e6007e;
+  border-radius: 2px;
+}
+
+.about-login-btn {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #e6007e;
+  padding: 10px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(230, 0, 126, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.about-login-btn:hover {
+  background: #d00070;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(230, 0, 126, 0.35);
+}
+
+/* Hero Badge */
+.about-hero-section {
+  padding: 50px 20px 20px 20px;
+  text-align: center;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.about-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(230, 0, 126, 0.08);
+  color: #e6007e;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 50px;
+  border: 1px solid rgba(230, 0, 126, 0.2);
+  margin-bottom: 16px;
+}
+
+/* Main Content Section - Two Columns with Divider */
+.about-two-col-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 48px 80px 48px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  position: relative;
+}
+
+/* Clean, thin vertical divider line between columns */
+.about-col-left {
+  padding-right: 50px;
+  border-right: 1.5px solid #e2e8f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.about-col-right {
+  padding-left: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.about-company-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  border: 4px solid #ffffff;
+  transform: rotate(-1deg);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.about-company-image-container:hover {
+  transform: rotate(0deg) scale(1.01);
+  box-shadow: 0 25px 50px rgba(230, 0, 126, 0.15);
+}
+
+.about-company-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  max-height: 420px;
+}
+
+/* Magenta accent bar on image corner */
+.about-company-image-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, #e6007e 0%, #ff4db8 100%);
+}
+
+.about-heading {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.5px;
+  position: relative;
+}
+
+/* Subtle accent line below heading */
+.about-heading::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: #e6007e;
+  border-radius: 2px;
+  margin-top: 12px;
+}
+
+.about-body-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 16.5px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.8;
+  margin: 0;
+}
+
+/* Second Section: Why Work With Us */
+.about-why-section {
+  background: #f8fafc;
+  padding: 80px 48px;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.about-section-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.about-section-heading-centered {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: #e6007e;
+  text-align: center;
+  margin: 0 0 12px 0;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.about-section-subtext {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: #64748b;
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 50px auto;
+}
+
+/* Three-point Card Grid Layout */
+.about-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+.about-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 36px 28px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+}
+
+.about-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.about-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(230, 0, 126, 0.1);
+  border-color: #f472b6;
+}
+
+.about-card:hover::before {
+  background: #e6007e;
+}
+
+.about-card-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(230, 0, 126, 0.1);
+  color: #e6007e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.about-card:hover .about-card-icon-wrapper {
+  transform: scale(1.1);
+  background: #e6007e;
+  color: #ffffff;
+}
+
+.about-card-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+}
+
+.about-card-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* Third Section: Location Iframe (Find Us / Our Headquarters) */
+.about-location-section {
+  padding: 80px 48px 100px 48px;
+  background: #ffffff;
+}
+
+.about-location-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+}
+
+.about-location-title span {
+  color: #e6007e;
+}
+
+.about-map-container {
+  max-width: 1050px;
+  margin: 40px auto 0 auto;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+  background: #f1f5f9;
+  position: relative;
+}
+
+.about-map-iframe {
+  width: 100%;
+  height: 480px;
+  border: none;
+  display: block;
+}
+
+/* Address Card below iframe */
+.about-address-card {
+  max-width: 800px;
+  margin: 32px auto 0 auto;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+}
+
+.about-address-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(230, 0, 126, 0.12);
+  color: #e6007e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.about-address-text-group {
+  text-align: left;
+}
+
+.about-address-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e6007e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 4px 0;
+}
+
+.about-address-value {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Footer Section */
+.about-footer {
+  background: #000000;
+  color: #94a3b8;
+  padding: 48px 48px 32px 48px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  border-top: 1px solid #1e293b;
+}
+
+.about-footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.about-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.about-footer-links {
+  display: flex;
+  gap: 24px;
+}
+
+.about-footer-links a {
+  color: #94a3b8;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.about-footer-links a:hover {
+  color: #e6007e;
+}
+
+.about-footer-bottom {
+  max-width: 1200px;
+  margin: 24px auto 0 auto;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 992px) {
+  .about-two-col-section {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 30px 24px 60px 24px;
+  }
+
+  .about-col-left {
+    padding-right: 0;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 40px;
+  }
+
+  .about-col-right {
+    padding-left: 0;
+    text-align: center;
+  }
+
+  .about-heading::after {
+    margin: 12px auto 0 auto;
+  }
+
+  .about-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .about-navbar {
+    padding: 0 20px;
+    height: 65px;
+  }
+
+  .about-navbar-nav {
+    display: none; /* Hide main links on mobile or simplify */
+  }
+
+  .about-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .about-why-section, .about-location-section {
+    padding: 60px 20px;
+  }
+
+  .about-map-iframe {
+    height: 350px;
+  }
+
+  .about-address-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px;
+  }
+
+  .about-address-text-group {
+    text-align: center;
+  }
+
+  .about-footer-content {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+  }
+}
+
+/* About Profile Status Card */
+.about-profile-status-section {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto 30px auto;
+  padding: 0 48px;
+  box-sizing: border-box;
+}
+
+.about-profile-status-card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px 28px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.about-profile-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.about-avatar-silhouette {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(236, 72, 153, 0.1);
+  border: 1.5px solid rgba(236, 72, 153, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-profile-user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.about-user-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.about-user-email {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+}
+
+.about-profile-card-right {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.about-status-label-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.about-status-content-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.about-status-badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.about-status-badge.status-pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.about-status-badge.status-review_required {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.about-status-badge.status-passed-initial {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.about-status-badge.status-pending-scheduled,
+.about-status-badge.status-interview_scheduled {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.about-status-badge.status-confirmed {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.about-status-badge.status-rescheduling {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.about-status-badge.status-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.about-status-badge.status-none {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.about-status-role {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: #475569;
+}
+
+.about-track-btn {
+  background: #ec4899;
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.about-track-btn:hover {
+  background: #db2777;
+}

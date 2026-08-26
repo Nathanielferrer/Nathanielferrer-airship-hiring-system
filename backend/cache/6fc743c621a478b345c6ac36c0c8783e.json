@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"Caloocan City\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    },\n    {\n      \"degree\": \"Senior High: STEM Science, Technology, Engineering, and Mathematics\",\n      \"year_graduated\": \"2021 - 2023\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work – IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Internship – United Asia Int’l Plastic Corp. (Accounting Intern)\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Multi-tasking\",\n      \"Basic Excel Skills\",\n      \"Time Management\",\n      \"Attention to detail\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"Marketing knowledge\",\n      \"Business background\",\n      \"Social media platforms\",\n      \"Good communication skills\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 50,\n    \"review_flag\": true,\n    \"review_reason\": \"The candidate is currently pursuing a degree in Accounting Information System rather than Marketing or Business (preferred field), and lacks explicitly listed skills in social media platforms and communication, resulting in a moderate score.\"\n  },\n  \"summary\": [\n    \"The candidate received partial points across categories: moderate experience relevance due to general office background, partial skills match for multi-tasking, and partial education points for studying a related business/information system field rather than pure marketing.\",\n    \"The candidate's work history includes office-based work and an accounting internship, which provide general administrative experience but lack direct marketing or social media responsibilities.\",\n    \"Key unmet requirements include the preferred Marketing/Business degree, basic knowledge of social media platforms, and explicitly stated communication skills.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPkwdkRvg0stBzKf0lv6ofzjf7qO2tVcuP9fH5CW0R46RjHFASISia3q9ncPIJ8FZfXM34v/SXUUo8fY1VNC9XgRO0e/48Eq7JSsu9fc+4x4WlXmeknAAo"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1943,
+    "candidatesTokenCount": 667,
+    "totalTokenCount": 2610,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1943
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "IEiFatbOBszi2roPl7GucA"
+}

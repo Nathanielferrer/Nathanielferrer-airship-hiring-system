@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "{\n  \"applicant_info\": {\n    \"name\": \"Bianca C. Isanan\",\n    \"contact\": \"09948700665 / bianca.isanan01@gmail.com\",\n    \"location\": \"Caloocan City\"\n  },\n  \"extracted_education\": [\n    {\n      \"degree\": \"Bachelor of Science in Accounting Information System\",\n      \"year_graduated\": \"2023 – present\"\n    },\n    {\n      \"degree\": \"Senior High: STEM Science, Technology, Engineering, and Mathematics\",\n      \"year_graduated\": \"2021 - 2023\"\n    },\n    {\n      \"degree\": \"Junior High: Caloocan High School\",\n      \"year_graduated\": \"2017 - 2021\"\n    },\n    {\n      \"degree\": \"Elementary: Gregoria De Jesus Elementary School\",\n      \"year_graduated\": \"2011 – 2017\"\n    }\n  ],\n  \"extracted_work_history\": [\n    {\n      \"job_title\": \"Work Immersion - Caloocan City Hall (Office-Based Work – IT Department)\",\n      \"duration\": \"2023\",\n      \"key_responsibilities\": []\n    },\n    {\n      \"job_title\": \"Internship – United Asia Int’l Plastic Corp. (Accounting Intern)\",\n      \"duration\": \"May 2026\",\n      \"key_responsibilities\": [\n        \"Monitored purchase orders to ensure timely processing, verifying purchase order details against delivery receipts and sales invoice to maintain accurate documentation.\",\n        \"Updated inventory records based on stock movements, production output, and deliveries while maintaining accurate inventory monitoring reports.\",\n        \"Managed documents by photocopying, filing, organizing, and maintaining company records.\",\n        \"Computed raw material purchases, consumption, and remaining inventory to support weekly purchasing decisions and cost control.\"\n      ]\n    }\n  ],\n  \"skills_analysis\": {\n    \"found_skills\": [\n      \"Basic computer skills\",\n      \"Basic Excel Skills\",\n      \"Attention to detail\",\n      \"Multi-tasking\",\n      \"Time Management\",\n      \"Data Entry and Record Management\"\n    ],\n    \"missing_skills\": [\n      \"Microsoft Word\",\n      \"Google Sheets\"\n    ]\n  },\n  \"ranking_logic\": {\n    \"match_score\": 67,\n    \"review_flag\": true,\n    \"review_reason\": \"The candidate is currently a college student (2023-present) and has not yet graduated, meaning she does not meet the minimum requirement of being a graduate of a 4-year business-related course (-15 points penalty applied for missing minimum education). Additionally, the candidate resides in Caloocan City, failing the preference for Tondo/Binondo areas (-10 points penalty applied for location mismatch). Work experience relevance scored 32/50 due to accounting internship and administrative background. Skills match scored 25/30 for computer literacy and basic Excel. Education scored 10/20 because the degree is related (Accounting Information System), but she has not graduated yet.\"\n  },\n  \"summary\": [\n    \"The candidate received a final score of 67 based on strong foundational accounting internship experience and basic computer skills, but lost points due to incomplete education and a location mismatch.\",\n    \"Work experience includes relevant administrative and accounting internship duties which align moderately well with general business support functions.\",\n    \"Key unmet requirements include not having graduated yet with a 4-year degree (currently a student), missing specific proficiency in Microsoft Word and Google Sheets, and residing in Caloocan City instead of the preferred Tondo/Binondo areas.\"\n  ]\n}",
+            "thoughtSignature": "El4KXAERTTIPvUTe2z4PoxIuuGp6cLkaPJifXer8PxlwrPI++Vmx+ALPc4dpNbwHnWIGcXUwxvGk+/PtU6oT9HE+qHZ7tOUMC5HaOm++eUCZ0a7ZCv6R4ktgNA+yyWIh"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 1867,
+    "candidatesTokenCount": 846,
+    "totalTokenCount": 2713,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1867
+      }
+    ],
+    "serviceTier": "standard"
+  },
+  "modelVersion": "gemini-3.5-flash-lite",
+  "responseId": "iUyFarLDM4u50-kPkoOTUQ"
+}
