@@ -51,27 +51,70 @@ if ($jobId <= 0 || $userId <= 0) {
     exit();
 }
 
-// 1.5. Check for duplicate application (Fail-Safe)
+// 1.4. Check if applicant is already officially hired for a position in the company
 try {
-    $dupStmt = $pdo->prepare("SELECT id FROM applications WHERE user_id = :user_id AND job_id = :job_id LIMIT 1");
+    $hiredStmt = $pdo->prepare("
+        SELECT a.application_id AS id, a.application_id, j.title AS job_title, a.status 
+        FROM applications_tbl a
+        INNER JOIN jobs_tbl j ON a.job_id = j.job_id
+        WHERE a.user_id = :user_id 
+        AND UPPER(a.status) IN (
+            'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 
+            'OFFICIALLY HIRED & SIGNED', 'OFFICIALLY HIRED', 'HIRED', 'PASSED',
+            'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL',
+            'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED',
+            'CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'
+        )
+        LIMIT 1
+    ");
+    $hiredStmt->execute(['user_id' => $userId]);
+    $hiredApp = $hiredStmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($hiredApp) {
+        http_response_code(409); // Conflict
+        echo json_encode([
+            "status" => "error",
+            "message" => "You have already been officially hired as \"{$hiredApp['job_title']}\" at Airship Express. Hired employees cannot submit new job applications."
+        ]);
+        exit();
+    }
+
+    // 1.5. Check for active duplicate application for this position (Fail-Safe)
+    $dupStmt = $pdo->prepare("
+        SELECT application_id FROM applications_tbl 
+        WHERE user_id = :user_id AND job_id = :job_id 
+        AND UPPER(status) NOT IN ('CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW') 
+        LIMIT 1
+    ");
     $dupStmt->execute(['user_id' => $userId, 'job_id' => $jobId]);
     if ($dupStmt->fetch()) {
         http_response_code(409); // Conflict
         echo json_encode([
             "status" => "error",
-            "message" => "You have already submitted an application for this position."
+            "message" => "You have already submitted an active application for this position."
         ]);
         exit();
     }
 
     // 1.6. Check if user already has an active application elsewhere
-    $activeStmt = $pdo->prepare("SELECT id FROM applications WHERE user_id = :user_id AND status IN ('pending', 'review_required', 'shortlisted', 'INTERVIEW_SCHEDULED') LIMIT 1");
+    $activeStmt = $pdo->prepare("
+        SELECT a.application_id AS id, a.application_id, j.title AS job_title FROM applications_tbl a
+        INNER JOIN jobs_tbl j ON a.job_id = j.job_id
+        WHERE a.user_id = :user_id 
+        AND UPPER(a.status) IN (
+            'PENDING', 'REVIEW_REQUIRED', 'SHORTLISTED', 'PASSED INITIAL', 
+            'PENDING SCHEDULED', 'CONFIRMED', 'INTERVIEW_SCHEDULED', 'RESCHEDULING',
+            'PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'
+        ) 
+        LIMIT 1
+    ");
     $activeStmt->execute(['user_id' => $userId]);
-    if ($activeStmt->fetch()) {
+    $activeApp = $activeStmt->fetch(PDO::FETCH_ASSOC);
+    if ($activeApp) {
         http_response_code(409); // Conflict
         echo json_encode([
             "status" => "error",
-            "message" => "You already have an active application under review. Please wait for a final decision on your current application before applying to other roles."
+            "message" => "You already have an active application under process for \"{$activeApp['job_title']}\". Please wait for a final decision on your current application before applying to other roles."
         ]);
         exit();
     }
@@ -86,7 +129,7 @@ try {
 
 // 2. Fetch the target job requirements
 try {
-    $jobStmt = $pdo->prepare("SELECT title, description, requirements FROM jobs WHERE id = :id");
+    $jobStmt = $pdo->prepare("SELECT title, description, requirements FROM jobs_tbl WHERE job_id = :id");
     $jobStmt->execute(['id' => $jobId]);
     $job = $jobStmt->fetch();
 
@@ -454,25 +497,59 @@ try {
     $resumeParsedName = isset($aiResult['applicant_info']['name']) ? trim($aiResult['applicant_info']['name']) : '';
     $finalCandidateName = !empty($resumeParsedName) ? $resumeParsedName : $candidateName;
 
-    $insertStmt = $pdo->prepare("INSERT INTO applications (user_id, job_id, resume_path, ai_match_score, ai_summary, status, candidate_name, candidate_email) VALUES (:user_id, :job_id, :resume_path, :score, :summary, :status, :candidate_name, :candidate_email)");
-    $insertStmt->execute([
-        'user_id'        => $userId,
-        'job_id'         => $jobId,
-        'resume_path'    => $dbFilePath,
-        'score'          => $score,
-        'summary'        => json_encode($aiResult), // Save the whole JSON string
-        'status'         => $status,
-        'candidate_name' => $finalCandidateName,
-        'candidate_email' => $candidateEmail
-    ]);
+    // Check if re-applying after a withdrawal
+    $checkWithdrawn = $pdo->prepare("SELECT application_id FROM applications_tbl WHERE user_id = :user_id AND job_id = :job_id AND status IN ('Candidate Withdrew', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW') ORDER BY application_id DESC LIMIT 1");
+    $checkWithdrawn->execute(['user_id' => $userId, 'job_id' => $jobId]);
+    $withdrawnId = $checkWithdrawn->fetchColumn();
 
-    $appId = $pdo->lastInsertId();
+    if ($withdrawnId) {
+        $updateStmt = $pdo->prepare("
+            UPDATE applications_tbl 
+            SET resume_path = :resume_path,
+                ai_match_score = :score,
+                ai_summary = :summary,
+                status = :status,
+                candidate_name = :candidate_name,
+                candidate_email = :candidate_email,
+                is_archived = 0,
+                contract_signing_date = NULL,
+                contract_signing_time = NULL,
+                contract_signing_location = NULL,
+                contract_signing_notes = NULL,
+                updated_at = NOW()
+            WHERE application_id = :id
+        ");
+        $updateStmt->execute([
+            'resume_path'     => $dbFilePath,
+            'score'           => $score,
+            'summary'         => json_encode($aiResult),
+            'status'          => $status,
+            'candidate_name'  => $finalCandidateName,
+            'candidate_email' => $candidateEmail,
+            'id'              => $withdrawnId
+        ]);
+        $appId = $withdrawnId;
+    } else {
+        $insertStmt = $pdo->prepare("INSERT INTO applications_tbl (user_id, job_id, resume_path, ai_match_score, ai_summary, status, candidate_name, candidate_email) VALUES (:user_id, :job_id, :resume_path, :score, :summary, :status, :candidate_name, :candidate_email)");
+        $insertStmt->execute([
+            'user_id'         => $userId,
+            'job_id'          => $jobId,
+            'resume_path'     => $dbFilePath,
+            'score'           => $score,
+            'summary'         => json_encode($aiResult),
+            'status'          => $status,
+            'candidate_name'  => $finalCandidateName,
+            'candidate_email' => $candidateEmail
+        ]);
+        $appId = $pdo->lastInsertId();
+    }
 
     echo json_encode([
         "status" => "success",
         "message" => "Application submitted and evaluated successfully!",
         "application" => [
             "id" => $appId,
+            "application_id" => $appId,
             "job_id" => $jobId,
             "ai_match_score" => $score,
             "ai_summary" => json_encode($aiResult),

@@ -45,7 +45,7 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 try {
-    $stmt = $pdo->prepare("INSERT INTO jobs (title, description, requirements, availability, status, image_path) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt = $pdo->prepare("INSERT INTO jobs_tbl (title, description, requirements, availability, status, image_path) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->execute([$title, $description, $requirements, $availability, $status, $image_path]);
     $newJobId = (int)$pdo->lastInsertId();
 
@@ -62,7 +62,7 @@ try {
         'Info'
     );
 
-    echo json_encode(["status" => "success", "message" => "Job added successfully."]);
+    echo json_encode(["status" => "success", "message" => "Job added successfully.", "job_id" => $newJobId]);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["status" => "error", "message" => $e->getMessage()]);

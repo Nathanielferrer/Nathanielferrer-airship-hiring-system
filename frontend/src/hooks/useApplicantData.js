@@ -242,6 +242,40 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
     });
   };
 
+  const handleWithdrawApplication = async (appId, jobTitle = 'this position') => {
+    if (!user) return;
+    setConfirmModalState({
+      isOpen: true,
+      title: 'Withdraw Application',
+      message: `Are you sure you want to cancel and withdraw your application for "${jobTitle}"? Your application will be recorded as withdrawn.`,
+      confirmText: 'Withdraw Application',
+      cancelText: 'Keep Application',
+      type: 'danger',
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          const res = await fetch('http://localhost/Hiring%20System/backend/applications/withdraw.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: user.id,
+              application_id: appId,
+              reason: 'Candidate cancelled application from status portal'
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            fetchUserApplications();
+          } else {
+            alert(data.message || 'Failed to withdraw application.');
+          }
+        } catch (err) {
+          console.error('Withdraw application error:', err);
+        }
+      }
+    });
+  };
+
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     user,
@@ -258,6 +292,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
     handleNotificationClick,
     handleClearReadNotifications,
     handleScheduleResponse,
+    handleWithdrawApplication,
     fetchUserApplications,
     handleLogout,
     confirmModalState,

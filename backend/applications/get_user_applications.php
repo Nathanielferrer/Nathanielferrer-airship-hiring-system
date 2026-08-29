@@ -17,18 +17,24 @@ if ($userId <= 0) {
 
 try {
     $stmt = $pdo->prepare("SELECT 
-                                a.id, 
+                                a.application_id AS id, 
+                                a.application_id,
                                 a.job_id, 
                                 a.resume_path, 
                                 a.ai_match_score, 
                                 a.ai_summary, 
                                 a.status, 
                                 a.applied_at, 
+                                a.updated_at,
                                 a.candidate_name,
                                 a.candidate_email,
+                                a.contract_signing_date,
+                                a.contract_signing_time,
+                                a.contract_signing_location,
+                                a.contract_signing_notes,
                                 j.title AS job_title 
-                            FROM applications a 
-                            INNER JOIN jobs j ON a.job_id = j.id 
+                            FROM applications_tbl a 
+                            INNER JOIN jobs_tbl j ON a.job_id = j.job_id 
                             WHERE a.user_id = :user_id 
                             ORDER BY a.applied_at DESC");
     $stmt->execute(['user_id' => $userId]);
@@ -45,3 +51,4 @@ try {
         "message" => "Failed to fetch user applications: " . $e->getMessage()
     ]);
 }
+?>

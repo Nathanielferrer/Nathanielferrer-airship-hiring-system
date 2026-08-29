@@ -14,12 +14,12 @@ ini_set('display_errors', 0);
 $json        = file_get_contents('php://input');
 $data        = json_decode($json, true);
 
-$id          = intval($data['id']           ?? 0);
+$id          = intval($data['id'] ?? ($data['user_id'] ?? 0));
 $fname       = trim($data['first_name']     ?? '');
 $lname       = trim($data['last_name']      ?? '');
 $email       = trim($data['email']          ?? '');
-$actorId     = intval($data['actor_id']     ?? 0);  // Super Admin's User_ID
-$resetPw     = !empty($data['reset_password']) && $data['reset_password'] === true; // explicit flag
+$actorId     = intval($data['actor_id']     ?? 0);
+$resetPw     = !empty($data['reset_password']) && $data['reset_password'] === true;
 
 if (!$id || !$fname || !$lname || !$email) {
     http_response_code(400);
@@ -33,7 +33,6 @@ if ($actorId <= 0) {
     exit();
 }
 
-// ── Email Validation & Domain DNS Check ───────────────────────────────────────
 function validate_admin_email_address($email) {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return "Invalid email format. Please enter a valid email address (e.g., name@gmail.com).";
@@ -66,8 +65,7 @@ if ($emailValidationError !== null) {
 }
 
 try {
-    // Verify target account is an admin (not applicant, not super admin) and is Active
-    $targetCheck = $pdo->prepare("SELECT User_ID, User_Fname, User_Lname, User_Email, is_admin, COALESCE(status, 'Active') as status FROM user WHERE User_ID = ?");
+    $targetCheck = $pdo->prepare("SELECT user_id, User_Fname, User_Lname, User_Email, is_admin, COALESCE(status, 'Active') as status FROM users_tbl WHERE user_id = ?");
     $targetCheck->execute([$id]);
     $targetUser = $targetCheck->fetch(PDO::FETCH_ASSOC);
     if (!$targetUser || intval($targetUser['is_admin']) === 0) {
@@ -82,8 +80,8 @@ try {
         exit();
     }
 
-    // Check email uniqueness (ignore same user)
-    $check = $pdo->prepare("SELECT User_ID, is_admin FROM user WHERE User_Email = ? AND User_ID != ?");
+    // Check email uniqueness
+    $check = $pdo->prepare("SELECT user_id, is_admin FROM users_tbl WHERE User_Email = ? AND user_id != ?");
     $check->execute([$email, $id]);
     $existingEmailUser = $check->fetch(PDO::FETCH_ASSOC);
     if ($existingEmailUser) {
@@ -96,29 +94,30 @@ try {
         exit();
     }
 
-    // Snapshot previous data for audit diff
     $oldFname = $targetUser['User_Fname'];
     $oldLname = $targetUser['User_Lname'];
     $oldEmail = $targetUser['User_Email'];
 
-    require_once '../../audit_helper.php';
-    $saStmt = $pdo->prepare("SELECT CONCAT(User_Fname, ' ', User_Lname) as name FROM user WHERE User_ID = ?");
-    $saStmt->execute([$actorId]);
-    $saName = $saStmt->fetchColumn() ?: 'Super Admin';
+    $tempPassword = null;
+    $pwResetSent  = false;
 
-    // ── MODE A: Password Reset (triggered by Reset Password button) ────────────
     if ($resetPw) {
-        // Auto-generate a cryptographically secure temporary password
         $tempPassword = substr(base64_encode(random_bytes(16)), 0, 12) . '!Ax' . rand(10, 99);
-        $hash         = password_hash($tempPassword, PASSWORD_BCRYPT);
+        $hash = password_hash($tempPassword, PASSWORD_BCRYPT);
 
-        // Update profile + hash + set requires_password_reset = 1
-        $stmt = $pdo->prepare("UPDATE user SET User_Fname = ?, User_Lname = ?, User_Email = ?, User_Pass = ?, requires_password_reset = 1 WHERE User_ID = ? AND is_admin >= 1");
+        $stmt = $pdo->prepare("
+            UPDATE users_tbl
+            SET User_Fname = ?,
+                User_Lname = ?,
+                User_Email = ?,
+                User_Pass = ?,
+                requires_password_reset = 1,
+                setup_token = NULL,
+                setup_token_expires = NULL
+            WHERE user_id = ? AND is_admin = 1
+        ");
         $stmt->execute([$fname, $lname, $email, $hash, $id]);
 
-        // ── Send email with new temp password ─────────────────────────────────
-        $emailSent  = false;
-        $emailError = '';
         try {
             $mail = new PHPMailer(true);
             $mail->isSMTP();
@@ -128,7 +127,6 @@ try {
             $mail->Password   = 'enzc ppph jran heso';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
-
             $mail->CharSet    = 'UTF-8';
             $mail->Encoding   = 'base64';
 
@@ -146,92 +144,83 @@ try {
                 <div style='padding: 24px 0;'>
                     <p style='font-size: 16px; color: #1e293b;'>Hello <strong>{$fname}</strong>,</p>
                     <p style='font-size: 15px; color: #475569; line-height: 1.6;'>
-                        Your admin account password has been <strong>reset by the Super Administrator</strong>. 
-                        Use the temporary password below to log in. You will be required to set a new password immediately.
+                        Your admin password for the <strong>Airship Express Hiring Portal</strong> has been reset by the Super Administrator. 
+                        Please log in with the new temporary credentials below:
                     </p>
-                    <div style='background: #fef3c7; border: 1.5px solid #fde68a; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;'>
-                        <p style='margin: 0 0 8px 0; font-size: 12px; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.05em;'>YOUR NEW TEMPORARY PASSWORD</p>
-                        <code style='font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: 2px; font-family: Consolas, Monaco, monospace; background: #ffffff; padding: 10px 20px; border-radius: 8px; border: 1px solid #fde68a; display: inline-block;'>{$tempPassword}</code>
+                    <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 20px 0;'>
+                        <p style='margin: 0 0 8px; font-size: 14px; color: #334155;'><strong>Login Email:</strong> {$email}</p>
+                        <p style='margin: 0; font-size: 14px; color: #334155;'><strong>New Temporary Password:</strong> <code style='background:#f1f5f9; padding: 2px 6px; border-radius: 4px; color: #e6007e; font-size: 15px; font-weight: bold;'>{$tempPassword}</code></p>
                     </div>
-                    <p style='font-size: 13px; color: #64748b; margin-top: 10px;'>
-                        <strong>Login Email:</strong> {$email}
+                    <p style='font-size: 14px; color: #dc2626;'>
+                        <strong>Security Notice:</strong> You will be required to set a new permanent password immediately upon logging in.
                     </p>
                     <div style='text-align: center; margin: 28px 0;'>
-                        <a href='http://localhost:5173/login' style='background-color: #e6007e; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>
-                            Log In to Admin Portal
-                        </a>
+                        <a href='http://localhost:5173/admin/login' style='background-color: #e6007e; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>Access Admin Portal</a>
                     </div>
-                    <p style='font-size: 12px; color: #94a3b8; border-top: 1px solid #e5e4e7; padding-top: 14px; margin-top: 10px;'>
-                        If you did not request this reset, please contact your Super Administrator immediately. Do not share this password with anyone.
-                    </p>
                 </div>
                 <div style='border-top: 1px solid #e5e4e7; padding-top: 16px; text-align: center; font-size: 12px; color: #9ca3af;'>
-                    <p style='margin: 0;'>Automated notification - Airship Express Hiring Portal. Do not reply.</p>
+                    <p style='margin: 0;'>This is an automated administrative notification from Airship Express. Do not reply to this email.</p>
                 </div>
             </div>
             ";
-            $mail->AltBody = "Hello {$fname},\n\nYour admin password has been reset.\n\nEmail: {$email}\nNew Temporary Password: {$tempPassword}\n\nPlease log in and change your password immediately.\n\nLogin: http://localhost:5173/login";
+            $mail->AltBody = "Hello {$fname},\n\nYour admin password has been reset.\nEmail: {$email}\nNew Temporary Password: {$tempPassword}\n\nLog in at: http://localhost:5173/admin/login";
 
             $mail->send();
-            $emailSent = true;
+            $pwResetSent = true;
         } catch (Exception $mailEx) {
-            $emailError = $mailEx->getMessage();
-            $logFile = __DIR__ . '/admin_provisioning_log.txt';
-            file_put_contents($logFile,
-                "=== PASSWORD RESET (EMAIL FALLBACK) ===\n" .
-                "Date: " . date('Y-m-d H:i:s') . "\n" .
-                "Admin: {$fname} {$lname} <{$email}>\n" .
-                "New Temp Password: {$tempPassword}\n" .
-                "Mail Error: {$emailError}\n" .
-                "=======================================\n\n",
-                FILE_APPEND
-            );
+            $logContent = "=== ADMIN PASSWORD RESET EMAIL FALLBACK ===\n" .
+                          "Date: " . date('Y-m-d H:i:s') . "\n" .
+                          "To: {$email} ({$fname} {$lname})\n" .
+                          "New Temp Password: {$tempPassword}\n" .
+                          "Error: " . $mailEx->getMessage() . "\n" .
+                          "===========================================\n\n";
+            @file_put_contents(__DIR__ . '/email_log.txt', $logContent, FILE_APPEND);
         }
-
-        // ── Audit log (admin_audit_log only — Super Admin action) ─────────────
-        $emailStatus  = $emailSent ? "New temp password emailed to {$email}." : "Email delivery failed — password logged to file.";
-        $auditDetails = "Password reset for Admin \"{$fname} {$lname}\" (ID:{$id}). {$emailStatus}";
-        $logStmt      = $pdo->prepare("INSERT INTO admin_audit_log (actor_id, target_id, action, details) VALUES (?, ?, 'password_reset_by_super_admin', ?)");
-        $logStmt->execute([$actorId, $id, $auditDetails]);
-
-        $msg = $emailSent
-            ? "Password reset successfully. A new temporary password has been emailed to {$email}."
-            : "Password updated in database. Automated email delivery could not be completed, but the temporary password has been generated.";
-
-        echo json_encode([
-            "status"     => "success",
-            "message"    => $msg,
-            "email_sent" => $emailSent
-        ]);
-        exit();
+    } else {
+        $stmt = $pdo->prepare("
+            UPDATE users_tbl
+            SET User_Fname = ?,
+                User_Lname = ?,
+                User_Email = ?
+            WHERE user_id = ? AND is_admin = 1
+        ");
+        $stmt->execute([$fname, $lname, $email, $id]);
     }
 
-    // ── MODE B: Profile Update Only (name / email — no password change) ────────
-    $stmt = $pdo->prepare("UPDATE user SET User_Fname = ?, User_Lname = ?, User_Email = ? WHERE User_ID = ? AND is_admin >= 1");
-    $stmt->execute([$fname, $lname, $email, $id]);
+    require_once '../../audit_helper.php';
+    $actorStmt = $pdo->prepare("SELECT User_Fname, User_Lname FROM users_tbl WHERE user_id = ?");
+    $actorStmt->execute([$actorId]);
+    $actorRow = $actorStmt->fetch(PDO::FETCH_ASSOC);
+    $actorName = $actorRow ? trim("{$actorRow['User_Fname']} {$actorRow['User_Lname']}") : 'Super Admin';
 
-    // Synchronize historical system_audit_logs to reflect updated admin name
-    $syncLogs = $pdo->prepare("UPDATE system_audit_logs SET admin_name = ? WHERE admin_id = ?");
-    $syncLogs->execute(["{$fname} {$lname}", $id]);
-
-    // Build diff string for audit
     $changes = [];
-    if ("{$oldFname} {$oldLname}" !== "{$fname} {$lname}") {
-        $changes[] = "Name: \"{$oldFname} {$oldLname}\" → \"{$fname} {$lname}\"";
-    }
-    if ($oldEmail !== $email) {
-        $changes[] = "Email: \"{$oldEmail}\" → \"{$email}\"";
-    }
-    $diffStr = !empty($changes) ? implode(' | ', $changes) : 'No field changes detected.';
-    $auditDetails = "Updated Admin account for \"{$oldFname} {$oldLname}\" (ID:{$id}): {$diffStr}";
+    if ($oldFname !== $fname) $changes[] = "First Name: '{$oldFname}' → '{$fname}'";
+    if ($oldLname !== $lname) $changes[] = "Last Name: '{$oldLname}' → '{$lname}'";
+    if ($oldEmail !== $email) $changes[] = "Email: '{$oldEmail}' → '{$email}'";
+    if ($resetPw)            $changes[] = "Password reset issued (temp password generated & emailed)";
 
-    // Internal admin_audit_log
-    $logStmt = $pdo->prepare("INSERT INTO admin_audit_log (actor_id, target_id, action, details) VALUES (?, ?, 'admin_profile_updated', ?)");
-    $logStmt->execute([$actorId, $id, $auditDetails]);
+    $changeSummary = !empty($changes) ? implode(', ', $changes) : 'No field values changed';
+    $auditDetails  = "Updated HR Admin profile for \"{$fname} {$lname}\" (ID:{$id}). Changes: [{$changeSummary}].";
+    log_system_audit($pdo, $actorId, $actorName, 'Admin Updated', 'Admin Management', $auditDetails);
+
+    $msg = "Admin account updated successfully.";
+    if ($resetPw) {
+        $msg .= $pwResetSent ? " New temporary password sent via email." : " Password reset (email delivery failed, see server log).";
+    }
 
     echo json_encode([
-        "status"  => "success",
-        "message" => "Admin profile updated successfully."
+        "status"              => "success",
+        "message"             => $msg,
+        "password_reset_sent" => $pwResetSent,
+        "admin"               => [
+            "id"         => $id,
+            "user_id"    => $id,
+            "User_ID"    => $id,
+            "first_name" => $fname,
+            "last_name"  => $lname,
+            "email"      => $email,
+            "is_admin"   => 1
+        ]
     ]);
 
 } catch (PDOException $e) {

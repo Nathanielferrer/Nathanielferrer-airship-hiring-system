@@ -4,10 +4,10 @@ header('Content-Type: application/json');
 
 try {
     // Fetch applicants who have passed initial screening
-    // They appear in stages: PASSED INITIAL, INTERVIEW_SCHEDULED, PENDING SCHEDULED, CONFIRMED, RESCHEDULING, HIRED
     $stmt = $pdo->prepare("
         SELECT 
-            a.id,
+            a.application_id AS id,
+            a.application_id,
             a.user_id,
             a.job_id,
             a.resume_path,
@@ -23,9 +23,9 @@ try {
             u.User_Mobile,
             j.title AS job_title,
             j.requirements AS job_requirements
-        FROM applications a
-        INNER JOIN user u ON a.user_id = u.User_ID
-        INNER JOIN jobs j ON a.job_id = j.id
+        FROM applications_tbl a
+        INNER JOIN users_tbl u ON a.user_id = u.user_id
+        INNER JOIN jobs_tbl j ON a.job_id = j.job_id
         WHERE a.status IN (
             'PASSED INITIAL',
             'INTERVIEW_SCHEDULED',

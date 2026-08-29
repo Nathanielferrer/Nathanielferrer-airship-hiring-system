@@ -27,16 +27,10 @@ if (empty($email) || empty($pass)) {
 
 try {
     // ── PROGRESSIVE BRUTE-FORCE PROTECTION ───────────────────────────────────
-    // 3-Tier Escalating Lockout System (OWASP Brute Force Prevention)
-    //
-    // Tier 1: 5 failures  in last  1 min  → lock  1 min
-    // Tier 2: 8 failures  in last  5 mins → lock  5 mins
-    // Tier 3: 11 failures in last 15 mins → lock 15 mins
-    //
-    // Each tier is checked from most severe to least so the longest applicable
-    // lockout always wins. Only FAILED attempts (success = 0) are counted.
-    // ─────────────────────────────────────────────────────────────────────────
-    $ip_address = $_SERVER['REMOTE_ADDR'];
+    $ip_address = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+    if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ip_address = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+    }
 
     $tiers = [
         ['window' => 15, 'threshold' => 11, 'lockout' => 15, 'level' => 3],
@@ -48,7 +42,7 @@ try {
 
     foreach ($tiers as $tier) {
         $countStmt = $pdo->prepare(
-            "SELECT COUNT(*) FROM login_attempts
+            "SELECT COUNT(*) FROM login_attempts_tbl
              WHERE (ip_address = :ip OR email = :email)
                AND success = 0
                AND attempted_at > DATE_SUB(NOW(), INTERVAL :window MINUTE)"
@@ -62,14 +56,13 @@ try {
 
         if ($failCount >= $tier['threshold']) {
             $activeTier = $tier;
-            break; // Highest applicable tier found — stop checking lower ones
+            break;
         }
     }
 
     if ($activeTier !== null) {
-        // Find the oldest failure within the active tier's window to calculate remaining lock time
         $oldestStmt = $pdo->prepare(
-            "SELECT attempted_at FROM login_attempts
+            "SELECT attempted_at FROM login_attempts_tbl
              WHERE (ip_address = :ip OR email = :email)
                AND success = 0
                AND attempted_at > DATE_SUB(NOW(), INTERVAL :window MINUTE)
@@ -100,17 +93,15 @@ try {
         ]);
         exit();
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
-
-    // SECURITY: SERVER-SIDE VALIDATION & SQL INJECTION PREVENTION via PDO
-    $stmt = $pdo->prepare("SELECT User_ID, User_Pass, is_verified, verified, is_admin, User_Fname, User_Lname, requires_password_reset, COALESCE(status, 'Active') as status FROM user WHERE User_Email = :email");
+    // Server-side validation via users_tbl
+    $stmt = $pdo->prepare("SELECT user_id, User_Pass, is_verified, is_admin, User_Fname, User_Lname, requires_password_reset, COALESCE(status, 'Active') as status FROM users_tbl WHERE User_Email = :email");
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
 
-    // If user not found — log as failed attempt (success = 0)
+    // If user not found — log failed attempt
     if (!$user) {
-        $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, email, success) VALUES (:ip, :email, 0)");
+        $logStmt = $pdo->prepare("INSERT INTO login_attempts_tbl (ip_address, email, success) VALUES (:ip, :email, 0)");
         $logStmt->execute(['ip' => $ip_address, 'email' => $email]);
 
         http_response_code(401);
@@ -121,7 +112,7 @@ try {
         exit();
     }
 
-    // SECURITY: ACCOUNT DEACTIVATION CHECK (Soft Delete enforcement)
+    // Account Deactivation Check
     if (strtolower($user['status'] ?? 'active') === 'inactive') {
         http_response_code(403);
         echo json_encode([
@@ -131,8 +122,8 @@ try {
         exit();
     }
 
-    // SECURITY: EMAIL VERIFICATION CHECK
-    if ($user['is_verified'] == 0 && $user['verified'] == 0) {
+    // Email Verification Check
+    if ((int)$user['is_verified'] === 0) {
         http_response_code(403);
         echo json_encode([
             "status"  => "error",
@@ -141,10 +132,9 @@ try {
         exit();
     }
 
-    // SECURITY: BCRYPT PASSWORD VERIFICATION (timing-attack safe)
+    // Password verification
     if (!password_verify($pass, $user['User_Pass'])) {
-        // Log failed attempt (success = 0)
-        $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, email, success) VALUES (:ip, :email, 0)");
+        $logStmt = $pdo->prepare("INSERT INTO login_attempts_tbl (ip_address, email, success) VALUES (:ip, :email, 0)");
         $logStmt->execute(['ip' => $ip_address, 'email' => $email]);
 
         http_response_code(401);
@@ -155,19 +145,14 @@ try {
         exit();
     }
 
-    // ── FORCED PASSWORD RESET INTERCEPT ───────────────────────────────────────
-    // If the admin account has a temporary password set by Super Admin,
-    // generate a short-lived one-time setup token and pause the login flow.
+    // Forced Password Reset Intercept
     if ((int)$user['requires_password_reset'] === 1 && (int)$user['is_admin'] >= 1) {
-        // Generate cryptographically secure 64-char hex token (expires in 1 hour)
         $setupToken = bin2hex(random_bytes(32));
 
-        // Use MySQL DATE_ADD(NOW(), INTERVAL 1 HOUR) so token expiry matches MySQL server clock perfectly
-        $tokenStmt = $pdo->prepare("UPDATE user SET setup_token = ?, setup_token_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE User_ID = ?");
-        $tokenStmt->execute([$setupToken, $user['User_ID']]);
+        $tokenStmt = $pdo->prepare("UPDATE users_tbl SET setup_token = ?, setup_token_expires = DATE_ADD(NOW(), INTERVAL 1 HOUR) WHERE user_id = ?");
+        $tokenStmt->execute([$setupToken, $user['user_id']]);
 
-        // Log the intercept (not a full successful login)
-        $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, email, success) VALUES (:ip, :email, 1)");
+        $logStmt = $pdo->prepare("INSERT INTO login_attempts_tbl (ip_address, email, success) VALUES (:ip, :email, 1)");
         $logStmt->execute(['ip' => $ip_address, 'email' => $email]);
 
         echo json_encode([
@@ -175,7 +160,8 @@ try {
             "message"     => "You must set a new password before continuing.",
             "setup_token" => $setupToken,
             "user"        => [
-                "id"         => $user['User_ID'],
+                "id"         => $user['user_id'],
+                "user_id"    => $user['user_id'],
                 "first_name" => $user['User_Fname'],
                 "last_name"  => $user['User_Lname'],
                 "email"      => $email,
@@ -184,28 +170,25 @@ try {
         ]);
         exit();
     }
-    // ─────────────────────────────────────────────────────────────────────────
 
-    // ── SUCCESS ───────────────────────────────────────────────────────────────
-    // Log successful login (success = 1) — does NOT clear other users' failed attempts
-    $logStmt = $pdo->prepare("INSERT INTO login_attempts (ip_address, email, success) VALUES (:ip, :email, 1)");
+    // Success
+    $logStmt = $pdo->prepare("INSERT INTO login_attempts_tbl (ip_address, email, success) VALUES (:ip, :email, 1)");
     $logStmt->execute(['ip' => $ip_address, 'email' => $email]);
 
-    // Generate a signed JWT token for the authenticated user
     $jwtToken = generateJWT([
-        'sub'        => $user['User_ID'],
+        'sub'        => $user['user_id'],
         'email'      => $email,
         'first_name' => $user['User_Fname'],
         'last_name'  => $user['User_Lname'],
         'is_admin'   => (int)$user['is_admin'],
     ]);
 
-    // If the logging-in user is an Admin (is_admin = 1), record in system_audit_logs (Super Admin is NEVER logged)
+    // System audit log for Admin (Super Admin is skipped by helper)
     if ((int)$user['is_admin'] === 1) {
         require_once '../audit_helper.php';
         log_system_audit(
             $pdo,
-            $user['User_ID'],
+            $user['user_id'],
             "{$user['User_Fname']} {$user['User_Lname']}",
             'Authentication',
             'Auth Portal',
@@ -219,7 +202,9 @@ try {
         "message" => "Login successful.",
         "token"   => $jwtToken,
         "user"    => [
-            "id"         => $user['User_ID'],
+            "id"         => $user['user_id'],
+            "user_id"    => $user['user_id'],
+            "User_ID"    => $user['user_id'],
             "first_name" => $user['User_Fname'],
             "last_name"  => $user['User_Lname'],
             "email"      => $email,
@@ -228,9 +213,10 @@ try {
     ]);
 
 } catch (PDOException $e) {
-    http_response_code(500); // 500 Internal Server Error
+    http_response_code(500);
     echo json_encode([
         "status" => "error",
         "message" => "Database error: " . $e->getMessage()
     ]);
 }
+?>

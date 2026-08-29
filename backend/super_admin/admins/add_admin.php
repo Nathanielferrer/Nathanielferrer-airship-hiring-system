@@ -17,7 +17,7 @@ $data    = json_decode($json, true);
 $fname   = trim($data['first_name'] ?? '');
 $lname   = trim($data['last_name']  ?? '');
 $email   = trim($data['email']      ?? '');
-$actorId = intval($data['actor_id'] ?? 0); // Super Admin's User_ID
+$actorId = intval($data['actor_id'] ?? 0);
 
 if (!$fname || !$lname || !$email) {
     http_response_code(400);
@@ -31,7 +31,6 @@ if ($actorId <= 0) {
     exit();
 }
 
-// ── Email Validation & Domain DNS Check ───────────────────────────────────────
 function validate_admin_email_address($email) {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         return "Invalid email format. Please enter a valid email address (e.g., name@gmail.com).";
@@ -63,12 +62,11 @@ if ($emailValidationError !== null) {
     exit();
 }
 
-// ── Auto-generate a cryptographically secure temporary password ───────────────
 $tempPassword = substr(base64_encode(random_bytes(16)), 0, 12) . '!Ax' . rand(10, 99);
 
 try {
-    // Check email uniqueness and guard applicant accounts
-    $check = $pdo->prepare("SELECT User_ID, is_admin FROM user WHERE User_Email = ?");
+    // Check email uniqueness
+    $check = $pdo->prepare("SELECT user_id, is_admin FROM users_tbl WHERE User_Email = ?");
     $check->execute([$email]);
     $existingUser = $check->fetch(PDO::FETCH_ASSOC);
     if ($existingUser) {
@@ -81,13 +79,11 @@ try {
         exit();
     }
 
-    // Create admin with hashed auto-generated temp password; requires_password_reset = 1
     $hash = password_hash($tempPassword, PASSWORD_BCRYPT);
-    $stmt = $pdo->prepare("INSERT INTO user (User_Fname, User_Lname, User_Email, User_Pass, is_admin, verified, is_verified, requires_password_reset) VALUES (?, ?, ?, ?, 1, 1, 1, 1)");
+    $stmt = $pdo->prepare("INSERT INTO users_tbl (User_Fname, User_Lname, User_Email, User_Pass, is_admin, is_verified, requires_password_reset) VALUES (?, ?, ?, ?, 1, 1, 1)");
     $stmt->execute([$fname, $lname, $email, $hash]);
     $newAdminId = (int)$pdo->lastInsertId();
 
-    // ── Send temp password via email ──────────────────────────────────────────
     $emailSent = false;
     $emailError = '';
     try {
@@ -118,69 +114,62 @@ try {
                 <p style='font-size: 16px; color: #1e293b;'>Hello <strong>{$fname}</strong>,</p>
                 <p style='font-size: 15px; color: #475569; line-height: 1.6;'>
                     A new admin account has been created for you on the <strong>Airship Express Hiring Portal</strong>. 
-                    Use the temporary credentials below to log in. You will be required to set a new password on your first login.
+                    Please use the temporary credentials below to complete your initial login:
                 </p>
-                <div style='background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 20px; margin: 20px 0; text-align: center;'>
-                    <p style='margin: 0 0 8px 0; font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;'>YOUR TEMPORARY PASSWORD</p>
-                    <code style='font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: 2px; font-family: Consolas, Monaco, monospace; background: #ffffff; padding: 10px 20px; border-radius: 8px; border: 1px solid #cbd5e1; display: inline-block;'>{$tempPassword}</code>
+                <div style='background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin: 20px 0;'>
+                    <p style='margin: 0 0 8px; font-size: 14px; color: #334155;'><strong>Login Email:</strong> {$email}</p>
+                    <p style='margin: 0; font-size: 14px; color: #334155;'><strong>Temporary Password:</strong> <code style='background:#f1f5f9; padding: 2px 6px; border-radius: 4px; color: #e6007e; font-size: 15px; font-weight: bold;'>{$tempPassword}</code></p>
                 </div>
-                <p style='font-size: 13px; color: #64748b; margin-top: 10px;'>
-                    <strong>Login Email:</strong> {$email}
+                <p style='font-size: 14px; color: #dc2626;'>
+                    <strong>Security Notice:</strong> Upon your first login, you will be required to choose a new permanent password.
                 </p>
                 <div style='text-align: center; margin: 28px 0;'>
-                    <a href='http://localhost:5173/login' style='background-color: #e6007e; color: #ffffff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>
-                        Log In to Admin Portal
-                    </a>
+                    <a href='http://localhost:5173/admin/login' style='background-color: #e6007e; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>Access Admin Portal</a>
                 </div>
-                <p style='font-size: 12px; color: #94a3b8; border-top: 1px solid #e5e4e7; padding-top: 14px; margin-top: 10px;'>
-                    For security, please change your password immediately after logging in. This temporary password should not be shared with anyone.
-                </p>
             </div>
             <div style='border-top: 1px solid #e5e4e7; padding-top: 16px; text-align: center; font-size: 12px; color: #9ca3af;'>
-                <p style='margin: 0;'>This is an automated notification from Airship Express Hiring Portal. Do not reply to this email.</p>
+                <p style='margin: 0;'>This is an automated administrative notification from Airship Express. Do not reply to this email.</p>
             </div>
         </div>
         ";
-        $mail->AltBody = "Hello {$fname},\n\nYour admin account has been created.\n\nEmail: {$email}\nTemporary Password: {$tempPassword}\n\nPlease log in and change your password immediately.\n\nLogin: http://localhost:5173/login";
+        $mail->AltBody = "Hello {$fname},\n\nYour admin account has been created.\nEmail: {$email}\nTemporary Password: {$tempPassword}\n\nLog in at: http://localhost:5173/admin/login\nYou will be required to change your password on first login.";
 
         $mail->send();
         $emailSent = true;
     } catch (Exception $mailEx) {
         $emailError = $mailEx->getMessage();
-        $logFile = __DIR__ . '/admin_provisioning_log.txt';
-        file_put_contents($logFile,
-            "=== NEW ADMIN PROVISIONING (EMAIL FALLBACK) ===\n" .
-            "Date: " . date('Y-m-d H:i:s') . "\n" .
-            "Admin: {$fname} {$lname} <{$email}>\n" .
-            "Temp Password: {$tempPassword}\n" .
-            "Mail Error: {$emailError}\n" .
-            "==============================================\n\n",
-            FILE_APPEND
-        );
+        $logContent = "=== ADMIN ACCOUNT CREATION EMAIL FALLBACK ===\n" .
+                      "Date: " . date('Y-m-d H:i:s') . "\n" .
+                      "To: {$email} ({$fname} {$lname})\n" .
+                      "Temp Password: {$tempPassword}\n" .
+                      "Error: {$emailError}\n" .
+                      "============================================\n\n";
+        @file_put_contents(__DIR__ . '/email_log.txt', $logContent, FILE_APPEND);
     }
 
-    // ── Write detailed audit log ──────────────────────────────────────────────
     require_once '../../audit_helper.php';
-    $saStmt = $pdo->prepare("SELECT CONCAT(User_Fname, ' ', User_Lname) as name FROM user WHERE User_ID = ?");
-    $saStmt->execute([$actorId]);
-    $saName = $saStmt->fetchColumn() ?: 'Super Admin';
+    $actorStmt = $pdo->prepare("SELECT User_Fname, User_Lname FROM users_tbl WHERE user_id = ?");
+    $actorStmt->execute([$actorId]);
+    $actorRow = $actorStmt->fetch(PDO::FETCH_ASSOC);
+    $actorName = $actorRow ? trim("{$actorRow['User_Fname']} {$actorRow['User_Lname']}") : 'Super Admin';
 
-    $emailStatus = $emailSent ? "Temp password emailed to {$email}." : "Email delivery failed — saved to server backup.";
-    $auditDetails = "Created Admin user \"{$fname} {$lname}\" (Email: {$email}, ID:{$newAdminId}). {$emailStatus}";
-
-    // Internal admin_audit_log
-    $logStmt = $pdo->prepare("INSERT INTO admin_audit_log (actor_id, target_id, action, details) VALUES (?, ?, 'admin_created', ?)");
-    $logStmt->execute([$actorId, $newAdminId, $auditDetails]);
-
-    $responseMsg = $emailSent
-        ? "Admin account created successfully. Temporary credentials have been emailed to {$email}."
-        : "Admin account created in database. Email delivery could not be completed, but the temporary password has been generated.";
+    $adminFullName = "{$fname} {$lname}";
+    $auditDetails = "Created new HR Admin account for \"{$adminFullName}\" (Email: {$email}, ID:{$newAdminId}). Temporary password generated and sent via email.";
+    log_system_audit($pdo, $actorId, $actorName, 'Admin Created', 'Admin Management', $auditDetails);
 
     echo json_encode([
-        "status"        => "success",
-        "message"       => $responseMsg,
-        "admin_id"      => $newAdminId,
-        "email_sent"    => $emailSent
+        "status"      => "success",
+        "message"     => "Admin account created successfully for {$adminFullName}." . ($emailSent ? " Credentials emailed." : " (Email delivery failed, check server log)."),
+        "email_sent"  => $emailSent,
+        "admin"       => [
+            "id"         => $newAdminId,
+            "user_id"    => $newAdminId,
+            "User_ID"    => $newAdminId,
+            "first_name" => $fname,
+            "last_name"  => $lname,
+            "email"      => $email,
+            "is_admin"   => 1
+        ]
     ]);
 
 } catch (PDOException $e) {

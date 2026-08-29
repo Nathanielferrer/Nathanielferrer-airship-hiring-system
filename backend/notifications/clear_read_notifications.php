@@ -12,7 +12,7 @@ if ($userId <= 0) {
 }
 
 try {
-    $stmt = $pdo->prepare("DELETE FROM notifications WHERE user_id = :user_id AND is_read = 1");
+    $stmt = $pdo->prepare("DELETE FROM notifications_tbl WHERE user_id = :user_id AND is_read = 1");
     $stmt->execute(['user_id' => $userId]);
     $deletedCount = $stmt->rowCount();
 

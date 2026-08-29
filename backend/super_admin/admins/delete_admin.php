@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
-$id = intval($data['id'] ?? 0);
+$id = intval($data['id'] ?? ($data['user_id'] ?? 0));
 $actorId = intval($data['actor_id'] ?? 0);
 $actorName = trim($data['actor_name'] ?? 'Super Admin');
 
@@ -16,7 +16,7 @@ if (!$id) {
 
 try {
     // Verify target admin
-    $stmt = $pdo->prepare("SELECT User_ID, User_Fname, User_Lname, User_Email, is_admin FROM user WHERE User_ID = ?");
+    $stmt = $pdo->prepare("SELECT user_id, User_Fname, User_Lname, User_Email, is_admin FROM users_tbl WHERE user_id = ?");
     $stmt->execute([$id]);
     $targetAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -29,8 +29,8 @@ try {
     $fullName = trim("{$targetAdmin['User_Fname']} {$targetAdmin['User_Lname']}");
     $email = $targetAdmin['User_Email'];
 
-    // Soft delete: status -> Inactive (NEVER hard delete)
-    $updateStmt = $pdo->prepare("UPDATE user SET status = 'Inactive' WHERE User_ID = ? AND is_admin = 1");
+    // Soft delete: status -> Inactive
+    $updateStmt = $pdo->prepare("UPDATE users_tbl SET status = 'Inactive' WHERE user_id = ? AND is_admin = 1");
     $updateStmt->execute([$id]);
 
     echo json_encode(["status" => "success", "message" => "Admin account deactivated successfully."]);

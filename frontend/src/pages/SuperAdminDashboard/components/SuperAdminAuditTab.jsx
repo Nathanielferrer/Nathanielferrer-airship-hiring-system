@@ -150,7 +150,23 @@ const SuperAdminAuditTab = () => {
     }
 
     // 4b. Candidate Evaluation & Executive Approval actions:
-    const evalMatch = text.match(/^Candidate "([^"]+)" \(applying for "([^"]+)"\)\s+(passed final interview|received President's Executive Approval|failed final interview|was not approved at President's Final Approval|withdrew from consideration|missed the 1-week pre-employment submission deadline|did not pass pre-employment clearance \(medical\/drug screening\)|withdrew):\s*(.*)$/i);
+    const contractScheduleMatch = text.match(/^Scheduled contract signing for candidate "([^"]+)" \(applying for "([^"]+)"\) on ([^a]+) at ([^a]+) at "([^"]+)".*$/i);
+    if (contractScheduleMatch) {
+      return {
+        eventDescription: `Scheduled contract signing for candidate "${contractScheduleMatch[1]}" (${contractScheduleMatch[2]}).`,
+        modificationDetails: `Appointment: ${contractScheduleMatch[3].trim()} at ${contractScheduleMatch[4].trim()} (${contractScheduleMatch[5].trim()}). Status set to Contract Signing Scheduled.`
+      };
+    }
+
+    const reqVerifyMatch = text.match(/^Verified all 7 pre-employment physical documents for candidate "([^"]+)" \(applying for "([^"]+)"\):\s*(.*)$/i);
+    if (reqVerifyMatch) {
+      return {
+        eventDescription: `Verified all 7 pre-employment physical documents for candidate "${reqVerifyMatch[1]}" (${reqVerifyMatch[2]}).`,
+        modificationDetails: `Status updated: Requirements Verified (Ready for Contract Signing).`
+      };
+    }
+
+    const evalMatch = text.match(/^Candidate "([^"]+)" \(applying for "([^"]+)"\)\s+(passed final interview|received President's Executive Approval|failed final interview|was not approved at President's Final Approval|withdrew from consideration|missed the 1-week pre-employment submission deadline|did not pass pre-employment clearance \(medical\/drug screening\)|completed contract signing and onboarding|withdrew):\s*(.*)$/i);
     if (evalMatch) {
       const actionType = (evalMatch[3] || '').toLowerCase();
       let eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) evaluated.`;
@@ -158,6 +174,7 @@ const SuperAdminAuditTab = () => {
       else if (actionType.includes('received president')) eventTitle = `President approved & hired candidate "${evalMatch[1]}" (${evalMatch[2]}).`;
       else if (actionType.includes('failed final interview')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) failed final interview.`;
       else if (actionType.includes('was not approved')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) rejected at President final review.`;
+      else if (actionType.includes('completed contract signing')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) signed contract & onboarded.`;
       else if (actionType.includes('withdrew')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) withdrew from consideration.`;
       else if (actionType.includes('missed the 1-week')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) marked Incomplete Requirements (deadline passed).`;
       else if (actionType.includes('pre-employment clearance')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) marked Failed Pre-Employment (clearance not met).`;
@@ -255,7 +272,7 @@ const SuperAdminAuditTab = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      
+
       {/* 1. Header Bar with Export Buttons */}
       <div className="admin-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
         <div>
@@ -265,8 +282,8 @@ const SuperAdminAuditTab = () => {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            className="admin-btn-secondary" 
+          <button
+            className="admin-btn-secondary"
             style={{
               background: '#ffffff', color: '#0f172a', border: '1.5px solid #cbd5e1',
               padding: '9px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '13.5px',
@@ -277,8 +294,8 @@ const SuperAdminAuditTab = () => {
           >
             <i className='bx bx-export' style={{ fontSize: '18px', color: '#475569' }}></i> Export CSV
           </button>
-          <button 
-            className="admin-btn-primary" 
+          <button
+            className="admin-btn-primary"
             style={{
               background: '#e6007e', color: '#ffffff', border: 'none',
               padding: '9px 20px', borderRadius: '8px', fontWeight: '700', fontSize: '13.5px',

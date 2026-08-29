@@ -11,9 +11,9 @@ $offset        = ($page - 1) * $limit;
 
 try {
     // Base SQL for counting and fetching
-    $baseSql = "FROM applications a
-                INNER JOIN user u ON a.user_id = u.User_ID
-                INNER JOIN jobs j ON a.job_id = j.id
+    $baseSql = "FROM applications_tbl a
+                INNER JOIN users_tbl u ON a.user_id = u.user_id
+                INNER JOIN jobs_tbl j ON a.job_id = j.job_id
                 WHERE 1=1";
     $params = [];
 
@@ -28,7 +28,7 @@ try {
     }
 
     if ($status_filter === 'hired') {
-        $baseSql .= " AND UPPER(a.status) IN ('HIRED', 'PASSED INTERVIEW', 'PASSED', 'HIRED / PASSED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL')";
+        $baseSql .= " AND UPPER(a.status) IN ('HIRED', 'PASSED INTERVIEW', 'PASSED', 'HIRED / PASSED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED')";
     } else if ($status_filter === 'rejected') {
         $baseSql .= " AND UPPER(a.status) IN ('REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW')";
     } else if ($status_filter === 'passed_final_interview') {
@@ -39,6 +39,8 @@ try {
         $baseSql .= " AND UPPER(a.status) IN ('INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS')";
     } else if ($status_filter === 'failed_pre_employment') {
         $baseSql .= " AND UPPER(a.status) IN ('FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT')";
+    } else if ($status_filter === 'contract_signing') {
+        $baseSql .= " AND UPPER(a.status) IN ('CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED', 'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED')";
     }
 
     // 1. Get Total Count for Pagination
@@ -49,11 +51,13 @@ try {
 
     // 2. Fetch Paginated Records
     $sql = "SELECT 
-                a.id, 
+                a.application_id AS id, 
+                a.application_id, 
                 a.user_id, 
                 a.job_id, 
                 a.status, 
                 a.applied_at, 
+                a.updated_at,
                 a.candidate_name,
                 a.candidate_email,
                 a.ai_match_score,
@@ -67,7 +71,6 @@ try {
 
     $stmt = $pdo->prepare($sql);
     
-    // Bind all params correctly
     foreach ($params as $key => &$val) {
         $stmt->bindParam(":$key", $val);
     }

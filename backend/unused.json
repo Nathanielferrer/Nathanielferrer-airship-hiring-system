@@ -1,0 +1,9 @@
+{
+    "tables": [],
+    "columns": [
+        "admin_audit_log.performed_at",
+        "interview_slots.duration_minutes",
+        "user.approval_token",
+        "user.User_ProfilePic"
+    ]
+}

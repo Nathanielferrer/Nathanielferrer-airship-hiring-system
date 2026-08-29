@@ -1,0 +1,422 @@
+[
+    {
+        "table": "admin_audit_log",
+        "column": "id"
+    },
+    {
+        "table": "admin_audit_log",
+        "column": "actor_id"
+    },
+    {
+        "table": "admin_audit_log",
+        "column": "target_id"
+    },
+    {
+        "table": "admin_audit_log",
+        "column": "action"
+    },
+    {
+        "table": "admin_audit_log",
+        "column": "details"
+    },
+    {
+        "table": "admin_audit_log",
+        "column": "performed_at"
+    },
+    {
+        "table": "applications",
+        "column": "id"
+    },
+    {
+        "table": "applications",
+        "column": "user_id"
+    },
+    {
+        "table": "applications",
+        "column": "job_id"
+    },
+    {
+        "table": "applications",
+        "column": "resume_path"
+    },
+    {
+        "table": "applications",
+        "column": "ai_match_score"
+    },
+    {
+        "table": "applications",
+        "column": "ai_summary"
+    },
+    {
+        "table": "applications",
+        "column": "status"
+    },
+    {
+        "table": "applications",
+        "column": "applied_at"
+    },
+    {
+        "table": "applications",
+        "column": "candidate_name"
+    },
+    {
+        "table": "applications",
+        "column": "candidate_email"
+    },
+    {
+        "table": "applications",
+        "column": "viewed"
+    },
+    {
+        "table": "applications",
+        "column": "updated_at"
+    },
+    {
+        "table": "applications",
+        "column": "is_archived"
+    },
+    {
+        "table": "applications",
+        "column": "reschedule_reason"
+    },
+    {
+        "table": "applications",
+        "column": "reschedule_requested_slot_id"
+    },
+    {
+        "table": "applications",
+        "column": "contract_signing_date"
+    },
+    {
+        "table": "applications",
+        "column": "contract_signing_time"
+    },
+    {
+        "table": "applications",
+        "column": "contract_signing_location"
+    },
+    {
+        "table": "applications",
+        "column": "contract_signing_notes"
+    },
+    {
+        "table": "chatbot_history",
+        "column": "id"
+    },
+    {
+        "table": "chatbot_history",
+        "column": "applicant_id"
+    },
+    {
+        "table": "chatbot_history",
+        "column": "sender"
+    },
+    {
+        "table": "chatbot_history",
+        "column": "message_text"
+    },
+    {
+        "table": "chatbot_history",
+        "column": "created_at"
+    },
+    {
+        "table": "interview_slots",
+        "column": "slot_id"
+    },
+    {
+        "table": "interview_slots",
+        "column": "slot_date"
+    },
+    {
+        "table": "interview_slots",
+        "column": "start_time"
+    },
+    {
+        "table": "interview_slots",
+        "column": "end_time"
+    },
+    {
+        "table": "interview_slots",
+        "column": "duration_minutes"
+    },
+    {
+        "table": "interview_slots",
+        "column": "status"
+    },
+    {
+        "table": "interview_slots",
+        "column": "applicant_id"
+    },
+    {
+        "table": "interviews",
+        "column": "id"
+    },
+    {
+        "table": "interviews",
+        "column": "application_id"
+    },
+    {
+        "table": "interviews",
+        "column": "scheduled_date"
+    },
+    {
+        "table": "interviews",
+        "column": "scheduled_time"
+    },
+    {
+        "table": "interviews",
+        "column": "location"
+    },
+    {
+        "table": "interviews",
+        "column": "requirements"
+    },
+    {
+        "table": "interviews",
+        "column": "created_at"
+    },
+    {
+        "table": "jobs",
+        "column": "id"
+    },
+    {
+        "table": "jobs",
+        "column": "title"
+    },
+    {
+        "table": "jobs",
+        "column": "description"
+    },
+    {
+        "table": "jobs",
+        "column": "requirements"
+    },
+    {
+        "table": "jobs",
+        "column": "availability"
+    },
+    {
+        "table": "jobs",
+        "column": "status"
+    },
+    {
+        "table": "jobs",
+        "column": "created_at"
+    },
+    {
+        "table": "jobs",
+        "column": "image_path"
+    },
+    {
+        "table": "knowledge_base",
+        "column": "id"
+    },
+    {
+        "table": "knowledge_base",
+        "column": "primary_question"
+    },
+    {
+        "table": "knowledge_base",
+        "column": "predefined_answer"
+    },
+    {
+        "table": "knowledge_base",
+        "column": "keyword_tags"
+    },
+    {
+        "table": "knowledge_base",
+        "column": "created_at"
+    },
+    {
+        "table": "login_attempts",
+        "column": "id"
+    },
+    {
+        "table": "login_attempts",
+        "column": "ip_address"
+    },
+    {
+        "table": "login_attempts",
+        "column": "email"
+    },
+    {
+        "table": "login_attempts",
+        "column": "attempted_at"
+    },
+    {
+        "table": "login_attempts",
+        "column": "success"
+    },
+    {
+        "table": "notifications",
+        "column": "id"
+    },
+    {
+        "table": "notifications",
+        "column": "user_id"
+    },
+    {
+        "table": "notifications",
+        "column": "title"
+    },
+    {
+        "table": "notifications",
+        "column": "message"
+    },
+    {
+        "table": "notifications",
+        "column": "type"
+    },
+    {
+        "table": "notifications",
+        "column": "application_id"
+    },
+    {
+        "table": "notifications",
+        "column": "link"
+    },
+    {
+        "table": "notifications",
+        "column": "is_read"
+    },
+    {
+        "table": "notifications",
+        "column": "created_at"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "id"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "admin_id"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "admin_name"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "action_category"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "module"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "details"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "ip_address"
+    },
+    {
+        "table": "system_audit_logs",
+        "column": "created_at"
+    },
+    {
+        "table": "unanswered_queries",
+        "column": "id"
+    },
+    {
+        "table": "unanswered_queries",
+        "column": "applicant_id"
+    },
+    {
+        "table": "unanswered_queries",
+        "column": "raw_question_text"
+    },
+    {
+        "table": "unanswered_queries",
+        "column": "status"
+    },
+    {
+        "table": "unanswered_queries",
+        "column": "created_at"
+    },
+    {
+        "table": "user",
+        "column": "User_ID"
+    },
+    {
+        "table": "user",
+        "column": "User_Fname"
+    },
+    {
+        "table": "user",
+        "column": "User_Lname"
+    },
+    {
+        "table": "user",
+        "column": "User_Email"
+    },
+    {
+        "table": "user",
+        "column": "User_Mobile"
+    },
+    {
+        "table": "user",
+        "column": "User_Pass"
+    },
+    {
+        "table": "user",
+        "column": "User_Bday"
+    },
+    {
+        "table": "user",
+        "column": "User_Gender"
+    },
+    {
+        "table": "user",
+        "column": "Created_at"
+    },
+    {
+        "table": "user",
+        "column": "is_admin"
+    },
+    {
+        "table": "user",
+        "column": "verification_token"
+    },
+    {
+        "table": "user",
+        "column": "is_verified"
+    },
+    {
+        "table": "user",
+        "column": "verification_code"
+    },
+    {
+        "table": "user",
+        "column": "approval_token"
+    },
+    {
+        "table": "user",
+        "column": "User_ProfilePic"
+    },
+    {
+        "table": "user",
+        "column": "reset_token"
+    },
+    {
+        "table": "user",
+        "column": "reset_expires"
+    },
+    {
+        "table": "user",
+        "column": "requires_password_reset"
+    },
+    {
+        "table": "user",
+        "column": "setup_token"
+    },
+    {
+        "table": "user",
+        "column": "setup_token_expires"
+    },
+    {
+        "table": "user",
+        "column": "status"
+    }
+]

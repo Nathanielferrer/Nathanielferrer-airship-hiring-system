@@ -35,10 +35,10 @@ if (!$strongPassword) {
 }
 
 try {
-    // Fetch admin by setup token — must be valid and not expired
+    // Fetch admin by setup token
     $stmt = $pdo->prepare("
-        SELECT User_ID, User_Fname, User_Lname, User_Email, User_Pass, is_admin
-        FROM user
+        SELECT user_id, User_Fname, User_Lname, User_Email, User_Pass, is_admin
+        FROM users_tbl
         WHERE setup_token = ?
           AND setup_token_expires > NOW()
           AND requires_password_reset = 1
@@ -57,7 +57,7 @@ try {
         exit();
     }
 
-    // Security Check: Disallow reusing the temporary password assigned by Super Admin
+    // Disallow reusing temporary password
     if (!empty($admin['User_Pass']) && password_verify($newPassword, $admin['User_Pass'])) {
         http_response_code(400);
         echo json_encode([
@@ -67,42 +67,40 @@ try {
         exit();
     }
 
-    // Hash new password and clear the reset flag + setup token
+    // Hash new password and clear setup token
     $hash = password_hash($newPassword, PASSWORD_BCRYPT);
     $updateStmt = $pdo->prepare("
-        UPDATE user
+        UPDATE users_tbl
         SET User_Pass = ?,
             requires_password_reset = 0,
             setup_token = NULL,
             setup_token_expires = NULL
-        WHERE User_ID = ?
+        WHERE user_id = ?
     ");
-    $updateStmt->execute([$hash, $admin['User_ID']]);
+    $updateStmt->execute([$hash, $admin['user_id']]);
 
-    // Write audit log: password setup completed
-    $logStmt = $pdo->prepare("INSERT INTO admin_audit_log (actor_id, target_id, action, details) VALUES (?, ?, 'password_setup_completed', ?)");
-    $logStmt->execute([
-        $admin['User_ID'],
-        $admin['User_ID'],
-        "HR Admin (ID:{$admin['User_ID']}) {$admin['User_Fname']} {$admin['User_Lname']} successfully completed forced password setup."
-    ]);
+    // Write audit log
+    require_once '../audit_helper.php';
+    $adminName = trim("{$admin['User_Fname']} {$admin['User_Lname']}");
+    $auditDetails = "HR Admin (ID:{$admin['user_id']}) {$adminName} successfully completed forced password setup.";
+    log_system_audit($pdo, $admin['user_id'], $adminName, 'Password Setup Completed', 'Authentication', $auditDetails);
 
-    // Generate a signed JWT token so the admin can access their dashboard immediately
+    // Generate signed JWT
     $jwtToken = generateJWT([
-        'sub'        => $admin['User_ID'],
+        'sub'        => $admin['user_id'],
         'email'      => $admin['User_Email'],
         'first_name' => $admin['User_Fname'],
         'last_name'  => $admin['User_Lname'],
         'is_admin'   => (int)$admin['is_admin'],
     ]);
 
-    // Return full user payload + JWT so frontend can redirect to dashboard
     echo json_encode([
         "status"  => "success",
         "message" => "Password updated successfully. Welcome!",
         "token"   => $jwtToken,
         "user"    => [
-            "id"         => $admin['User_ID'],
+            "id"         => $admin['user_id'],
+            "user_id"    => $admin['user_id'],
             "first_name" => $admin['User_Fname'],
             "last_name"  => $admin['User_Lname'],
             "email"      => $admin['User_Email'],

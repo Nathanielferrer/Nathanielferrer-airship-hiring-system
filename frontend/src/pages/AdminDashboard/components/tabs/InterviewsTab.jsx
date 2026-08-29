@@ -97,10 +97,10 @@ const InterviewsTab = () => {
 
   const handleDecision = (appId, status, candidateName) => {
     const isPass = status === 'Passed Final Interview' || status === 'HIRED' || status === 'PASSED';
-    const actionTitle = isPass ? 'Confirm Pass F2F Interview' : 'Confirm Fail F2F Interview';
+    const actionTitle = isPass ? 'Pass Final Interview' : 'Fail Final Interview';
     const actionMsg = isPass
-      ? `Are you sure you want to mark ${candidateName} as Passed Final Interview? This will forward their profile to the President for final executive approval.`
-      : `Are you sure you want to mark ${candidateName} as Failed Final Interview?`;
+      ? `Pass "${candidateName}" in the Final Interview and forward to Executive Approval?`
+      : `Mark "${candidateName}" as Failed in the Final Interview?`;
 
     setModalConfig({
       type: 'confirm',
@@ -371,6 +371,7 @@ const InterviewsTab = () => {
                   <tr>
                     <th>Candidate</th>
                     <th>Position</th>
+                    <th>Day</th>
                     <th>Interview Date</th>
                     <th>Time Slot</th>
                     <th>Status</th>
@@ -379,6 +380,7 @@ const InterviewsTab = () => {
                 <tbody>
                   {activeQueue.map((item) => {
                     const cName = item.candidate_name || `${item.User_Fname || ''} ${item.User_Lname || ''}`.trim();
+                    const dayName = item.interview_date ? new Date(item.interview_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }) : '—';
                     return (
                       <tr key={item.application_id}>
                         <td>
@@ -387,6 +389,7 @@ const InterviewsTab = () => {
                           </div>
                         </td>
                         <td><strong>{item.job_title}</strong></td>
+                        <td><strong style={{ color: '#0f172a' }}>{dayName}</strong></td>
                         <td>
                           {item.interview_date
                             ? new Date(item.interview_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
@@ -423,6 +426,7 @@ const InterviewsTab = () => {
                   <tr>
                     <th>Candidate</th>
                     <th>Position</th>
+                    <th>Day</th>
                     <th>Original Date</th>
                     <th>Requested New Slot</th>
                     <th>Flag Status</th>
@@ -430,28 +434,31 @@ const InterviewsTab = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {rescheduleQueue.map((item) => (
-                    <tr key={item.application_id}>
-                      <td>
-                        <div className="admin-candidate-cell">
-                          <span className="admin-candidate-name">{item.candidate_name || `${item.User_Fname} ${item.User_Lname}`}</span>
-                        </div>
-                      </td>
-                      <td><strong>{item.job_title}</strong></td>
-                      <td>{item.interview_date ? new Date(item.interview_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'N/A'}</td>
-                      <td>
-                        <span style={{ fontSize: '12.5px', color: item.requested_date ? '#15803d' : '#64748b', fontWeight: item.requested_date ? '600' : '400' }}>
-                          {formatRequestedSlot(item)}
-                        </span>
-                      </td>
-                      <td>
-                        <span style={{
-                          display: 'inline-block', padding: '4px 12px', borderRadius: '16px',
-                          fontSize: '11px', fontWeight: '700', color: '#b45309',
-                          background: '#fff7ed', border: '1px solid #fed7aa'
-                        }}>RESCHEDULE</span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
+                  {rescheduleQueue.map((item) => {
+                    const origDay = item.interview_date ? new Date(item.interview_date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }) : '—';
+                    return (
+                      <tr key={item.application_id}>
+                        <td>
+                          <div className="admin-candidate-cell">
+                            <span className="admin-candidate-name">{item.candidate_name || `${item.User_Fname} ${item.User_Lname}`}</span>
+                          </div>
+                        </td>
+                        <td><strong>{item.job_title}</strong></td>
+                        <td><strong style={{ color: '#0f172a' }}>{origDay}</strong></td>
+                        <td>{item.interview_date ? new Date(item.interview_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'N/A'}</td>
+                        <td>
+                          <span style={{ fontSize: '12.5px', color: item.requested_date ? '#15803d' : '#64748b', fontWeight: item.requested_date ? '600' : '400' }}>
+                            {formatRequestedSlot(item)}
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{
+                            display: 'inline-block', padding: '4px 12px', borderRadius: '16px',
+                            fontSize: '11px', fontWeight: '700', color: '#b45309',
+                            background: '#fff7ed', border: '1px solid #fed7aa'
+                          }}>RESCHEDULE</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
                         <button
                           style={{
                             background: '#ffffff', color: '#0f172a', fontSize: '12px',
@@ -465,7 +472,8 @@ const InterviewsTab = () => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}

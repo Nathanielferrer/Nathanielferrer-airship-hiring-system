@@ -2,7 +2,7 @@
 require_once '../db.php';
 header('Content-Type: application/json');
 
-$id           = intval($_POST['id'] ?? 0);
+$id           = intval($_POST['id'] ?? ($_POST['job_id'] ?? 0));
 $title        = trim($_POST['title']        ?? '');
 $description  = trim($_POST['description']  ?? '');
 $requirements = trim($_POST['requirements'] ?? '');
@@ -57,19 +57,17 @@ function splitLines(string $text): array {
 }
 
 // ── Utility: generate a detailed human-readable diff for a text block field ──
-// Returns an array of descriptive change sentences.
 function textBlockDiff(string $label, string $oldText, string $newText): array {
     if ($oldText === $newText) return [];
 
     $oldLines = splitLines($oldText);
     $newLines = splitLines($newText);
 
-    $added   = array_diff($newLines, $oldLines);  // in new but not in old
-    $removed = array_diff($oldLines, $newLines);  // in old but not in new
+    $added   = array_diff($newLines, $oldLines);
+    $removed = array_diff($oldLines, $newLines);
 
     $messages = [];
 
-    // If counts match and we have equal adds/removes, pair them as modifications
     if (count($added) > 0 && count($removed) > 0 && count($added) === count($removed)) {
         $addedReindexed   = array_values($added);
         $removedReindexed = array_values($removed);
@@ -77,7 +75,6 @@ function textBlockDiff(string $label, string $oldText, string $newText): array {
             $messages[] = "Modified {$label} from \"{$removedReindexed[$i]}\" to \"{$addedReindexed[$i]}\".";
         }
     } else {
-        // Report removals first, then additions
         foreach ($removed as $line) {
             $messages[] = "Removed {$label}: \"{$line}\".";
         }
@@ -86,7 +83,6 @@ function textBlockDiff(string $label, string $oldText, string $newText): array {
         }
     }
 
-    // Fallback: if lines changed but diff is too complex (reorder etc), log a general note
     if (empty($messages)) {
         $messages[] = "{$label} content was reorganized or reformatted.";
     }
@@ -96,7 +92,7 @@ function textBlockDiff(string $label, string $oldText, string $newText): array {
 
 try {
     // Fetch ALL previous job fields for detailed diff
-    $prevStmt = $pdo->prepare("SELECT title, description, requirements, availability, status FROM jobs WHERE id = ?");
+    $prevStmt = $pdo->prepare("SELECT title, description, requirements, availability, status FROM jobs_tbl WHERE job_id = ?");
     $prevStmt->execute([$id]);
     $prevJob  = $prevStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -108,10 +104,10 @@ try {
 
     // Perform the update
     if ($image_path) {
-        $stmt = $pdo->prepare("UPDATE jobs SET title = ?, description = ?, requirements = ?, availability = ?, status = ? $update_image_sql WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE jobs_tbl SET title = ?, description = ?, requirements = ?, availability = ?, status = ? $update_image_sql WHERE job_id = ?");
         $stmt->execute([$title, $description, $requirements, $availability, $status, $image_path, $id]);
     } else {
-        $stmt = $pdo->prepare("UPDATE jobs SET title = ?, description = ?, requirements = ?, availability = ?, status = ? WHERE id = ?");
+        $stmt = $pdo->prepare("UPDATE jobs_tbl SET title = ?, description = ?, requirements = ?, availability = ?, status = ? WHERE job_id = ?");
         $stmt->execute([$title, $description, $requirements, $availability, $status, $id]);
     }
 
@@ -119,7 +115,7 @@ try {
     $archivedCount = 0;
     if ($status === 'Closed' || $availability <= 0) {
         $archiveStmt = $pdo->prepare("
-            UPDATE applications 
+            UPDATE applications_tbl 
             SET is_archived = 1 
             WHERE job_id = :jid 
             AND status IN ('HIRED', 'Hired', 'hired', 'PASSED', 'HIRED / PASSED', 'rejected', 'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE')
@@ -128,42 +124,35 @@ try {
         $archivedCount = $archiveStmt->rowCount();
     }
 
-    // ── Build granular audit messages ─────────────────────────────────────────
+    // Audit log
     require_once '../audit_helper.php';
     $actorId   = intval($_POST['actor_id']   ?? 0);
     $actorName = trim($_POST['actor_name']   ?? 'Admin');
 
     $changeLines = [];
 
-    // 1. Title change
     if ($prevTitle !== $title) {
         $changeLines[] = "Renamed title from \"{$prevTitle}\" to \"{$title}\".";
     }
 
-    // 2. Openings change
     if ((string)$prevAvail !== (string)$availability) {
         $changeLines[] = "Updated available openings from {$prevAvail} to {$availability}.";
     }
 
-    // 3. Status change
     if ($prevStatus !== $status) {
         $changeLines[] = "Changed status from \"{$prevStatus}\" to \"{$status}\".";
     }
 
-    // 4. Requirements — line-by-line diff (each bullet/line is tracked individually)
     $reqChanges = textBlockDiff('requirement', $prevRequirements, $requirements);
     foreach ($reqChanges as $msg) $changeLines[] = $msg;
 
-    // 5. Description — line-by-line diff
     $descChanges = textBlockDiff('description line', $prevDescription, $description);
     foreach ($descChanges as $msg) $changeLines[] = $msg;
 
-    // 6. Image
     if ($image_path) {
         $changeLines[] = "Updated job image/banner.";
     }
 
-    // Format the final audit message
     if (empty($changeLines)) {
         $changeLines[] = "No detectable content changes.";
     }

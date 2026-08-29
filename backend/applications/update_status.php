@@ -4,14 +4,12 @@ require_once '../db.php';
 
 header('Content-Type: application/json');
 
-// Read JSON input
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-$id     = isset($data['id']) ? intval($data['id']) : 0;
+$id     = isset($data['id']) ? intval($data['id']) : (isset($data['application_id']) ? intval($data['application_id']) : 0);
 $status = isset($data['status']) ? strtoupper(trim($data['status'])) : '';
 
-// 1. Validate inputs
 $allowedStatuses = [
     'PENDING', 'REVIEW_REQUIRED', 'REJECTED', 'SCREENING_REJECTED', 'PASSED INITIAL',
     'DECLINED - UNRESPONSIVE', 'PENDING SCHEDULED', 'CONFIRMED',
@@ -23,7 +21,10 @@ $allowedStatuses = [
     'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL',
     'Candidate Withdrew', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW',
     'Incomplete Requirements', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS',
-    'Failed Pre-Employment', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'
+    'Failed Pre-Employment', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT',
+    'Requirements Verified', 'REQUIREMENTS_VERIFIED', 'REQUIREMENTS VERIFIED',
+    'Contract Signing Scheduled', 'CONTRACT_SIGNING_SCHEDULED', 'CONTRACT SIGNING SCHEDULED',
+    'Contract Signed & Onboarded', 'CONTRACT_SIGNED_AND_ONBOARDED', 'CONTRACT SIGNED & ONBOARDED'
 ];
 
 if ($id <= 0 || !in_array($status, $allowedStatuses)) {
@@ -41,18 +42,18 @@ try {
     // Fetch previous application info + job title for audit details
     $candStmt = $pdo->prepare("
         SELECT a.candidate_name, a.candidate_email, a.job_id, a.status, j.title AS job_title
-        FROM applications a
-        LEFT JOIN jobs j ON j.id = a.job_id
-        WHERE a.id = :id
+        FROM applications_tbl a
+        LEFT JOIN jobs_tbl j ON j.job_id = a.job_id
+        WHERE a.application_id = :id
     ");
     $candStmt->execute(['id' => $id]);
     $candInfo = $candStmt->fetch(PDO::FETCH_ASSOC);
 
-    // 2. Perform the application status update
+    // Perform the application status update
     if (strtoupper($status) === 'ARCHIVED') {
-        $stmt = $pdo->prepare("UPDATE applications SET is_archived = 1 WHERE id = :id");
+        $stmt = $pdo->prepare("UPDATE applications_tbl SET is_archived = 1 WHERE application_id = :id");
     } else {
-        $stmt = $pdo->prepare("UPDATE applications SET status = :status WHERE id = :id");
+        $stmt = $pdo->prepare("UPDATE applications_tbl SET status = :status WHERE application_id = :id");
     }
     $stmt->execute([
         'status' => $status,
@@ -69,30 +70,25 @@ try {
         exit();
     }
 
-    // 3. If hired/passed, deduct 1 available slot from the associated job
     $upperStatus = strtoupper($status);
     $prevUpper = strtoupper($candInfo['status'] ?? '');
     $jobId = intval($candInfo['job_id'] ?? 0);
 
     if ($upperStatus === 'HIRED' || $upperStatus === 'HIRED / PASSED' || $upperStatus === 'PASSED' || $upperStatus === 'PASSED FINAL APPROVAL' || $upperStatus === 'PASSED_FINAL_APPROVAL') {
         if ($jobId > 0) {
-            // Decrement open slot count by 1
-            $decStmt = $pdo->prepare("UPDATE jobs SET availability = availability - 1 WHERE id = :jid AND availability > 0");
+            $decStmt = $pdo->prepare("UPDATE jobs_tbl SET availability = availability - 1 WHERE job_id = :jid AND availability > 0");
             $decStmt->execute(['jid' => $jobId]);
 
-            // Check remaining availability
-            $checkJobStmt = $pdo->prepare("SELECT availability FROM jobs WHERE id = :jid");
+            $checkJobStmt = $pdo->prepare("SELECT availability FROM jobs_tbl WHERE job_id = :jid");
             $checkJobStmt->execute(['jid' => $jobId]);
             $jobData = $checkJobStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($jobData && intval($jobData['availability']) <= 0) {
-                // Out of slots -> Auto-close job
-                $closeStmt = $pdo->prepare("UPDATE jobs SET status = 'Closed', availability = 0 WHERE id = :jid");
+                $closeStmt = $pdo->prepare("UPDATE jobs_tbl SET status = 'Closed', availability = 0 WHERE job_id = :jid");
                 $closeStmt->execute(['jid' => $jobId]);
 
-                // Auto-archive rejected and terminal applicants for this closed job
                 $autoArchStmt = $pdo->prepare("
-                    UPDATE applications 
+                    UPDATE applications_tbl 
                     SET is_archived = 1 
                     WHERE job_id = :jid 
                     AND UPPER(status) IN ('HIRED', 'PASSED FINAL APPROVAL', 'FAILED FINAL APPROVAL', 'FAILED FINAL INTERVIEW', 'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'DECLINED - UNRESPONSIVE', 'CANDIDATE WITHDREW')
@@ -101,18 +97,16 @@ try {
             }
         }
     } elseif (in_array($upperStatus, ['CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT']) && in_array($prevUpper, ['HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'PASSED'])) {
-        // Candidate failed/withdrew after being hired -> restore position availability slot
         if ($jobId > 0) {
-            $incStmt = $pdo->prepare("UPDATE jobs SET availability = availability + 1 WHERE id = :jid");
+            $incStmt = $pdo->prepare("UPDATE jobs_tbl SET availability = availability + 1 WHERE job_id = :jid");
             $incStmt->execute(['jid' => $jobId]);
 
-            // Re-activate job if it was closed
-            $checkJobStmt = $pdo->prepare("SELECT availability, status FROM jobs WHERE id = :jid");
+            $checkJobStmt = $pdo->prepare("SELECT availability, status FROM jobs_tbl WHERE job_id = :jid");
             $checkJobStmt->execute(['jid' => $jobId]);
             $jobData = $checkJobStmt->fetch(PDO::FETCH_ASSOC);
 
             if ($jobData && (int)$jobData['availability'] > 0 && $jobData['status'] === 'Closed') {
-                $reactivateStmt = $pdo->prepare("UPDATE jobs SET status = 'Active' WHERE id = :jid");
+                $reactivateStmt = $pdo->prepare("UPDATE jobs_tbl SET status = 'Active' WHERE job_id = :jid");
                 $reactivateStmt->execute(['jid' => $jobId]);
             }
         }
@@ -120,9 +114,8 @@ try {
 
     $pdo->commit();
 
-    // System audit log
     require_once '../audit_helper.php';
-    $actorId   = intval($data['actor_id']   ?? 0); // Default to 0 to prevent Super Admin filtering collision
+    $actorId   = intval($data['actor_id']   ?? 0);
     $actorName = trim($data['actor_name']   ?? 'Admin');
     $candName  = $candInfo['candidate_name'] ?? "Application #{$id}";
     $oldStatus = $candInfo['status']         ?? 'unknown';
@@ -149,3 +142,4 @@ try {
         "message" => "Failed to update status: " . $e->getMessage()
     ]);
 }
+?>

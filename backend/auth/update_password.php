@@ -21,7 +21,7 @@ if (empty($token) || empty($password)) {
     exit();
 }
 
-// Enforce server-side password strength validation (matching client-side criteria)
+// Enforce server-side password strength validation
 $hasLength   = strlen($password) >= 8;
 $hasUpper    = preg_match('/[A-Z]/', $password);
 $hasLower    = preg_match('/[a-z]/', $password);
@@ -38,9 +38,8 @@ if (!$hasLength || !$hasUpper || !$hasLower || !$hasNumber || !$hasSpecial) {
 }
 
 try {
-    // 2. Fetch candidate user matching the token where the token hasn't expired yet (is_admin = 0)
-    // SECURITY: Self-service token reset applies ONLY to candidates.
-    $stmt = $pdo->prepare("SELECT User_ID FROM user WHERE reset_token = :token AND reset_expires > NOW() AND (is_admin = 0 OR is_admin IS NULL)");
+    // 2. Fetch candidate user matching the token
+    $stmt = $pdo->prepare("SELECT user_id FROM users_tbl WHERE reset_token = :token AND reset_expires > NOW() AND (is_admin = 0 OR is_admin IS NULL)");
     $stmt->execute(['token' => $token]);
     $user = $stmt->fetch();
 
@@ -56,11 +55,11 @@ try {
     // 3. Hash the new password securely using BCRYPT
     $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
 
-    // 4. Update the user password, clear reset token details and reset flag so they cannot be reused
-    $updateStmt = $pdo->prepare("UPDATE user SET User_Pass = :pass, reset_token = NULL, reset_expires = NULL, requires_password_reset = 0 WHERE User_ID = :id");
+    // 4. Update the user password, clear reset token details
+    $updateStmt = $pdo->prepare("UPDATE users_tbl SET User_Pass = :pass, reset_token = NULL, reset_expires = NULL, requires_password_reset = 0 WHERE user_id = :id");
     $updateStmt->execute([
         'pass' => $hashedPassword,
-        'id'   => $user['User_ID']
+        'id'   => $user['user_id']
     ]);
 
     echo json_encode([
@@ -75,3 +74,4 @@ try {
         "message" => "Database error: " . $e->getMessage()
     ]);
 }
+?>

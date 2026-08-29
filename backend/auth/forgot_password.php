@@ -33,9 +33,7 @@ if (empty($email)) {
 
 try {
     // 1. Check if an applicant user exists (is_admin = 0)
-    // SECURITY: Admins (is_admin >= 1) cannot reset passwords via self-service email; 
-    // administrative accounts are governed strictly via Super Admin provisioning.
-    $stmt = $pdo->prepare("SELECT User_ID, User_Fname, User_Lname FROM user WHERE User_Email = :email AND (is_admin = 0 OR is_admin IS NULL)");
+    $stmt = $pdo->prepare("SELECT user_id, User_Fname, User_Lname FROM users_tbl WHERE User_Email = :email AND (is_admin = 0 OR is_admin IS NULL)");
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
 
@@ -44,10 +42,10 @@ try {
         $token = bin2hex(random_bytes(32));
         
         // 3. Save the token and expiration to the database
-        $updateStmt = $pdo->prepare("UPDATE user SET reset_token = :token, reset_expires = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE User_ID = :id");
+        $updateStmt = $pdo->prepare("UPDATE users_tbl SET reset_token = :token, reset_expires = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE user_id = :id");
         $updateStmt->execute([
             'token' => $token,
-            'id' => $user['User_ID']
+            'id' => $user['user_id']
         ]);
 
         // 4. Send the verification/recovery email using PHPMailer
@@ -93,7 +91,6 @@ try {
         ";
         $mail->AltBody = "Hello " . $user['User_Fname'] . ",\n\nTo reset your password, please visit this link (expires in 15 minutes):\n" . $resetLink;
 
-        // Logging fallback for local developer testing when SMTP fails or in sandbox mode
         $isPlaceholder = ($mail->Username === 'YOUR_GMAIL_ADDRESS@gmail.com' || $mail->Password === 'YOUR_GOOGLE_APP_PASSWORD');
 
         if ($isPlaceholder) {
@@ -108,7 +105,6 @@ try {
             try {
                 $mail->send();
             } catch (Exception $mailException) {
-                // If mailer fails (e.g. network block), fallback to writing to log file
                 $logFile = __DIR__ . '/email_log.txt';
                 $logContent = "=== PASSWORD RESET EMAIL (FALLBACK LOG MODE) ===\n" .
                               "Date: " . date('Y-m-d H:i:s') . "\n" .
@@ -121,7 +117,6 @@ try {
         }
     }
 
-    // Generic success response to mitigate username enumeration attacks (OWASP A07)
     echo json_encode([
         "status" => "success",
         "message" => "If an applicant account exists for this email, password recovery instructions have been sent."
@@ -134,3 +129,4 @@ try {
         "message" => "Database error: " . $e->getMessage()
     ]);
 }
+?>

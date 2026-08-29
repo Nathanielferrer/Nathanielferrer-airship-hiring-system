@@ -18,7 +18,7 @@ if (empty($token)) {
 
 try {
     // Look up the user by verification_code or verification_token
-    $stmt = $pdo->prepare("SELECT User_ID, is_verified FROM user WHERE verification_code = :code OR verification_token = :token");
+    $stmt = $pdo->prepare("SELECT user_id, is_verified FROM users_tbl WHERE verification_code = :code OR verification_token = :token");
     $stmt->execute([
         'code' => $token,
         'token' => $token
@@ -35,13 +35,12 @@ try {
     }
 
     // Update user to verified status and clear the token columns
-    $updateStmt = $pdo->prepare("UPDATE user SET 
+    $updateStmt = $pdo->prepare("UPDATE users_tbl SET 
                                     is_verified = 1, 
-                                    verified = 1, 
                                     verification_code = NULL, 
                                     verification_token = NULL 
-                                 WHERE User_ID = :id");
-    $updateStmt->execute(['id' => $user['User_ID']]);
+                                 WHERE user_id = :id");
+    $updateStmt->execute(['id' => $user['user_id']]);
 
     echo json_encode([
         "status" => "success",

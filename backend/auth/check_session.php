@@ -1,11 +1,9 @@
 <?php
 // ── Session Heartbeat Endpoint ─────────────────────────────────────────────────
-// Output buffering prevents any PHP notices/warnings from corrupting the JSON response.
 ob_start();
 
 require_once '../db.php';
 
-// Discard any accidental output from db.php (errors/notices) so JSON stays clean
 ob_clean();
 
 header('Content-Type: application/json');
@@ -24,7 +22,7 @@ if ($userId <= 0) {
 
 // Check real-time account status in database
 try {
-    $stmt = $pdo->prepare("SELECT User_ID, requires_password_reset, COALESCE(status, 'Active') as status FROM user WHERE User_ID = :id LIMIT 1");
+    $stmt = $pdo->prepare("SELECT user_id, requires_password_reset, COALESCE(status, 'Active') as status FROM users_tbl WHERE user_id = :id LIMIT 1");
     $stmt->execute(['id' => $userId]);
     $user = $stmt->fetch();
 

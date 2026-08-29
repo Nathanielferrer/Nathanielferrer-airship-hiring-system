@@ -4,7 +4,8 @@ header('Content-Type: application/json');
 
 try {
     $sql = "SELECT 
-                a.id as application_id, 
+                a.application_id,
+                a.application_id as id, 
                 a.user_id,
                 a.job_id,
                 a.candidate_name, 
@@ -14,6 +15,11 @@ try {
                 a.ai_summary,
                 a.status,
                 a.applied_at,
+                a.updated_at,
+                a.contract_signing_date,
+                a.contract_signing_time,
+                a.contract_signing_location,
+                a.contract_signing_notes,
                 u.User_Fname, 
                 u.User_Lname,
                 u.User_Email,
@@ -23,37 +29,37 @@ try {
                 COALESCE(inv.scheduled_time, slot.start_time) as start_time,
                 slot.end_time,
                 COALESCE(inv.location, 'Headquarters / Main Office') as location,
-                COALESCE(inv.requirements, '[\"Resume\"]') as requirements,
-                COALESCE(inv.meeting_link, slot.meeting_link, '') as meeting_link
-            FROM applications a
-            INNER JOIN user u ON a.user_id = u.User_ID
-            INNER JOIN jobs j ON a.job_id = j.id
+                COALESCE(inv.requirements, '[\"Resume\"]') as requirements
+            FROM applications_tbl a
+            INNER JOIN users_tbl u ON a.user_id = u.user_id
+            INNER JOIN jobs_tbl j ON a.job_id = j.job_id
             LEFT JOIN (
-                SELECT application_id, scheduled_date, scheduled_time, location, meeting_link, requirements 
-                FROM interviews 
-                WHERE id IN (SELECT MAX(id) FROM interviews GROUP BY application_id)
-            ) inv ON inv.application_id = a.id
+                SELECT application_id, scheduled_date, scheduled_time, location, requirements 
+                FROM interviews_tbl 
+                WHERE interview_id IN (SELECT MAX(interview_id) FROM interviews_tbl GROUP BY application_id)
+            ) inv ON inv.application_id = a.application_id
             LEFT JOIN (
-                SELECT applicant_id, slot_date, start_time, end_time, meeting_link 
-                FROM interview_slots 
-                WHERE status = 'Booked' AND slot_id IN (SELECT MAX(slot_id) FROM interview_slots WHERE status = 'Booked' GROUP BY applicant_id)
-            ) slot ON slot.applicant_id = a.id
+                SELECT application_id, slot_date, start_time, end_time 
+                FROM interview_slots_tbl 
+                WHERE status = 'Booked' AND slot_id IN (SELECT MAX(slot_id) FROM interview_slots_tbl WHERE status = 'Booked' GROUP BY application_id)
+            ) slot ON slot.application_id = a.application_id
             WHERE 
                 (a.status IN ('CONFIRMED', 'INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'RESCHEDULING') AND a.is_archived = 0)
                 OR 
                 (UPPER(a.status) IN ('PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW') AND a.is_archived = 0)
                 OR 
-                (UPPER(a.status) IN ('PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED', 'REJECTED', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'))
+                (UPPER(a.status) IN ('PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED', 'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED', 'CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED', 'REJECTED', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'))
             ORDER BY 
                 CASE 
                     WHEN a.status IN ('CONFIRMED', 'INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'RESCHEDULING') THEN 1
                     WHEN UPPER(a.status) IN ('PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW') THEN 2
-                    ELSE 3
+                    WHEN UPPER(a.status) IN ('PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED', 'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED', 'CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED') THEN 3
+                    ELSE 4
                 END ASC,
                 a.updated_at DESC,
                 interview_date DESC, 
                 start_time DESC,
-                a.id DESC";
+                a.application_id DESC";
 
     $stmt = $pdo->query($sql);
     $scheduled = $stmt->fetchAll(PDO::FETCH_ASSOC);

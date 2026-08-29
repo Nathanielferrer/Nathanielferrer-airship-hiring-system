@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
-$id = intval($data['id'] ?? 0);
+$id = intval($data['id'] ?? ($data['job_id'] ?? 0));
 
 if (!$id) {
     http_response_code(400);
@@ -14,14 +14,14 @@ if (!$id) {
 
 try {
     // Fetch full job details before deletion for detailed audit log
-    $jobStmt = $pdo->prepare("SELECT title, availability, status FROM jobs WHERE id = ?");
+    $jobStmt = $pdo->prepare("SELECT title, availability, status FROM jobs_tbl WHERE job_id = ?");
     $jobStmt->execute([$id]);
     $prevJob  = $jobStmt->fetch(PDO::FETCH_ASSOC);
     $jobTitle = $prevJob['title']        ?? "Job #{$id}";
     $jobAvail = $prevJob['availability'] ?? 0;
     $jobStatus= $prevJob['status']       ?? 'Unknown';
 
-    $stmt = $pdo->prepare("DELETE FROM jobs WHERE id = ?");
+    $stmt = $pdo->prepare("DELETE FROM jobs_tbl WHERE job_id = ?");
     $stmt->execute([$id]);
 
     require_once '../audit_helper.php';

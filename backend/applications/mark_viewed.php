@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
-$id = isset($data['id']) ? intval($data['id']) : 0;
+$id = isset($data['id']) ? intval($data['id']) : (isset($data['application_id']) ? intval($data['application_id']) : 0);
 
 if ($id <= 0) {
     http_response_code(400);
@@ -13,10 +13,11 @@ if ($id <= 0) {
 }
 
 try {
-    $stmt = $pdo->prepare("UPDATE applications SET viewed = 1 WHERE id = :id");
+    $stmt = $pdo->prepare("UPDATE applications_tbl SET viewed = 1 WHERE application_id = :id");
     $stmt->execute(['id' => $id]);
     echo json_encode(["status" => "success", "message" => "Marked as viewed."]);
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(["status" => "error", "message" => "Failed to update viewed status."]);
 }
+?>

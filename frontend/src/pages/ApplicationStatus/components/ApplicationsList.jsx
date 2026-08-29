@@ -9,6 +9,7 @@ const ApplicationsList = ({
   scheduleActionLoading,
   scheduleActionFeedback,
   onScheduleResponse,
+  onWithdrawApplication,
 }) => {
   const navigate = useNavigate();
 
@@ -45,6 +46,7 @@ const ApplicationsList = ({
           scheduleActionLoading={scheduleActionLoading}
           scheduleActionFeedback={scheduleActionFeedback}
           onScheduleResponse={onScheduleResponse}
+          onWithdrawApplication={onWithdrawApplication}
         />
       ))}
     </div>

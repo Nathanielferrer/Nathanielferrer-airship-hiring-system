@@ -1,3 +1,17 @@
+/* Vacancy Page Wrapper - Sticky Footer Layout */
+.vacancy-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.vacancy-wrapper > .loading-container {
+  flex: 1;
+}
+
 /* Terms & Conditions Modal Overlay */
 .vacancy-terms-overlay {
   position: fixed;
@@ -256,6 +270,7 @@
   box-sizing: border-box;
   align-items: flex-start;
   transition: all 0.3s ease;
+  flex: 1;
 }
 
 /* Default Grid View */

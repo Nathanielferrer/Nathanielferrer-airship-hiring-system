@@ -47,6 +47,8 @@ const Vacancy = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notifRef = useRef(null);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isHiredUser, setIsHiredUser] = useState(false);
+  const [hiredJobTitle, setHiredJobTitle] = useState('');
 
   useEffect(() => {
     document.title = 'Job Vacancies - Airship Express';
@@ -79,6 +81,8 @@ const Vacancy = () => {
         setAppliedJobs(data.job_ids);
         setAppliedJobsMap(data.applied_jobs_map || {});
         setHasActiveApp(data.has_active_application);
+        setIsHiredUser(Boolean(data.is_hired));
+        setHiredJobTitle(data.hired_job_title || '');
       }
     } catch (err) {
       console.error("Failed to fetch applied jobs:", err);
@@ -198,6 +202,41 @@ const Vacancy = () => {
         localStorage.removeItem('hiring_user');
         navigate('/login');
       },
+    });
+  };
+
+  const handleWithdrawApplication = (job) => {
+    if (!user || !job) return;
+    setConfirmModalState({
+      isOpen: true,
+      title: 'Cancel & Withdraw Application',
+      message: `Are you sure you want to cancel and withdraw your submitted application for "${job.title}"? Your application will be withdrawn.`,
+      confirmText: 'Withdraw Application',
+      cancelText: 'Keep Application',
+      type: 'danger',
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          const res = await fetch('http://localhost/Hiring%20System/backend/applications/withdraw.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: user.id,
+              job_id: job.id,
+              reason: 'Candidate cancelled application from vacancy portal'
+            })
+          });
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            await fetchAppliedJobs();
+            await fetchJobs();
+          } else {
+            alert(data.message || 'Failed to withdraw application.');
+          }
+        } catch (err) {
+          console.error('Failed to withdraw application:', err);
+        }
+      }
     });
   };
 
@@ -411,12 +450,48 @@ const Vacancy = () => {
                     let disabled = !isActive;
 
                     if (jobStatus) {
-                      disabled = true;
-                      const isRejected = ['rejected', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE'].includes(jobStatus);
-                      const isHired = ['HIRED', 'Hired', 'hired', 'PASSED', 'HIRED / PASSED'].includes(jobStatus);
+                      const isRejected = ['rejected', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'Failed Final Interview', 'Failed Final Approval'].includes(jobStatus);
+                      const isHired = ['HIRED', 'Hired', 'hired', 'PASSED', 'HIRED / PASSED', 'Passed Final Approval', 'Contract Signed & Onboarded'].includes(jobStatus);
+                      const isWithdrawn = ['Candidate Withdrew', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW'].includes(jobStatus);
 
-                      if (isHired) {
-                        btnText = 'Application Accepted';
+                      if (isWithdrawn) {
+                        // Candidate withdrew: allow re-application if job is active
+                        if (isActive) {
+                          btnText = 'Apply Now';
+                          disabled = false;
+                          btnStyle = {
+                            width: '100%',
+                            padding: '12px 20px',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            fontWeight: '700',
+                            fontFamily: "'Montserrat', sans-serif",
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #e6007e 0%, #c4006b 100%)',
+                            color: '#ffffff',
+                            boxShadow: '0 4px 12px rgba(230, 0, 126, 0.3)'
+                          };
+                        } else {
+                          btnText = 'Application Withdrawn (Closed)';
+                          disabled = true;
+                          btnStyle = {
+                            width: '100%',
+                            padding: '12px 20px',
+                            borderRadius: '8px',
+                            fontSize: '13.5px',
+                            fontWeight: '700',
+                            fontFamily: "'Montserrat', sans-serif",
+                            background: '#f1f5f9',
+                            color: '#64748b',
+                            cursor: 'not-allowed',
+                            border: '1px solid #cbd5e1'
+                          };
+                        }
+                      } else if (isHired) {
+                        disabled = true;
+                        btnText = 'Officially Hired';
                         btnStyle = {
                           width: '100%',
                           padding: '12px 20px',
@@ -424,12 +499,13 @@ const Vacancy = () => {
                           fontSize: '13.5px',
                           fontWeight: '700',
                           fontFamily: "'Montserrat', sans-serif",
-                          background: '#f1f5f9',
-                          color: '#047857',
+                          background: '#ecfdf5',
+                          color: '#059669',
                           cursor: 'not-allowed',
-                          border: '1px solid #a7f3d0'
+                          border: '1.5px solid #a7f3d0'
                         };
                       } else if (isRejected) {
+                        disabled = true;
                         btnText = 'Application Concluded';
                         btnStyle = {
                           width: '100%',
@@ -444,6 +520,7 @@ const Vacancy = () => {
                           border: '1px solid #cbd5e1'
                         };
                       } else {
+                        disabled = true;
                         btnText = 'Under Review';
                         btnStyle = {
                           width: '100%',
@@ -458,9 +535,24 @@ const Vacancy = () => {
                           border: '1px solid #94a3b8'
                         };
                       }
+                    } else if (isHiredUser) {
+                      disabled = true;
+                      btnText = 'Already Hired (Active Employee)';
+                      btnStyle = {
+                        width: '100%',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        fontWeight: '700',
+                        fontFamily: "'Montserrat', sans-serif",
+                        background: '#f8fafc',
+                        color: '#64748b',
+                        cursor: 'not-allowed',
+                        border: '1.5px solid #cbd5e1'
+                      };
                     } else if (hasActiveApp) {
                       disabled = true;
-                      btnText = 'Application Pending';
+                      btnText = 'Application Under Process';
                       btnStyle = {
                         width: '100%',
                         padding: '12px 20px',
@@ -475,6 +567,15 @@ const Vacancy = () => {
                       };
                     }
 
+                    const normJobStatus = (jobStatus || '').toUpperCase();
+                    const hasActiveForThisJob = jobStatus && ![
+                      'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED',
+                      'DECLINED - UNRESPONSIVE', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW',
+                      'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED',
+                      'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW',
+                      'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'
+                    ].includes(normJobStatus);
+
                     return (
                       <div style={{ marginTop: '18px' }}>
                         <button
@@ -485,6 +586,37 @@ const Vacancy = () => {
                         >
                           {btnText}
                         </button>
+
+                        {hasActiveForThisJob && (
+                          <div style={{ marginTop: '10px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleWithdrawApplication(selectedJob)}
+                              style={{
+                                width: '100%',
+                                padding: '10px 16px',
+                                borderRadius: '8px',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                fontFamily: "'Inter', sans-serif",
+                                background: '#ffffff',
+                                color: '#dc2626',
+                                border: '1.5px solid #fecaca',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseOver={(e) => { e.currentTarget.style.background = '#fef2f2'; }}
+                              onMouseOut={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+                            >
+                              <i className="bx bx-trash" style={{ fontSize: '16px' }} />
+                              <span>Cancel / Withdraw Application</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}

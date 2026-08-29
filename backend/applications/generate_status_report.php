@@ -10,13 +10,14 @@ try {
     $sql = "SELECT 
                 a.status, 
                 a.applied_at, 
+                a.updated_at,
                 a.candidate_name,
                 u.User_Fname, 
                 u.User_Lname, 
                 j.title AS job_title
-            FROM applications a
-            INNER JOIN user u ON a.user_id = u.User_ID
-            INNER JOIN jobs j ON a.job_id = j.id
+            FROM applications_tbl a
+            INNER JOIN users_tbl u ON a.user_id = u.user_id
+            INNER JOIN jobs_tbl j ON a.job_id = j.job_id
             WHERE 1=1";
 
     $params = [];
@@ -32,7 +33,7 @@ try {
     }
 
     if ($status_filter === 'hired') {
-        $sql .= " AND UPPER(a.status) IN ('HIRED', 'PASSED INTERVIEW', 'PASSED', 'HIRED / PASSED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL')";
+        $sql .= " AND UPPER(a.status) IN ('HIRED', 'PASSED INTERVIEW', 'PASSED', 'HIRED / PASSED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED')";
     } else if ($status_filter === 'rejected') {
         $sql .= " AND UPPER(a.status) IN ('REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW')";
     } else if ($status_filter === 'passed_final_interview') {
@@ -43,6 +44,8 @@ try {
         $sql .= " AND UPPER(a.status) IN ('INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS')";
     } else if ($status_filter === 'failed_pre_employment') {
         $sql .= " AND UPPER(a.status) IN ('FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT')";
+    } else if ($status_filter === 'contract_signing') {
+        $sql .= " AND UPPER(a.status) IN ('CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED', 'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED')";
     }
 
     $sql .= " ORDER BY a.applied_at DESC";
@@ -197,6 +200,7 @@ try {
                 <th>Applicant Name</th>
                 <th>Applied Position</th>
                 <th>Application Date</th>
+                <th>Decision / Updated Date</th>
                 <th>Current Hiring Status</th>
               </tr>
             </thead>
@@ -204,15 +208,20 @@ try {
               <?php foreach ($applications as $idx => $app): 
                 $name = !empty($app['candidate_name']) ? $app['candidate_name'] : trim($app['User_Fname'] . ' ' . $app['User_Lname']);
                 $date = date('M d, Y', strtotime($app['applied_at']));
+                $updatedDate = !empty($app['updated_at']) ? date('M d, Y h:i A', strtotime($app['updated_at'])) : $date;
                 $statusUpper = strtoupper($app['status']);
 
                 $badgeClass = 'badge-pending';
-                if (in_array($statusUpper, ['HIRED', 'HIRED / PASSED', 'PASSED', 'PASSED INTERVIEW', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL'])) {
+                if (in_array($statusUpper, ['HIRED', 'HIRED / PASSED', 'PASSED', 'PASSED INTERVIEW', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED'])) {
                   $badgeClass = 'badge-hired';
-                } elseif (in_array($statusUpper, ['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW', 'PASSED INITIAL', 'CONFIRMED', 'INTERVIEW_SCHEDULED'])) {
+                } elseif (in_array($statusUpper, ['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED', 'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED', 'PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW', 'PASSED INITIAL', 'CONFIRMED', 'INTERVIEW_SCHEDULED'])) {
                   $badgeClass = 'badge-passed';
-                } elseif (in_array($statusUpper, ['REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'DECLINED - UNRESPONSIVE'])) {
+                } elseif (in_array($statusUpper, ['REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'DECLINED - UNRESPONSIVE', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'])) {
                   $badgeClass = 'badge-rejected';
+                }
+                $displayStatus = $statusUpper;
+                if (in_array($statusUpper, ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED', 'HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'PASSED', 'HIRED / PASSED'])) {
+                  $displayStatus = 'OFFICIALLY HIRED';
                 }
               ?>
                 <tr>
@@ -220,12 +229,13 @@ try {
                   <td><strong><?= htmlspecialchars($name) ?></strong></td>
                   <td><?= htmlspecialchars($app['job_title']) ?></td>
                   <td><?= $date ?></td>
-                  <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($statusUpper) ?></span></td>
+                  <td><?= $updatedDate ?></td>
+                  <td><span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($displayStatus) ?></span></td>
                 </tr>
               <?php endforeach; ?>
               <?php if (empty($applications)): ?>
                 <tr>
-                  <td colSpan="5" style="text-align: center; padding: 20px;">No application records found matching the specified parameters.</td>
+                  <td colSpan="6" style="text-align: center; padding: 20px;">No application records found matching the specified parameters.</td>
                 </tr>
               <?php endif; ?>
             </tbody>
@@ -252,18 +262,23 @@ try {
     $output = fopen('php://output', 'w');
 
     // Output CSV headers
-    fputcsv($output, ['Applicant Name', 'Job Position', 'Date Applied', 'Status']);
+    fputcsv($output, ['Applicant Name', 'Job Position', 'Date Applied', 'Decision / Updated Date', 'Status']);
 
     // Output data rows
     foreach ($applications as $app) {
         $name = !empty($app['candidate_name']) ? $app['candidate_name'] : trim($app['User_Fname'] . ' ' . $app['User_Lname']);
-        $date = date('Y-m-d', strtotime($app['applied_at']));
+        $appliedDate = date('Y-m-d', strtotime($app['applied_at']));
+        $updatedDate = !empty($app['updated_at']) ? date('Y-m-d H:i', strtotime($app['updated_at'])) : $appliedDate;
         $status = strtoupper($app['status']);
+        if (in_array($status, ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED', 'HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'PASSED', 'HIRED / PASSED'])) {
+            $status = 'OFFICIALLY HIRED';
+        }
         
         fputcsv($output, [
             $name,
             $app['job_title'],
-            $date,
+            $appliedDate,
+            $updatedDate,
             $status
         ]);
     }

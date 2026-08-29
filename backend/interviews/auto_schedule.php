@@ -1,13 +1,13 @@
 <?php
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-require '../libs/PHPMailer/src/Exception.php';
-require '../libs/PHPMailer/src/PHPMailer.php';
-require '../libs/PHPMailer/src/SMTP.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/Exception.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/SMTP.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +15,7 @@ header('Content-Type: application/json');
 function insertNotification($pdo, $userId, $appId, $title, $message) {
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO notifications (user_id, application_id, title, message, type, link, is_read)
+            INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read)
             VALUES (:user_id, :app_id, :title, :message, 'interview_scheduled', '/applicant-dashboard', 0)
         ");
         $stmt->execute([
@@ -25,7 +25,6 @@ function insertNotification($pdo, $userId, $appId, $title, $message) {
             'message' => $message
         ]);
     } catch (PDOException $e) {
-        // non-fatal – log and continue
         error_log("Notification insert failed: " . $e->getMessage());
     }
 }
@@ -36,7 +35,6 @@ function sendScheduledEmail($toEmail, $toName, $date = '', $startTime = '', $end
     try {
         $mail = new PHPMailer(true);
 
-        // SMTP settings for Gmail
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
@@ -87,20 +85,15 @@ function sendScheduledEmail($toEmail, $toName, $date = '', $startTime = '', $end
     }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 try {
     $pdo->beginTransaction();
 
-    // 1. Fetch applicants in 'PASSED INITIAL' status only.
-    // RESCHEDULING candidates are excluded — their reschedule is confirmed
-    // directly by the admin via confirm_reschedule.php using the slot the
-    // applicant already selected.
+    // 1. Fetch applicants in 'PASSED INITIAL' status
     $appStmt = $pdo->query("
-        SELECT a.id, a.user_id, a.candidate_name, a.candidate_email, a.status,
+        SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email, a.status,
                u.User_Fname, u.User_Lname, u.User_Email
-        FROM applications a
-        INNER JOIN user u ON a.user_id = u.User_ID
+        FROM applications_tbl a
+        INNER JOIN users_tbl u ON a.user_id = u.user_id
         WHERE a.status = 'PASSED INITIAL'
         ORDER BY a.applied_at ASC
     ");
@@ -117,7 +110,7 @@ try {
     }
 
     // 2. Fetch available open slots
-    $slotStmt = $pdo->query("SELECT slot_id, slot_date, start_time, end_time FROM interview_slots WHERE status = 'Open' ORDER BY slot_date ASC, start_time ASC");
+    $slotStmt = $pdo->query("SELECT slot_id, slot_date, start_time, end_time FROM interview_slots_tbl WHERE status = 'Open' ORDER BY slot_date ASC, start_time ASC");
     $slots = $slotStmt->fetchAll(PDO::FETCH_ASSOC);
 
     if (empty($slots)) {
@@ -136,15 +129,14 @@ try {
     $fixedRequirements = json_encode(["Resume"]);
 
     foreach ($applicants as $app) {
-        $appId  = $app['id'];
+        $appId  = $app['application_id'];
         $userId = $app['user_id'];
 
-        // Get previous scheduled date/time if any (rejected slot)
-        $prevStmt = $pdo->prepare("SELECT scheduled_date, scheduled_time FROM interviews WHERE application_id = :app_id");
+        // Get previous scheduled date/time if any
+        $prevStmt = $pdo->prepare("SELECT scheduled_date, scheduled_time FROM interviews_tbl WHERE application_id = :app_id");
         $prevStmt->execute(['app_id' => $appId]);
         $prevInterview = $prevStmt->fetch(PDO::FETCH_ASSOC);
 
-        // Find an open slot that is not yet used in this run AND has a different date/time than previous rejected schedule
         $selectedSlot = null;
         foreach ($slots as $slot) {
             if (in_array($slot['slot_id'], $usedSlotIds)) {
@@ -154,7 +146,6 @@ try {
             if ($prevInterview && !empty($prevInterview['scheduled_date'])) {
                 $sameDate = ($slot['slot_date'] === $prevInterview['scheduled_date']);
                 $sameTime = (date('H:i', strtotime($slot['start_time'])) === date('H:i', strtotime($prevInterview['scheduled_time'])));
-                // Skip if exact same slot date AND time as rejected schedule
                 if ($sameDate && $sameTime) {
                     continue;
                 }
@@ -165,7 +156,6 @@ try {
         }
 
         if (!$selectedSlot) {
-            // No suitable different slot available for this candidate right now
             continue;
         }
 
@@ -175,27 +165,26 @@ try {
         $time    = $selectedSlot['start_time'];
         $endTime = $selectedSlot['end_time'] ?? '';
 
-        // Format a friendly date+time string for the notification
         $friendlyDate  = date('D, M j, Y', strtotime($date));
         $friendlyStart = date('g:i A', strtotime($time));
         $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
         $friendlyTime  = $friendlyEnd ? "{$friendlyStart} - {$friendlyEnd}" : $friendlyStart;
 
         // Book the slot
-        $bookStmt = $pdo->prepare("UPDATE interview_slots SET status = 'Booked', applicant_id = :app_id WHERE slot_id = :slot_id");
+        $bookStmt = $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Booked', application_id = :app_id WHERE slot_id = :slot_id");
         $bookStmt->execute(['app_id' => $appId, 'slot_id' => $slotId]);
 
         // Update application status to PENDING SCHEDULED
-        $statusStmt = $pdo->prepare("UPDATE applications SET status = 'PENDING SCHEDULED' WHERE id = :id");
+        $statusStmt = $pdo->prepare("UPDATE applications_tbl SET status = 'PENDING SCHEDULED' WHERE application_id = :id");
         $statusStmt->execute(['id' => $appId]);
 
-        // Insert or update interviews table
-        $checkInt = $pdo->prepare("SELECT COUNT(*) FROM interviews WHERE application_id = :app_id");
+        // Insert or update interviews_tbl
+        $checkInt = $pdo->prepare("SELECT COUNT(*) FROM interviews_tbl WHERE application_id = :app_id");
         $checkInt->execute(['app_id' => $appId]);
         if ($checkInt->fetchColumn() == 0) {
             $insertInt = $pdo->prepare("
-                INSERT INTO interviews (application_id, scheduled_date, scheduled_time, location, meeting_link, requirements)
-                VALUES (:app_id, :date, :time, :location, '', :requirements)
+                INSERT INTO interviews_tbl (application_id, scheduled_date, scheduled_time, location, requirements)
+                VALUES (:app_id, :date, :time, :location, :requirements)
             ");
             $insertInt->execute([
                 'app_id'       => $appId,
@@ -206,7 +195,7 @@ try {
             ]);
         } else {
             $updateInt = $pdo->prepare("
-                UPDATE interviews SET scheduled_date = :date, scheduled_time = :time, location = :location, requirements = :requirements
+                UPDATE interviews_tbl SET scheduled_date = :date, scheduled_time = :time, location = :location, requirements = :requirements
                 WHERE application_id = :app_id
             ");
             $updateInt->execute([
@@ -244,7 +233,7 @@ try {
     $actorId = intval($data['actor_id'] ?? 0);
     $actorName = trim($data['actor_name'] ?? 'Admin');
 
-    require_once '../audit_helper.php';
+    require_once __DIR__ . '/../audit_helper.php';
     log_system_audit(
         $pdo,
         $actorId,

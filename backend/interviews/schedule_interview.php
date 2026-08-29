@@ -1,24 +1,23 @@
 <?php
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-require '../libs/PHPMailer/src/Exception.php';
-require '../libs/PHPMailer/src/PHPMailer.php';
-require '../libs/PHPMailer/src/SMTP.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/Exception.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/SMTP.php';
 
 header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-$applicationId = isset($data['application_id']) ? intval($data['application_id']) : 0;
+$applicationId = isset($data['application_id']) ? intval($data['application_id']) : (isset($data['id']) ? intval($data['id']) : 0);
 $userId = isset($data['user_id']) ? intval($data['user_id']) : 0;
 $slot_id = isset($data['slot_id']) ? intval($data['slot_id']) : 0;
 $location = isset($data['location']) ? trim($data['location']) : 'Main Office';
-$meetingLink = isset($data['meeting_link']) ? trim($data['meeting_link']) : null;
 $requirements = isset($data['requirements']) ? $data['requirements'] : [];
 
 if ($applicationId <= 0 || $userId <= 0 || $slot_id <= 0) {
@@ -28,11 +27,10 @@ if ($applicationId <= 0 || $userId <= 0 || $slot_id <= 0) {
 }
 
 try {
-    // Start transaction
     $pdo->beginTransaction();
 
     // Fetch slot details
-    $slotStmt = $pdo->prepare("SELECT slot_date as date, start_time, end_time FROM interview_slots WHERE slot_id = :slot_id AND status = 'Open'");
+    $slotStmt = $pdo->prepare("SELECT slot_date as date, start_time, end_time FROM interview_slots_tbl WHERE slot_id = :slot_id AND status = 'Open'");
     $slotStmt->execute(['slot_id' => $slot_id]);
     $slot = $slotStmt->fetch();
 
@@ -44,43 +42,42 @@ try {
     $time = $slot['start_time'];
 
     // 1. Book the slot
-    $bookSlotStmt = $pdo->prepare("UPDATE interview_slots SET status = 'Booked', applicant_id = :app_id WHERE slot_id = :slot_id");
+    $bookSlotStmt = $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Booked', application_id = :app_id WHERE slot_id = :slot_id");
     $bookSlotStmt->execute(['app_id' => $applicationId, 'slot_id' => $slot_id]);
 
     // 2. Update application status
-    $updateStmt = $pdo->prepare("UPDATE applications SET status = 'INTERVIEW_SCHEDULED' WHERE id = :id");
+    $updateStmt = $pdo->prepare("UPDATE applications_tbl SET status = 'INTERVIEW_SCHEDULED' WHERE application_id = :id");
     $updateStmt->execute(['id' => $applicationId]);
 
     // 3. Insert interview details
     $reqJson = json_encode($requirements);
-    $insertInterview = $pdo->prepare("INSERT INTO interviews (application_id, scheduled_date, scheduled_time, location, meeting_link, requirements) VALUES (:app_id, :date, :time, :loc, :link, :req)");
+    $insertInterview = $pdo->prepare("INSERT INTO interviews_tbl (application_id, scheduled_date, scheduled_time, location, requirements) VALUES (:app_id, :date, :time, :loc, :req)");
     $insertInterview->execute([
         'app_id' => $applicationId,
         'date' => $date,
         'time' => $time,
         'loc' => $location,
-        'link' => $meetingLink,
         'req' => $reqJson
     ]);
 
-    // 3. Create notification for applicant
+    // 4. Create notification for applicant
     $title = "Interview Scheduled";
     $message = "Your interview is set for " . date("F j, Y", strtotime($date)) . " at " . date("g:i A", strtotime($time)) . ". Please review the requirements.";
     $link = "/applicant-dashboard";
 
-    $insertNotif = $pdo->prepare("INSERT INTO notifications (user_id, title, message, link) VALUES (:user_id, :title, :msg, :link)");
+    $insertNotif = $pdo->prepare("INSERT INTO notifications_tbl (user_id, application_id, title, message, link) VALUES (:user_id, :app_id, :title, :msg, :link)");
     $insertNotif->execute([
         'user_id' => $userId,
+        'app_id'  => $applicationId,
         'title' => $title,
         'msg' => $message,
         'link' => $link
     ]);
 
-    // Commit transaction
     $pdo->commit();
 
     // Fetch candidate email
-    $emailStmt = $pdo->prepare("SELECT a.candidate_email, u.User_Email, u.User_Fname FROM applications a INNER JOIN user u ON a.user_id = u.User_ID WHERE a.id = :id");
+    $emailStmt = $pdo->prepare("SELECT a.candidate_email, u.User_Email, u.User_Fname FROM applications_tbl a INNER JOIN users_tbl u ON a.user_id = u.user_id WHERE a.application_id = :id");
     $emailStmt->execute(['id' => $applicationId]);
     $emailData = $emailStmt->fetch();
     
@@ -90,12 +87,11 @@ try {
         try {
             $mail = new PHPMailer(true);
 
-            // SMTP settings for Gmail
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
             $mail->SMTPAuth   = true;
             $mail->Username   = 'nathanielferrer691@gmail.com';
-            $mail->Password   = 'enzc ppph jran heso'; // Google App Password
+            $mail->Password   = 'enzc ppph jran heso';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
 
@@ -122,11 +118,7 @@ try {
                 <div style='background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 20px 0;'>
                     <p style='margin: 5px 0;'><strong>Date:</strong> " . date("F j, Y", strtotime($date)) . "</p>
                     <p style='margin: 5px 0;'><strong>Time:</strong> " . date("g:i A", strtotime($time)) . "</p>
-                    <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>";
-            if (!empty($meetingLink)) {
-                $mail->Body .= "<p style='margin: 5px 0;'><strong>Meeting Link:</strong> <a href='" . htmlspecialchars($meetingLink) . "'>" . htmlspecialchars($meetingLink) . "</a></p>";
-            }
-            $mail->Body .= "
+                    <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
                 </div>
                 <p><strong>Requirements to Bring:</strong></p>
                 $reqHtml
@@ -136,7 +128,6 @@ try {
             
             $mail->send();
         } catch (Exception $e) {
-            // Log error but don't fail the schedule transaction
             error_log("Email could not be sent. Mailer Error: {$mail->ErrorInfo}");
         }
     }
@@ -151,3 +142,4 @@ try {
     http_response_code(500);
     echo json_encode(["status" => "error", "message" => "Transaction failed: " . $e->getMessage()]);
 }
+?>

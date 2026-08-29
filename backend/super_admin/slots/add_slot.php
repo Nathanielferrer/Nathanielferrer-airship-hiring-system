@@ -1,5 +1,6 @@
 <?php
-require_once '../../db.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../audit_helper.php';
 header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
@@ -8,6 +9,8 @@ $data = json_decode($json, true);
 $date       = trim($data['date']       ?? '');
 $start_time = trim($data['start_time'] ?? '');
 $end_time   = trim($data['end_time']   ?? '');
+$actorId    = intval($data['actor_id'] ?? 0);
+$actorName  = trim($data['actor_name'] ?? 'Super Admin');
 
 if (!$date || !$start_time || !$end_time) {
     http_response_code(400);
@@ -24,21 +27,18 @@ if ($end <= $start) {
     exit();
 }
 
-// Enforce minimum 30 minutes duration (1800 seconds)
 if (($end - $start) < 1800) {
     http_response_code(400);
     echo json_encode(["status" => "error", "message" => "Minimum interview slot duration is 30 minutes. Please select a time window of at least 30 minutes."]);
     exit();
 }
 
-// ── Duplicate slot prevention ─────────────────────────────────────────────────
 try {
-    // Calculate how many new 30-min slots this window would create
     $interval     = 30 * 60;
     $newSlotCount = 0;
     for ($curr = $start; $curr + $interval <= $end; $curr += $interval) {
         $slotStart = date('H:i:s', $curr);
-        $dupCheck  = $pdo->prepare("SELECT COUNT(*) FROM interview_slots WHERE slot_date = ? AND start_time = ?");
+        $dupCheck  = $pdo->prepare("SELECT COUNT(*) FROM interview_slots_tbl WHERE slot_date = ? AND start_time = ?");
         $dupCheck->execute([$date, $slotStart]);
         if ($dupCheck->fetchColumn() == 0) {
             $newSlotCount++;
@@ -50,13 +50,12 @@ try {
     exit();
 }
 
-// ── Insert slots ──────────────────────────────────────────────────────────────
 try {
     $interval    = 30 * 60;
     $createdCount = 0;
 
-    $stmt      = $pdo->prepare("INSERT INTO interview_slots (slot_date, start_time, end_time, status) VALUES (?, ?, ?, 'Open')");
-    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM interview_slots WHERE slot_date = ? AND start_time = ?");
+    $stmt      = $pdo->prepare("INSERT INTO interview_slots_tbl (slot_date, start_time, end_time, status) VALUES (?, ?, ?, 'Open')");
+    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM interview_slots_tbl WHERE slot_date = ? AND start_time = ?");
 
     for ($curr = $start; $curr + $interval <= $end; $curr += $interval) {
         $slotStart = date('H:i:s', $curr);
@@ -72,6 +71,20 @@ try {
     if ($createdCount === 0) {
         echo json_encode(["status" => "info", "message" => "Slots for this time window already exist or overlap with existing slots."]);
     } else {
+        $friendlyDate = date('D, M j, Y', strtotime($date));
+        $friendlyStart = date('g:i A', $start);
+        $friendlyEnd = date('g:i A', $end);
+
+        log_system_audit(
+            $pdo,
+            $actorId,
+            $actorName,
+            'Slot Creation',
+            'Interview Schedule',
+            "Created {$createdCount} interview slot(s) for {$friendlyDate} ({$friendlyStart} - {$friendlyEnd}).",
+            'Info'
+        );
+
         echo json_encode([
             "status"  => "success",
             "message" => "Successfully created {$createdCount} interview slot(s) (30-min duration each).",

@@ -11,8 +11,6 @@ const ScheduleModal = ({
   availableSlots, 
   scheduleLocation, 
   setScheduleLocation, 
-  scheduleMeetingLink, 
-  setScheduleMeetingLink, 
   scheduleRequirements, 
   setScheduleRequirements 
 }) => {
@@ -53,10 +51,6 @@ const ScheduleModal = ({
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#334155', marginBottom: '8px' }}>Location</label>
             <input type="text" required value={scheduleLocation} onChange={(e) => setScheduleLocation(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box', background: '#f8fafc', color: '#1e293b' }} />
-          </div>
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#334155', marginBottom: '8px' }}>Meeting Link (Optional)</label>
-            <input type="url" placeholder="e.g., https://meet.google.com/..." value={scheduleMeetingLink} onChange={(e) => setScheduleMeetingLink(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box', background: '#f8fafc', color: '#1e293b' }} />
           </div>
           <div style={{ marginBottom: '24px' }}>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#334155', marginBottom: '8px' }}>Requirements to Bring (One per line)</label>

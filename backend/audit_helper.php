@@ -11,7 +11,7 @@ function log_system_audit($pdo, $admin_id, $admin_name, $category, $module, $det
 
         // 1. Guard: Check if the actor is Super Admin in database (is_admin = 3)
         if ($adminIdInt > 0) {
-            $userCheck = $pdo->prepare("SELECT is_admin FROM user WHERE User_ID = ?");
+            $userCheck = $pdo->prepare("SELECT is_admin FROM users_tbl WHERE user_id = ?");
             $userCheck->execute([$adminIdInt]);
             $role = $userCheck->fetchColumn();
             if ($role !== false && intval($role) === 3) {
@@ -32,7 +32,7 @@ function log_system_audit($pdo, $admin_id, $admin_name, $category, $module, $det
         $detailsStr = is_array($details) ? json_encode($details, JSON_UNESCAPED_UNICODE) : (string)$details;
 
         $stmt = $pdo->prepare("
-            INSERT INTO system_audit_logs (admin_id, admin_name, action_category, module, details, ip_address, created_at)
+            INSERT INTO system_audit_logs_tbl (admin_id, admin_name, action_category, module, details, ip_address, created_at)
             VALUES (:admin_id, :admin_name, :category, :module, :details, :ip_address, NOW())
         ");
         $stmt->execute([

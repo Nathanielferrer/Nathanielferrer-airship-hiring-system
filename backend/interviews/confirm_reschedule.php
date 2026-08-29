@@ -1,19 +1,19 @@
 <?php
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require '../libs/PHPMailer/src/Exception.php';
-require '../libs/PHPMailer/src/PHPMailer.php';
-require '../libs/PHPMailer/src/SMTP.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/Exception.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/PHPMailer.php';
+require_once __DIR__ . '/../libs/PHPMailer/src/SMTP.php';
 
 header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-$applicationId = isset($data['application_id']) ? intval($data['application_id']) : 0;
+$applicationId = isset($data['application_id']) ? intval($data['application_id']) : (isset($data['id']) ? intval($data['id']) : 0);
 $actorId       = intval($data['actor_id']  ?? 0);
 $actorName     = trim($data['actor_name']  ?? 'Admin');
 $fixedLocation = '352 T. Pinpin Escolta st. Binondo Manila, 1006';
@@ -24,11 +24,10 @@ if ($applicationId <= 0) {
     exit();
 }
 
-// ─── Helper: in-app notification ─────────────────────────────────────────────
 function insertNotification($pdo, $userId, $appId, $title, $message) {
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO notifications (user_id, application_id, title, message, type, link, is_read)
+            INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read)
             VALUES (:user_id, :app_id, :title, :message, 'interview_scheduled', '/applicant-dashboard', 0)
         ");
         $stmt->execute([
@@ -42,7 +41,6 @@ function insertNotification($pdo, $userId, $appId, $title, $message) {
     }
 }
 
-// ─── Helper: send email ───────────────────────────────────────────────────────
 function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTime, $location) {
     if (empty($toEmail)) return;
     try {
@@ -68,19 +66,19 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
         $timeRange     = $friendlyEnd ? "$friendlyStart - $friendlyEnd" : $friendlyStart;
 
         $mail->isHTML(true);
-        $mail->Subject = 'Interview Reschedule Confirmed - Airship Express';
+        $mail->Subject = 'Rescheduled Interview Confirmed - Airship Express';
         $mail->Body    = "
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;'>
                 <h2 style='color: #e6007e; margin-top: 0;'>Airship Express Hiring Platform</h2>
                 <p style='font-size: 15px; color: #1e293b;'>Dear <strong>" . htmlspecialchars($toName) . "</strong>,</p>
-                <p style='font-size: 14px; color: #475569; line-height: 1.6;'>Your reschedule request has been reviewed and confirmed by our HR team. Your new interview slot is below. Please log in to confirm your attendance.</p>
+                <p style='font-size: 14px; color: #475569; line-height: 1.6;'>Your requested reschedule appointment has been approved and confirmed. Please review the details below:</p>
                 <div style='background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;'>
-                    <p style='margin: 5px 0;'><strong>Date:</strong> $friendlyDate</p>
-                    <p style='margin: 5px 0;'><strong>Time:</strong> $timeRange</p>
+                    <p style='margin: 5px 0;'><strong>New Date:</strong> {$friendlyDate}</p>
+                    <p style='margin: 5px 0;'><strong>Time:</strong> {$timeRange}</p>
                     <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
                 </div>
                 <div style='margin: 24px 0;'>
-                    <a href='http://localhost:5173/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>View &amp; Confirm Interview</a>
+                    <a href='http://localhost:5173/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
                 </div>
                 <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
             </div>
@@ -92,18 +90,17 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
     }
 }
 
-// ─── Main transaction ─────────────────────────────────────────────────────────
 try {
     $pdo->beginTransaction();
 
     // 1. Fetch application + candidate info + requested slot
     $appStmt = $pdo->prepare("
-        SELECT a.id, a.user_id, a.candidate_name, a.candidate_email,
+        SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email,
                a.status, a.reschedule_requested_slot_id,
                u.User_Fname, u.User_Lname, u.User_Email
-        FROM applications a
-        INNER JOIN user u ON a.user_id = u.User_ID
-        WHERE a.id = :app_id
+        FROM applications_tbl a
+        INNER JOIN users_tbl u ON a.user_id = u.user_id
+        WHERE a.application_id = :app_id
     ");
     $appStmt->execute(['app_id' => $applicationId]);
     $app = $appStmt->fetch(PDO::FETCH_ASSOC);
@@ -126,7 +123,7 @@ try {
     }
 
     // 2. Fetch slot details
-    $slotStmt = $pdo->prepare("SELECT slot_date, start_time, end_time, status FROM interview_slots WHERE slot_id = :slot_id");
+    $slotStmt = $pdo->prepare("SELECT slot_date, start_time, end_time, status FROM interview_slots_tbl WHERE slot_id = :slot_id");
     $slotStmt->execute(['slot_id' => $slotId]);
     $slot = $slotStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -145,27 +142,27 @@ try {
     $endTime   = $slot['end_time'] ?? '';
 
     // 3. Book the slot
-    $bookStmt = $pdo->prepare("UPDATE interview_slots SET status = 'Booked', applicant_id = :app_id WHERE slot_id = :slot_id");
+    $bookStmt = $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Booked', application_id = :app_id WHERE slot_id = :slot_id");
     $bookStmt->execute(['app_id' => $applicationId, 'slot_id' => $slotId]);
 
     // 4. Update application: PENDING SCHEDULED, clear reschedule fields
     $updateApp = $pdo->prepare("
-        UPDATE applications
+        UPDATE applications_tbl
         SET status = 'PENDING SCHEDULED',
             reschedule_reason = NULL,
             reschedule_requested_slot_id = NULL
-        WHERE id = :id
+        WHERE application_id = :id
     ");
     $updateApp->execute(['id' => $applicationId]);
 
-    // 5. Insert or update interviews table
-    $checkInt = $pdo->prepare("SELECT COUNT(*) FROM interviews WHERE application_id = :app_id");
+    // 5. Insert or update interviews_tbl
+    $checkInt = $pdo->prepare("SELECT COUNT(*) FROM interviews_tbl WHERE application_id = :app_id");
     $checkInt->execute(['app_id' => $applicationId]);
 
     if ($checkInt->fetchColumn() == 0) {
         $insertInt = $pdo->prepare("
-            INSERT INTO interviews (application_id, scheduled_date, scheduled_time, location, meeting_link, requirements)
-            VALUES (:app_id, :date, :time, :location, '', :req)
+            INSERT INTO interviews_tbl (application_id, scheduled_date, scheduled_time, location, requirements)
+            VALUES (:app_id, :date, :time, :location, :req)
         ");
         $insertInt->execute([
             'app_id'   => $applicationId,
@@ -176,8 +173,7 @@ try {
         ]);
     } else {
         $updateInt = $pdo->prepare("
-            UPDATE interviews
-            SET scheduled_date = :date, scheduled_time = :time, location = :location, meeting_link = ''
+            UPDATE interviews_tbl SET scheduled_date = :date, scheduled_time = :time, location = :location
             WHERE application_id = :app_id
         ");
         $updateInt->execute([
@@ -188,44 +184,42 @@ try {
         ]);
     }
 
-    // 6. Build friendly strings
+    // 6. Send in-app notification
     $friendlyDate  = date('D, M j, Y', strtotime($date));
     $friendlyStart = date('g:i A', strtotime($startTime));
     $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
-    $friendlyTime  = $friendlyEnd ? "$friendlyStart - $friendlyEnd" : $friendlyStart;
-    $candidateName = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
-    $userId        = intval($app['user_id']);
+    $friendlyTime  = $friendlyEnd ? "{$friendlyStart} - {$friendlyEnd}" : $friendlyStart;
 
-    // 7. In-app notification
     insertNotification(
         $pdo,
-        $userId,
+        $app['user_id'],
         $applicationId,
-        'Reschedule Confirmed – Action Required',
-        "Your reschedule request has been approved. New interview: {$friendlyDate} ({$friendlyTime}) at {$fixedLocation}. Please log in to confirm your attendance."
+        'Reschedule Request Approved',
+        "Your rescheduled interview has been approved for {$friendlyDate} at {$friendlyTime}. Please log in to confirm your attendance."
     );
+
+    // 7. Send email notification
+    $toEmail = $app['candidate_email'] ?: $app['User_Email'];
+    $toName  = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
+    sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTime, $fixedLocation);
 
     $pdo->commit();
 
     // 8. Audit log
-    require_once '../audit_helper.php';
+    require_once __DIR__ . '/../audit_helper.php';
     log_system_audit(
         $pdo,
         $actorId,
         $actorName,
-        'Interview Scheduling',
-        'Interview Module',
-        "Confirmed reschedule request for candidate '{$candidateName}' (App ID #{$applicationId}) on {$friendlyDate} ({$friendlyTime}) at {$fixedLocation}.",
+        'Interview Reschedule',
+        'Screening Module',
+        "Confirmed reschedule request for candidate \"{$toName}\" (App ID #{$applicationId}) to {$friendlyDate} at {$friendlyTime}.",
         'Info'
     );
 
-    // 9. Email notification (after commit, non-blocking)
-    $toEmail = $app['candidate_email'] ?: $app['User_Email'];
-    sendConfirmRescheduleEmail($toEmail, $candidateName, $date, $startTime, $endTime, $fixedLocation);
-
     echo json_encode([
         'status'  => 'success',
-        'message' => "Reschedule confirmed for {$candidateName}. Candidate moved to PENDING SCHEDULED."
+        'message' => "Reschedule confirmed for {$friendlyDate} at {$friendlyTime}. Candidate notified."
     ]);
 
 } catch (Exception $e) {
@@ -233,9 +227,6 @@ try {
         $pdo->rollBack();
     }
     http_response_code(500);
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'Confirm reschedule failed: ' . $e->getMessage()
-    ]);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>

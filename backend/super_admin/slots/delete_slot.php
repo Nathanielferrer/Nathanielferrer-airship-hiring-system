@@ -13,11 +13,11 @@ if (!$slot_id) {
 }
 
 try {
-    $slotStmt = $pdo->prepare("SELECT slot_date, start_time, end_time FROM interview_slots WHERE slot_id = ?");
+    $slotStmt = $pdo->prepare("SELECT slot_date, start_time, end_time FROM interview_slots_tbl WHERE slot_id = ?");
     $slotStmt->execute([$slot_id]);
     $slotData = $slotStmt->fetch(PDO::FETCH_ASSOC);
 
-    $stmt = $pdo->prepare("DELETE FROM interview_slots WHERE slot_id = ? AND status = 'Open'");
+    $stmt = $pdo->prepare("DELETE FROM interview_slots_tbl WHERE slot_id = ? AND status = 'Open'");
     $stmt->execute([$slot_id]);
 
     echo json_encode(["status" => "success", "message" => "Slot deleted successfully."]);

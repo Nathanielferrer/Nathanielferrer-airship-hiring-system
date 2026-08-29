@@ -23,6 +23,7 @@ const ApplicationStatus = () => {
     handleNotificationClick,
     handleClearReadNotifications,
     handleScheduleResponse,
+    handleWithdrawApplication,
     handleLogout,
     confirmModalState,
     closeConfirmModal,
@@ -95,6 +96,7 @@ const ApplicationStatus = () => {
               scheduleActionLoading={scheduleActionLoading}
               scheduleActionFeedback={scheduleActionFeedback}
               onScheduleResponse={handleScheduleResponseWithToast}
+              onWithdrawApplication={handleWithdrawApplication}
             />
           </div>
         </div>

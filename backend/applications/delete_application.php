@@ -8,7 +8,7 @@ header('Content-Type: application/json');
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-$id = isset($data['id']) ? intval($data['id']) : 0;
+$id = isset($data['id']) ? intval($data['id']) : (isset($data['application_id']) ? intval($data['application_id']) : 0);
 
 if ($id <= 0) {
     http_response_code(400);
@@ -21,7 +21,7 @@ if ($id <= 0) {
 
 try {
     // 1. Retrieve resume file path before deleting
-    $stmt = $pdo->prepare("SELECT resume_path FROM applications WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT resume_path FROM applications_tbl WHERE application_id = :id");
     $stmt->execute(['id' => $id]);
     $app = $stmt->fetch();
 
@@ -38,13 +38,12 @@ try {
     $filePath = '../' . $app['resume_path'];
     if (!empty($filePath) && file_exists($filePath)) {
         if (!unlink($filePath)) {
-            // Log warning but proceed with database record deletion
             error_log("Warning: Failed to delete resume file at: " . $filePath);
         }
     }
 
     // 3. Remove database row
-    $deleteStmt = $pdo->prepare("DELETE FROM applications WHERE id = :id");
+    $deleteStmt = $pdo->prepare("DELETE FROM applications_tbl WHERE application_id = :id");
     $deleteStmt->execute(['id' => $id]);
 
     echo json_encode([
@@ -66,3 +65,4 @@ try {
         "message" => "Failed to delete record: " . $e->getMessage()
     ]);
 }
+?>

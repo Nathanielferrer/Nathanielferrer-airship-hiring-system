@@ -2,8 +2,7 @@
 // Gated Secure Resume Download / Viewing Endpoint
 require_once '../db.php';
 
-// Extract requested application ID or user request
-$appId  = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$appId  = isset($_GET['id']) ? intval($_GET['id']) : (isset($_GET['application_id']) ? intval($_GET['application_id']) : 0);
 $userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 
 if ($appId <= 0) {
@@ -15,7 +14,7 @@ if ($appId <= 0) {
 
 try {
     // 1. Fetch application record
-    $stmt = $pdo->prepare("SELECT id, user_id, candidate_name, resume_path FROM applications WHERE id = :id LIMIT 1");
+    $stmt = $pdo->prepare("SELECT application_id, user_id, candidate_name, resume_path FROM applications_tbl WHERE application_id = :id LIMIT 1");
     $stmt->execute(['id' => $appId]);
     $app = $stmt->fetch();
 
@@ -27,26 +26,21 @@ try {
     }
 
     // 2. Security Check: Authorization
-    // Verify requester has permission to view this resume (Admin, Super Admin, or File Owner)
     $isAuthorized = false;
 
     if ($userId > 0) {
-        $userStmt = $pdo->prepare("SELECT is_admin FROM user WHERE User_ID = :user_id LIMIT 1");
+        $userStmt = $pdo->prepare("SELECT is_admin FROM users_tbl WHERE user_id = :user_id LIMIT 1");
         $userStmt->execute(['user_id' => $userId]);
         $user = $userStmt->fetch();
 
         if ($user) {
-            // Admins (1) and Super Admins (3) can view any resume
             if ((int)$user['is_admin'] === 1 || (int)$user['is_admin'] === 3) {
                 $isAuthorized = true;
-            }
-            // Candidate can view their own resume
-            else if ((int)$app['user_id'] === $userId) {
+            } else if ((int)$app['user_id'] === $userId) {
                 $isAuthorized = true;
             }
         }
     } else {
-        // Fallback: Default to authorized if called in admin session context
         $isAuthorized = true;
     }
 
@@ -57,17 +51,13 @@ try {
         exit();
     }
 
-    // 3. Resolve absolute file path safely on disk (prevent directory traversal)
+    // 3. Resolve absolute file path safely on disk
     $relativePath = $app['resume_path'];
-    
-    // Normalize path separator
     $relativePath = str_replace('\\', '/', $relativePath);
     
-    // Base uploads / private directory path
     $baseDir = realpath(__DIR__ . '/../');
     $fullPath = realpath($baseDir . '/' . $relativePath);
 
-    // Ensure target path exists and remains inside backend directory (prevents ../ traversal attacks)
     if (!$fullPath || !file_exists($fullPath) || strpos($fullPath, $baseDir) !== 0) {
         http_response_code(404);
         header('Content-Type: application/json');
@@ -84,7 +74,6 @@ try {
     header('Cache-Control: private, max-age=3600, must-revalidate');
     header('Pragma: public');
 
-    // Clean output buffer before streaming binary
     if (ob_get_level()) {
         ob_end_clean();
     }
@@ -98,3 +87,4 @@ try {
     echo json_encode(["status" => "error", "message" => "Database error: " . $e->getMessage()]);
     exit();
 }
+?>

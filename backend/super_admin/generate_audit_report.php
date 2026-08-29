@@ -136,13 +136,13 @@ try {
 
     $whereClause = implode(" AND ", $where);
 
-    $sql = "SELECT sal.id, sal.admin_id, 
+    $sql = "SELECT sal.log_id AS id, sal.log_id, sal.admin_id, 
                    COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) AS admin_name,
                    sal.action_category, sal.module, sal.details, sal.ip_address, sal.created_at
-            FROM system_audit_logs sal
-            LEFT JOIN user u ON sal.admin_id = u.User_ID
+            FROM system_audit_logs_tbl sal
+            LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
             WHERE {$whereClause}
-            ORDER BY sal.id DESC";
+            ORDER BY sal.log_id DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

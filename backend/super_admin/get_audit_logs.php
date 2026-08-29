@@ -22,7 +22,7 @@ try {
     ];
     $params = [];
 
-    // Date Filtering: Range takes precedence, then single date, then preset range
+    // Date Filtering
     if (!empty($start_date) && !empty($end_date)) {
         $where[] = "DATE(sal.created_at) >= :start_date AND DATE(sal.created_at) <= :end_date";
         $params['start_date'] = $start_date;
@@ -44,7 +44,7 @@ try {
         $where[] = "sal.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     }
 
-    // Admin Filter — match against live user name or snapshot name
+    // Admin Filter
     if (!empty($admin_filter) && $admin_filter !== 'All' && $admin_filter !== '') {
         $where[] = "(COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) = :admin_filter OR sal.admin_name = :admin_filter)";
         $params['admin_filter'] = $admin_filter;
@@ -56,31 +56,29 @@ try {
         $params['category_filter'] = $category_filter;
     }
 
-    // Search Query (across Administrator, Category, or Description Details)
+    // Search Query
     if (!empty($search_query)) {
-        $where[] = "(COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) LIKE :search1 OR sal.action_category LIKE :search2 OR sal.details LIKE :search3)";
-        $params['search1'] = "%{$search_query}%";
-        $params['search2'] = "%{$search_query}%";
-        $params['search3'] = "%{$search_query}%";
+        $where[] = "(sal.admin_name LIKE :search OR sal.action_category LIKE :search OR sal.details LIKE :search)";
+        $params['search'] = "%{$search_query}%";
     }
 
     $whereClause = implode(" AND ", $where);
 
     // Total Records Count
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM system_audit_logs sal LEFT JOIN user u ON sal.admin_id = u.User_ID WHERE {$whereClause}");
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM system_audit_logs_tbl sal LEFT JOIN users_tbl u ON sal.admin_id = u.user_id WHERE {$whereClause}");
     $countStmt->execute($params);
     $totalRecords = (int)$countStmt->fetchColumn();
 
     $totalPages = max(1, ceil($totalRecords / $limit));
 
-    // Fetch Records — dynamically resolving current admin name from user table
-    $sql = "SELECT sal.id, sal.admin_id, 
+    // Fetch Records
+    $sql = "SELECT sal.log_id AS id, sal.log_id, sal.admin_id, 
                    COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) AS admin_name,
                    sal.action_category, sal.details, sal.ip_address, sal.created_at
-            FROM system_audit_logs sal
-            LEFT JOIN user u ON sal.admin_id = u.User_ID
+            FROM system_audit_logs_tbl sal
+            LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
             WHERE {$whereClause}
-            ORDER BY sal.id DESC
+            ORDER BY sal.log_id DESC
             LIMIT :limit OFFSET :offset";
     
     $stmt = $pdo->prepare($sql);
@@ -93,11 +91,11 @@ try {
 
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Fetch distinct filter options for Admin-only administrators (strictly excluding Super Admin)
+    // Fetch distinct filter options
     $adminsList = $pdo->query("
         SELECT DISTINCT COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) AS admin_name 
-        FROM system_audit_logs sal
-        LEFT JOIN user u ON sal.admin_id = u.User_ID
+        FROM system_audit_logs_tbl sal
+        LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
         WHERE sal.admin_name NOT LIKE '%Super Admin%'
           AND (u.is_admin IS NULL OR u.is_admin = 1)
           AND COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) != ''
@@ -106,8 +104,8 @@ try {
 
     $categoriesList = $pdo->query("
         SELECT DISTINCT sal.action_category 
-        FROM system_audit_logs sal
-        LEFT JOIN user u ON sal.admin_id = u.User_ID
+        FROM system_audit_logs_tbl sal
+        LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
         WHERE sal.admin_name NOT LIKE '%Super Admin%'
           AND (u.is_admin IS NULL OR u.is_admin = 1)
           AND sal.action_category != ''

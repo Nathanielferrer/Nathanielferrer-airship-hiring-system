@@ -8,13 +8,13 @@ try {
     $activeOnly = isset($_GET['active_only']) && $_GET['active_only'] === 'true';
 
     // Auto-close any job with 0 or less open slots
-    $pdo->exec("UPDATE jobs SET status = 'Closed' WHERE availability <= 0");
+    $pdo->exec("UPDATE jobs_tbl SET status = 'Closed' WHERE availability <= 0");
 
-    $query = "SELECT id, title, description, requirements, availability, status, image_path FROM jobs";
+    $query = "SELECT job_id AS id, job_id, title, description, requirements, availability, status, image_path FROM jobs_tbl";
     if ($activeOnly) {
         $query .= " WHERE status = 'Active' AND availability > 0";
     }
-    $query .= " ORDER BY id ASC";
+    $query .= " ORDER BY job_id ASC";
 
     $stmt = $pdo->query($query);
     $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -30,3 +30,4 @@ try {
         "message" => "Database query failed: " . $e->getMessage()
     ]);
 }
+?>

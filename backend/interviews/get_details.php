@@ -1,8 +1,8 @@
 <?php
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 header('Content-Type: application/json');
 
-$applicationId = isset($_GET['application_id']) ? intval($_GET['application_id']) : 0;
+$applicationId = isset($_GET['application_id']) ? intval($_GET['application_id']) : (isset($_GET['id']) ? intval($_GET['id']) : 0);
 $userId        = isset($_GET['user_id'])        ? intval($_GET['user_id'])        : 0;
 
 if ($applicationId <= 0 || $userId <= 0) {
@@ -13,7 +13,7 @@ if ($applicationId <= 0 || $userId <= 0) {
 
 try {
     // Security check: verify this application belongs to the requesting user
-    $appStmt = $pdo->prepare("SELECT id, status FROM applications WHERE id = :app_id AND user_id = :user_id");
+    $appStmt = $pdo->prepare("SELECT application_id, status FROM applications_tbl WHERE application_id = :app_id AND user_id = :user_id");
     $appStmt->execute(['app_id' => $applicationId, 'user_id' => $userId]);
     $app = $appStmt->fetch();
 
@@ -25,10 +25,10 @@ try {
 
     $stmt = $pdo->prepare("
         SELECT i.*, COALESCE(slot.end_time, '') as end_time 
-        FROM interviews i
-        LEFT JOIN interview_slots slot ON (slot.applicant_id = i.application_id AND slot.status = 'Booked')
+        FROM interviews_tbl i
+        LEFT JOIN interview_slots_tbl slot ON (slot.application_id = i.application_id AND slot.status = 'Booked')
         WHERE i.application_id = :app_id 
-        ORDER BY i.id DESC LIMIT 1
+        ORDER BY i.interview_id DESC LIMIT 1
     ");
     $stmt->execute(['app_id' => $applicationId]);
     $interview = $stmt->fetch();

@@ -20,6 +20,13 @@ const STATUS_CONFIG = {
   'Passed Final Approval':    { bg: '#ecfdf5', color: '#047857',  label: 'Officially Hired'                   },
   'PASSED FINAL APPROVAL':    { bg: '#ecfdf5', color: '#047857',  label: 'Officially Hired'                   },
   'HIRED':                    { bg: '#ecfdf5', color: '#047857',  label: 'Officially Hired'                   },
+  'Requirements Verified':    { bg: '#dcfce7', color: '#15803d',  label: 'Requirements Verified'             },
+  'REQUIREMENTS_VERIFIED':    { bg: '#dcfce7', color: '#15803d',  label: 'Requirements Verified'             },
+  'Contract Signing Scheduled': { bg: '#dcfce7', color: '#15803d', label: 'Contract Signing Scheduled'       },
+  'CONTRACT_SIGNING_SCHEDULED': { bg: '#dcfce7', color: '#15803d', label: 'Contract Signing Scheduled'       },
+  'Contract Signed & Onboarded': { bg: '#ecfdf5', color: '#047857', label: 'Officially Hired & Onboarded'    },
+  'CONTRACT_SIGNED_AND_ONBOARDED': { bg: '#ecfdf5', color: '#047857', label: 'Officially Hired & Onboarded'  },
+  'Officially Hired & Signed': { bg: '#ecfdf5', color: '#047857', label: 'Officially Hired & Onboarded'      },
   'Failed Final Interview':   { bg: '#fee2e2', color: '#b91c1c',  label: 'Interview Not Passed'               },
   'FAILED FINAL INTERVIEW':   { bg: '#fee2e2', color: '#b91c1c',  label: 'Interview Not Passed'               },
   'Failed Final Approval':    { bg: '#f1f5f9', color: '#334155',  label: 'Not Selected (Executive Review)'   },
@@ -53,6 +60,7 @@ const ApplicationCard = ({
   scheduleActionLoading,
   scheduleActionFeedback,
   onScheduleResponse,
+  onWithdrawApplication,
 }) => {
   const badge     = STATUS_CONFIG[app.status] || { bg: '#f1f5f9', color: '#475569', label: app.status };
   const details   = interviewDetails[app.id];
@@ -68,6 +76,9 @@ const ApplicationCard = ({
   const isRescheduling             = normStatus === 'RESCHEDULING';
   const isPassedFinalInterview     = ['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'].includes(normStatus);
   const isHired                    = ['HIRED', 'PASSED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED / PASSED'].includes(normStatus);
+  const isReqVerified              = ['REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED'].includes(normStatus);
+  const isContractScheduled        = ['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'].includes(normStatus);
+  const isContractSigned           = ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED'].includes(normStatus);
   const isScreeningRejected        = ['REJECTED', 'SCREENING_REJECTED'].includes(normStatus);
   const isInterviewFailed          = ['INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED'].includes(normStatus);
   const isFailedFinalApproval      = ['FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL'].includes(normStatus);
@@ -401,12 +412,105 @@ const ApplicationCard = ({
         </div>
       )}
 
-      {/* ── HIRED: Pre-Employment Requirements & Onboarding Panel (Clean Professional List) ── */}
-      {isHired && (() => {
+      {/* ── CONTRACT SIGNED & ONBOARDED: Official Welcome Banner ── */}
+      {isContractSigned && (
+        <div className="app-card__hired-panel" style={{ borderLeft: '4px solid #059669', background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)' }}>
+          <div className="app-card__hired-headline">
+            <i className="bx bx-check-double app-card__hired-badge-icon" style={{ background: '#dcfce7', color: '#059669' }} />
+            <h4 className="app-card__hired-title" style={{ color: '#065f46' }}>Welcome to Airship Express! Employment Contract Executed</h4>
+          </div>
+          <p className="app-card__hired-welcome" style={{ color: '#334155', lineHeight: 1.6 }}>
+            Congratulations <strong>{candidateName}</strong>! Your employment contract for <strong>{app.job_title || 'Position'}</strong> has been signed, and you are officially hired. Your new hire training will begin the following next week. Welcome aboard!
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px', background: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', marginTop: '14px' }}>
+            <i className="bx bx-party" style={{ fontSize: '18px', color: '#059669' }} />
+            <span style={{ fontSize: '12.5px', color: '#065f46', fontWeight: '600' }}>
+              Your training will begin the following next week. Your HR onboarding coordinator will provide your first-day reporting instructions and orientation schedule.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── CONTRACT SIGNING SCHEDULED: Dedicated Appointment Card ── */}
+      {isContractScheduled && !isContractSigned && (() => {
+        const dateObj = app.contract_signing_date ? new Date(app.contract_signing_date + 'T00:00:00') : null;
+        const formattedSigningDate = dateObj ? dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'Scheduled Date Pending';
+        const signingTime = app.contract_signing_time || '—';
+        const signingLocation = app.contract_signing_location || 'Airship Express Main Office - HR Department (352 T. Pinpin Escolta St., Binondo, Manila)';
+        const signingNotes = app.contract_signing_notes || '';
+
+        return (
+          <div className="app-card__hired-panel" style={{ borderLeft: '4px solid #059669', background: 'linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)' }}>
+            <div className="app-card__hired-headline">
+              <i className="bx bx-calendar-check app-card__hired-badge-icon" style={{ background: '#dcfce7', color: '#059669' }} />
+              <h4 className="app-card__hired-title" style={{ color: '#065f46' }}>Employment Contract Signing &amp; Onboarding Orientation</h4>
+            </div>
+            <p className="app-card__hired-welcome" style={{ color: '#334155' }}>
+              All your pre-employment documents have been verified. You are scheduled to execute your official employment contract for <strong>{app.job_title || 'Position'}</strong>.
+            </p>
+
+            {/* Appointment Details Grid */}
+            <div style={{ background: '#ffffff', border: '1.5px solid #a7f3d0', borderRadius: '10px', padding: '16px', margin: '16px 0', boxShadow: '0 2px 8px rgba(16, 185, 129, 0.05)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <i className="bx bx-calendar" style={{ fontSize: '18px', color: '#059669', marginTop: '2px' }} />
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Date</span>
+                    <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>{formattedSigningDate}</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <i className="bx bx-time" style={{ fontSize: '18px', color: '#059669', marginTop: '2px' }} />
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Time</span>
+                    <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>{signingTime}</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', gridColumn: '1 / -1' }}>
+                  <i className="bx bx-map-pin" style={{ fontSize: '18px', color: '#059669', marginTop: '2px' }} />
+                  <div>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Venue / Location</span>
+                    <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>{signingLocation}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {signingNotes && (
+                <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #d1fae5' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: '#065f46', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                    Instructions &amp; What to Bring:
+                  </span>
+                  <p style={{ margin: 0, fontSize: '12.5px', color: '#475569', lineHeight: 1.5 }}>
+                    {signingNotes}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── REQUIREMENTS VERIFIED: Next Contract Signing Notice ── */}
+      {isReqVerified && !isContractScheduled && !isContractSigned && (
+        <div className="app-card__hired-panel" style={{ borderLeft: '4px solid #10b981', background: 'linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%)' }}>
+          <div className="app-card__hired-headline">
+            <i className="bx bx-check-circle app-card__hired-badge-icon" style={{ background: '#d1fae5', color: '#059669' }} />
+            <h4 className="app-card__hired-title" style={{ color: '#065f46' }}>Physical Pre-Employment Requirements Verified</h4>
+          </div>
+          <p className="app-card__hired-welcome" style={{ color: '#334155', lineHeight: 1.6 }}>
+            All your mandatory pre-employment physical documents have been submitted and verified by HR. 
+            Our recruitment team is currently preparing your employment contract and will notify you with your official contract signing schedule shortly.
+          </p>
+        </div>
+      )}
+
+      {/* ── HIRED: Pre-Employment Requirements & Onboarding Panel (Merged Clean Layout) ── */}
+      {isHired && !isReqVerified && !isContractScheduled && !isContractSigned && (() => {
         const baseDate = app.updated_at || app.applied_at || new Date().toISOString();
         const dObj = new Date(baseDate);
         const deadlineObj = new Date(dObj.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const decisionDateFormatted = dObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
         const deadlineDateFormatted = deadlineObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
         return (
@@ -421,24 +525,18 @@ const ApplicationCard = ({
               </p>
             </div>
 
-            {/* Submission Deadline Banner */}
-            <div className="app-card__hired-deadline-banner">
-              <div className="app-card__hired-deadline-icon">
-                <i className="bx bx-calendar-event" />
-              </div>
-              <div className="app-card__hired-deadline-content">
-                <p className="app-card__hired-deadline-title">Pre-Employment Requirements Submission Deadline</p>
-                <p className="app-card__hired-deadline-target">
-                  <strong>{deadlineDateFormatted}</strong> (Within 7 Calendar Days)
-                </p>
-                <p className="app-card__hired-deadline-note">
-                  Since your hiring was confirmed on {decisionDateFormatted}, please bring and submit all physical documents listed below to the HR Department on or before next week ({deadlineDateFormatted}).
-                </p>
-              </div>
-            </div>
-
-            {/* Clean Numbered List of Requirements (No Box Tables) */}
+            {/* Merged Single Container: Prominent Deadline Header + Requirements Checklist */}
             <div className="app-card__requirements-list-container">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0', marginBottom: '14px' }}>
+                <div>
+                  <span style={{ fontSize: '11px', fontWeight: '800', color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block' }}>Submission Deadline</span>
+                  <strong style={{ fontSize: '15px', color: '#0f172a' }}>{deadlineDateFormatted}</strong>
+                </div>
+                <span style={{ fontSize: '11.5px', fontWeight: '700', background: '#dcfce7', color: '#15803d', padding: '3px 10px', borderRadius: '12px' }}>
+                  Within 7 Calendar Days
+                </span>
+              </div>
+
               <p className="app-card__requirements-list-heading">
                 Mandatory Pre-Employment Document Checklist:
               </p>
@@ -468,12 +566,49 @@ const ApplicationCard = ({
             <div className="app-card__hired-footer-note">
               <i className="bx bx-info-circle" style={{ fontSize: '18px', color: '#047857', flexShrink: 0 }} />
               <span>
-                Please submit all physical documents directly to our HR Main Office during business hours. For any inquiries regarding documentation, our recruitment team is ready to assist.
+                Please submit all physical documents directly to our HR Main Office during business hours on or before your deadline.
               </span>
             </div>
           </div>
         );
       })()}
+
+      {/* ── Active Application Withdrawal Option (Excluded once Contract is Signed or Concluded) ── */}
+      {!['REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'].includes(normStatus) && onWithdrawApplication && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          marginTop: '16px',
+          paddingTop: '12px',
+          borderTop: '1px solid #f1f5f9'
+        }}>
+          <button
+            type="button"
+            onClick={() => onWithdrawApplication(app.id, app.job_title)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#94a3b8',
+              fontSize: '12px',
+              fontWeight: '600',
+              fontFamily: "'Inter', sans-serif",
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              transition: 'color 0.2s ease',
+              padding: '4px 8px',
+              borderRadius: '6px'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.color = '#ef4444'; }}
+            onMouseOut={(e) => { e.currentTarget.style.color = '#94a3b8'; }}
+            title="Cancel and withdraw your application for this position"
+          >
+            <i className="bx bx-trash" style={{ fontSize: '14px' }} />
+            <span>Cancel / Withdraw Application</span>
+          </button>
+        </div>
+      )}
 
       {/* ── Reschedule Modal (portal) ── */}
       <RescheduleModal

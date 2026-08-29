@@ -136,7 +136,8 @@ const MasterListTab = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="">All Statuses</option>
-              <option value="hired">Passed Final Approval / Hired</option>
+              <option value="hired">Officially Hired / Passed Final Approval</option>
+              <option value="contract_signing">Contract Signing & Onboarding</option>
               <option value="passed_final_interview">Passed Final Interview (Awaiting President)</option>
               <option value="withdrawn">Candidate Withdrew</option>
               <option value="incomplete_requirements">Incomplete Requirements</option>
@@ -178,10 +179,9 @@ const MasterListTab = () => {
                 color: '#ef4444',
                 cursor: 'pointer'
               }}
-              onClick={() => { setSelectedDate(''); setStatusFilter(''); setMasterSearch(''); }}
-              title="Clear Filters"
+              onClick={() => { setMasterSearch(''); setStatusFilter(''); setSelectedDate(''); }}
             >
-              ✕ Clear
+              Clear Filters
             </button>
           )}
         </div>
@@ -189,15 +189,22 @@ const MasterListTab = () => {
 
       <div className="admin-table-card">
         {loadingMasterList ? (
-          <div className="admin-loading">Loading application audit records...</div>
+          <div className="admin-loading">Loading audit records...</div>
+        ) : masterList.length === 0 ? (
+          <div className="admin-empty-state" style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            <i className='bx bx-history' style={{ fontSize: '40px', display: 'block', marginBottom: '10px' }}></i>
+            <h3>No Application Records Found</h3>
+            <p>No historical application data matches the selected filters.</p>
+          </div>
         ) : (
-          <>
+          <div className="admin-table-responsive">
             <table className="admin-table">
               <thead>
                 <tr>
                   <th>Candidate Name</th>
                   <th>Applied Position</th>
-                  <th>Submission Date</th>
+                  <th>Application Date</th>
+                  <th>Decision / Updated Date</th>
                   <th>Lifecycle Status</th>
                 </tr>
               </thead>
@@ -209,11 +216,26 @@ const MasterListTab = () => {
                   let statusText = app.status ? app.status.toUpperCase() : 'PENDING';
                   let statusLabel = statusText;
 
-                  if (statusText === 'HIRED' || statusText === 'PASSED FINAL APPROVAL' || statusText === 'PASSED_FINAL_APPROVAL' || statusText === 'PASSED' || statusText === 'HIRED / PASSED') {
+                  if (statusText === 'CONTRACT SIGNED & ONBOARDED' || statusText === 'CONTRACT_SIGNED_AND_ONBOARDED' || statusText === 'OFFICIALLY HIRED & SIGNED' || statusText === 'OFFICIALLY HIRED') {
                     badgeColor = '#047857';
                     badgeBg = '#d1fae5';
                     badgeBorder = '#a7f3d0';
-                    statusLabel = 'PASSED FINAL APPROVAL (HIRED)';
+                    statusLabel = 'OFFICIALLY HIRED';
+                  } else if (statusText === 'CONTRACT SIGNING SCHEDULED' || statusText === 'CONTRACT_SIGNING_SCHEDULED') {
+                    badgeColor = '#0369a1';
+                    badgeBg = '#e0f2fe';
+                    badgeBorder = '#bae6fd';
+                    statusLabel = 'CONTRACT SIGNING SCHEDULED';
+                  } else if (statusText === 'REQUIREMENTS VERIFIED' || statusText === 'REQUIREMENTS_VERIFIED') {
+                    badgeColor = '#15803d';
+                    badgeBg = '#dcfce7';
+                    badgeBorder = '#bbf7d0';
+                    statusLabel = 'REQUIREMENTS VERIFIED';
+                  } else if (statusText === 'HIRED' || statusText === 'PASSED FINAL APPROVAL' || statusText === 'PASSED_FINAL_APPROVAL' || statusText === 'PASSED' || statusText === 'HIRED / PASSED') {
+                    badgeColor = '#047857';
+                    badgeBg = '#d1fae5';
+                    badgeBorder = '#a7f3d0';
+                    statusLabel = 'OFFICIALLY HIRED';
                   } else if (statusText === 'PASSED FINAL INTERVIEW' || statusText === 'PASSED_FINAL_INTERVIEW') {
                     badgeColor = '#047857';
                     badgeBg = '#d1fae5';
@@ -299,7 +321,21 @@ const MasterListTab = () => {
                         </div>
                       </td>
                       <td><strong>{app.job_title}</strong></td>
-                      <td>{new Date(app.applied_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+                      <td>{app.applied_at ? new Date(app.applied_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : '—'}</td>
+                      <td>
+                        {app.updated_at ? (
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: '600', color: '#0f172a', fontSize: '13px' }}>
+                              {new Date(app.updated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>
+                              {new Date(app.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#94a3b8' }}>—</span>
+                        )}
+                      </td>
                       <td>
                         <span style={{
                           display: 'inline-block',
@@ -321,7 +357,7 @@ const MasterListTab = () => {
                 })}
                 {masterList.length === 0 && (
                   <tr>
-                    <td colSpan="4" style={{textAlign:'center', padding:'30px', color: '#64748b'}}>No application records found matching the specified filters.</td>
+                    <td colSpan="5" style={{textAlign:'center', padding:'30px', color: '#64748b'}}>No application records found matching the specified filters.</td>
                   </tr>
                 )}
               </tbody>
@@ -349,7 +385,7 @@ const MasterListTab = () => {
                 </button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </>

@@ -1,11 +1,11 @@
 <?php
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-$applicationId = isset($data['application_id']) ? intval($data['application_id']) : 0;
+$applicationId = isset($data['application_id']) ? intval($data['application_id']) : (isset($data['id']) ? intval($data['id']) : 0);
 $userId        = isset($data['user_id'])        ? intval($data['user_id'])        : 0;
 $action        = isset($data['action'])         ? trim($data['action'])           : ''; // 'confirm' or 'reschedule'
 
@@ -17,7 +17,7 @@ if ($applicationId <= 0 || $userId <= 0 || !in_array($action, ['confirm', 'resch
 
 try {
     // Security: verify ownership
-    $appStmt = $pdo->prepare("SELECT id, status FROM applications WHERE id = :app_id AND user_id = :user_id");
+    $appStmt = $pdo->prepare("SELECT application_id, status FROM applications_tbl WHERE application_id = :app_id AND user_id = :user_id");
     $appStmt->execute(['app_id' => $applicationId, 'user_id' => $userId]);
     $app = $appStmt->fetch();
 
@@ -34,10 +34,7 @@ try {
 
     if ($action === 'confirm') {
         // Mark as CONFIRMED
-        $pdo->prepare("UPDATE applications SET status = 'CONFIRMED' WHERE id = :id")->execute(['id' => $applicationId]);
-
-        // Insert admin notification (optional – notify admin that candidate confirmed)
-        // For now just update application status
+        $pdo->prepare("UPDATE applications_tbl SET status = 'CONFIRMED' WHERE application_id = :id")->execute(['id' => $applicationId]);
 
         echo json_encode([
             "status"  => "success",
@@ -51,7 +48,7 @@ try {
             : (isset($data['requested_slot_id']) && intval($data['requested_slot_id']) > 0 ? intval($data['requested_slot_id']) : null);
 
         // Mark as RESCHEDULING and store reason & requested slot
-        $stmt = $pdo->prepare("UPDATE applications SET status = 'RESCHEDULING', reschedule_reason = :reason, reschedule_requested_slot_id = :slot_id WHERE id = :id");
+        $stmt = $pdo->prepare("UPDATE applications_tbl SET status = 'RESCHEDULING', reschedule_reason = :reason, reschedule_requested_slot_id = :slot_id WHERE application_id = :id");
         $stmt->execute([
             'reason' => $reason,
             'slot_id' => $slotId,
@@ -59,11 +56,11 @@ try {
         ]);
 
         // Free the previous slot
-        $pdo->prepare("UPDATE interview_slots SET status = 'Open', applicant_id = NULL WHERE applicant_id = :app_id")->execute(['app_id' => $applicationId]);
+        $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Open', application_id = NULL WHERE application_id = :app_id")->execute(['app_id' => $applicationId]);
 
         // Notify applicant that request was received
         $pdo->prepare("
-            INSERT INTO notifications (user_id, application_id, title, message, type, link, is_read)
+            INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read)
             VALUES (:user_id, :app_id, 'Reschedule Request Received', 'Your request to reschedule your interview has been noted. Our recruitment team will reach out to you with a new schedule shortly.', 'reschedule_requested', '/applicant-dashboard', 0)
         ")->execute(['user_id' => $userId, 'app_id' => $applicationId]);
 

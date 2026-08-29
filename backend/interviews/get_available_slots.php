@@ -1,9 +1,9 @@
 <?php
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
 header('Content-Type: application/json');
 
 try {
-    $stmt = $pdo->query("SELECT slot_id, slot_date as date, start_time, end_time FROM interview_slots WHERE status = 'Open' ORDER BY slot_date ASC, start_time ASC");
+    $stmt = $pdo->query("SELECT slot_id, slot_date as date, start_time, end_time FROM interview_slots_tbl WHERE status = 'Open' ORDER BY slot_date ASC, start_time ASC");
     $slots = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode([
@@ -17,3 +17,4 @@ try {
         "message" => "Failed to fetch slots: " . $e->getMessage()
     ]);
 }
+?>

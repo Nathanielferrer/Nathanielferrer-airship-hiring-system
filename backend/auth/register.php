@@ -71,7 +71,7 @@ try {
     // - $pdo->prepare(): Compiles the SQL query template first.
     // - :email placeholder: Separates the SQL query structure from raw input data.
     // - $stmt->execute(['email' => $email]): Binds the variable safely, making SQL Injection impossible.
-    $stmt = $pdo->prepare("SELECT User_ID FROM user WHERE User_Email = :email");
+    $stmt = $pdo->prepare("SELECT user_id FROM users_tbl WHERE User_Email = :email");
     $stmt->execute(['email' => $email]);
     if ($stmt->fetch()) {
         http_response_code(400);
@@ -97,14 +97,14 @@ try {
     // SECURITY CONCEPT 3 (Syntax explanation):
     // - Hardcoded '0' for is_admin: The registration query forces 'is_admin = 0' on line insertion.
     //   This prevents clients from self-promoting or submitting parameters to escalate role privileges.
-    $sql = "INSERT INTO user (
+    $sql = "INSERT INTO users_tbl (
                 User_Fname, User_Lname, User_Email, User_Mobile, 
                 User_Pass, User_Bday, User_Gender, is_verified, 
-                verified, verification_code, verification_token, is_admin
+                verification_code, verification_token, is_admin
             ) VALUES (
                 :fname, :lname, :email, :mobile, 
                 :pass, :bday, :gender, 0, 
-                0, :code, :token, 0
+                :code, :token, 0
             )";
     
     $insertStmt = $pdo->prepare($sql);

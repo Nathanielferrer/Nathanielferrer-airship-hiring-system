@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
-$id = intval($data['id'] ?? 0);
+$id = intval($data['id'] ?? ($data['user_id'] ?? 0));
 $actorId = intval($data['actor_id'] ?? 0);
 $actorName = trim($data['actor_name'] ?? 'Super Admin');
 
@@ -15,8 +15,8 @@ if (!$id) {
 }
 
 try {
-    // Verify target exists and is an admin (not super admin, not applicant)
-    $stmt = $pdo->prepare("SELECT User_ID, User_Fname, User_Lname, User_Email, is_admin, status FROM user WHERE User_ID = ?");
+    // Verify target exists and is an admin
+    $stmt = $pdo->prepare("SELECT user_id, User_Fname, User_Lname, User_Email, is_admin, status FROM users_tbl WHERE user_id = ?");
     $stmt->execute([$id]);
     $targetAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -29,14 +29,14 @@ try {
     $fullName = trim("{$targetAdmin['User_Fname']} {$targetAdmin['User_Lname']}");
     $email = $targetAdmin['User_Email'];
 
-    // ── SOFT DELETE: Update status to 'Inactive' (NEVER execute hard DELETE) ────
-    $updateStmt = $pdo->prepare("UPDATE user SET status = 'Inactive' WHERE User_ID = ? AND is_admin = 1");
+    // Soft delete: status -> Inactive
+    $updateStmt = $pdo->prepare("UPDATE users_tbl SET status = 'Inactive' WHERE user_id = ? AND is_admin = 1");
     $updateStmt->execute([$id]);
 
-    // Internal admin_audit_log
+    require_once '../../audit_helper.php';
+    
     $adminAuditDetails = "Deactivated Admin account \"{$fullName}\" (Email: {$email}, ID:{$id}). Status set to Inactive.";
-    $logStmt = $pdo->prepare("INSERT INTO admin_audit_log (actor_id, target_id, action, details) VALUES (?, ?, 'admin_deactivated', ?)");
-    $logStmt->execute([$actorId, $id, $adminAuditDetails]);
+    log_system_audit($pdo, $actorId, $actorName, 'Admin Deactivated', 'Admin Management', $adminAuditDetails);
 
     echo json_encode([
         "status"  => "success",

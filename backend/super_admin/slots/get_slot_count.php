@@ -10,7 +10,7 @@ if (!$date) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM interview_slots WHERE slot_date = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM interview_slots_tbl WHERE slot_date = ?");
     $stmt->execute([$date]);
     $count = (int)$stmt->fetchColumn();
     echo json_encode(["status" => "success", "count" => $count, "remaining" => 99]);

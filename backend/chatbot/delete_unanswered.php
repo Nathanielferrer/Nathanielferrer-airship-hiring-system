@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
-$id = intval($data['id'] ?? 0);
+$id = intval($data['id'] ?? ($data['query_id'] ?? 0));
 
 if (!$id) {
     http_response_code(400);
@@ -13,11 +13,11 @@ if (!$id) {
 }
 
 try {
-    $qStmt = $pdo->prepare("SELECT raw_question_text FROM unanswered_queries WHERE id = ?");
+    $qStmt = $pdo->prepare("SELECT raw_question_text FROM chatbot_unresolved_queries_tbl WHERE query_id = ?");
     $qStmt->execute([$id]);
     $qText = $qStmt->fetchColumn() ?: "Query #{$id}";
 
-    $stmt = $pdo->prepare("DELETE FROM unanswered_queries WHERE id = ?");
+    $stmt = $pdo->prepare("DELETE FROM chatbot_unresolved_queries_tbl WHERE query_id = ?");
     $stmt->execute([$id]);
 
     require_once __DIR__ . '/../audit_helper.php';

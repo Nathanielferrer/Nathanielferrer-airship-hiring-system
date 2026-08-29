@@ -85,7 +85,28 @@ const ProcessTracker = ({ status = 'pending' }) => {
     step2State = 'completed'; step2Sub = 'Passed';
     step3State = 'completed'; step3Sub = 'Passed Interview';
     step4State = 'completed'; step4Sub = 'Approved by Pres.';
-    step5State = 'completed'; step5Sub = 'Officially Hired';
+    step5State = 'active';    step5Sub = 'Req. Pending';
+
+  } else if (['REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED'].includes(normStatus)) {
+    activeStep = 5;
+    step2State = 'completed'; step2Sub = 'Passed';
+    step3State = 'completed'; step3Sub = 'Passed Interview';
+    step4State = 'completed'; step4Sub = 'Approved';
+    step5State = 'active';    step5Sub = 'Req. Verified';
+
+  } else if (['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'].includes(normStatus)) {
+    activeStep = 5;
+    step2State = 'completed'; step2Sub = 'Passed';
+    step3State = 'completed'; step3Sub = 'Passed Interview';
+    step4State = 'completed'; step4Sub = 'Approved';
+    step5State = 'active';    step5Sub = 'Signing Sched.';
+
+  } else if (['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED'].includes(normStatus)) {
+    activeStep = 5;
+    step2State = 'completed'; step2Sub = 'Passed';
+    step3State = 'completed'; step3Sub = 'Passed Interview';
+    step4State = 'completed'; step4Sub = 'Approved';
+    step5State = 'completed'; step5Sub = 'Onboarded';
 
   } else if (['CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW'].includes(normStatus)) {
     activeStep = 5;

@@ -5,6 +5,7 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import MasterListTab from '../AdminDashboard/components/tabs/MasterListTab';
 import JobsTab from '../AdminDashboard/components/tabs/JobsTab';
 import SuperAdminAuditTab from './components/SuperAdminAuditTab';
+import OnboardingDrawer from './components/OnboardingDrawer';
 import logoImg from '../../assets/images/Logo Airship Express.png';
 import useInactivityTimeout from '../../hooks/useInactivityTimeout';
 import '../AdminDashboard/AdminDashboard.css';
@@ -18,8 +19,8 @@ const FIELD_STYLE = {
 // ── Calendar helpers ──────────────────────────────────────────────────────────
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -110,13 +111,19 @@ const SuperAdminDashboard = () => {
   const [evalTab, setEvalTab] = useState('pending');
   const [evalSearch, setEvalSearch] = useState('');
   const [evalPage, setEvalPage] = useState(1);
-  const [activeActionDropdownId, setActiveActionDropdownId] = useState(null);
+  const [updateStatusTarget, setUpdateStatusTarget] = useState(null); // { id, name, job, status }
+  const [selectedPostHireStatus, setSelectedPostHireStatus] = useState('Candidate Withdrew');
 
-  useEffect(() => {
-    const handleOutsideClick = () => setActiveActionDropdownId(null);
-    window.addEventListener('click', handleOutsideClick);
-    return () => window.removeEventListener('click', handleOutsideClick);
-  }, []);
+  // Contract Signing Schedule States
+  const [contractModalCandidate, setContractModalCandidate] = useState(null); // { id, name, job, email, date, time, location, notes }
+  const [contractDate, setContractDate] = useState('');
+  const [contractTime, setContractTime] = useState('');
+  const [contractLocation, setContractLocation] = useState('');
+  const [contractNotes, setContractNotes] = useState('');
+  const [contractSubmitting, setContractSubmitting] = useState(false);
+
+  // Onboarding Side Drawer state
+  const [onboardingDrawerCandidate, setOnboardingDrawerCandidate] = useState(null);
 
   // Candidate Credentials states
   const [resumeSearch, setResumeSearch] = useState('');
@@ -427,43 +434,53 @@ const SuperAdminDashboard = () => {
     let confirmBtnType = 'primary';
 
     if (result === 'Passed Final Interview' || result === 'PASS_FINAL_INTERVIEW') {
-      modalTitle = 'Confirm Pass Final Interview';
-      modalMsg = `Are you sure you want to record "${candidateName}" as Passed Final Interview? Their application will be forwarded to the President's Final Approval queue.`;
-      confirmBtnText = 'Pass Final Interview';
+      modalTitle = 'Pass Final Interview';
+      modalMsg = `Mark "${candidateName}" as Passed in Final Interview and forward to Executive Approval?`;
+      confirmBtnText = 'Pass Interview';
       confirmBtnType = 'primary';
     } else if (result === 'Failed Final Interview' || result === 'FAIL_FINAL_INTERVIEW' || result === 'INTERVIEW_FAILED' || result === 'rejected') {
-      modalTitle = 'Confirm Fail Final Interview';
-      modalMsg = `Are you sure you want to record a final Fail decision for "${candidateName}" in the final interview?`;
-      confirmBtnText = 'Fail Final Interview';
+      modalTitle = 'Fail Final Interview';
+      modalMsg = `Mark "${candidateName}" as Failed in Final Interview?`;
+      confirmBtnText = 'Fail Interview';
       confirmBtnType = 'danger';
     } else if (result === 'Passed Final Approval' || result === 'PASS_FINAL_APPROVAL' || result === 'HIRED') {
-      modalTitle = 'Confirm Executive Hire Approval';
-      modalMsg = `Are you sure you want to officially approve and hire "${candidateName}" for "${candidateJob}"? This will officially mark the candidate as Passed Final Approval, deduct 1 position opening, and dispatch the onboarding requirements email & notification.`;
-      confirmBtnText = 'Approve & Hire Candidate';
+      modalTitle = 'Approve & Hire Candidate';
+      modalMsg = `Approve and hire "${candidateName}" for "${candidateJob}"?`;
+      confirmBtnText = 'Approve & Hire';
       confirmBtnType = 'primary';
     } else if (result === 'Failed Final Approval' || result === 'FAIL_FINAL_APPROVAL') {
-      modalTitle = 'Confirm Executive Rejection';
-      modalMsg = `Are you sure you want to reject "${candidateName}" at the President's Final Approval stage?`;
+      modalTitle = 'Executive Rejection';
+      modalMsg = `Reject "${candidateName}" at Executive Final Approval?`;
       confirmBtnText = 'Reject Candidate';
       confirmBtnType = 'danger';
     } else if (result === 'Candidate Withdrew' || result === 'CANDIDATE_WITHDREW') {
-      modalTitle = 'Confirm Candidate Withdrawal';
-      modalMsg = `Are you sure you want to mark "${candidateName}" as Candidate Withdrew? If the candidate was previously marked as hired, this will restore 1 available opening slot for "${candidateJob}".`;
+      modalTitle = 'Candidate Withdrawal';
+      modalMsg = `Record voluntary withdrawal for "${candidateName}"?`;
       confirmBtnText = 'Record Withdrawal';
       confirmBtnType = 'secondary';
     } else if (result === 'Incomplete Requirements' || result === 'INCOMPLETE_REQUIREMENTS') {
-      modalTitle = 'Confirm Incomplete Requirements';
-      modalMsg = `Are you sure you want to mark "${candidateName}" as Incomplete Requirements due to missing the 1-week submission deadline? If the candidate was previously marked as hired, this will restore 1 available opening slot for "${candidateJob}".`;
+      modalTitle = 'Incomplete Requirements';
+      modalMsg = `Mark "${candidateName}" as Incomplete Requirements?`;
       confirmBtnText = 'Mark Incomplete';
       confirmBtnType = 'danger';
     } else if (result === 'Failed Pre-Employment' || result === 'FAILED_PRE_EMPLOYMENT') {
-      modalTitle = 'Confirm Pre-Employment Failure';
-      modalMsg = `Are you sure you want to mark "${candidateName}" as Failed Pre-Employment due to medical or drug screening clearance failure? If the candidate was previously marked as hired, this will restore 1 available opening slot for "${candidateJob}".`;
-      confirmBtnText = 'Mark Failed Pre-Employment';
+      modalTitle = 'Pre-Employment Failure';
+      modalMsg = `Mark "${candidateName}" as Failed Pre-Employment?`;
+      confirmBtnText = 'Mark Failed';
       confirmBtnType = 'danger';
+    } else if (result === 'Requirements Verified' || result === 'VERIFY_REQUIREMENTS') {
+      modalTitle = 'Verify Requirements';
+      modalMsg = `Confirm all pre-employment requirements are verified for "${candidateName}"?`;
+      confirmBtnText = 'Verify Requirements';
+      confirmBtnType = 'primary';
+    } else if (result === 'Contract Signed & Onboarded' || result === 'CONTRACT_SIGNED') {
+      modalTitle = 'Complete Onboarding';
+      modalMsg = `Confirm employment contract signed and complete onboarding for "${candidateName}"?`;
+      confirmBtnText = 'Confirm Onboarded';
+      confirmBtnType = 'primary';
     } else if (result === 'UNDO' || result === 'REVERT') {
-      modalTitle = 'Confirm Revert Decision';
-      modalMsg = `Are you sure you want to revert the evaluation decision for "${candidateName}"?`;
+      modalTitle = 'Revert Decision';
+      modalMsg = `Revert the evaluation decision for "${candidateName}"?`;
       confirmBtnText = 'Revert Decision';
       confirmBtnType = 'secondary';
     }
@@ -486,7 +503,7 @@ const SuperAdminDashboard = () => {
           const data = await res.json();
           if (data.status === 'success') {
             await fetchInterviews(true);
-            const isPositive = ['Passed Final Interview', 'Passed Final Approval', 'HIRED', 'UNDO'].includes(result);
+            const isPositive = ['Passed Final Interview', 'Passed Final Approval', 'HIRED', 'Requirements Verified', 'Contract Signed & Onboarded', 'UNDO'].includes(result);
             showSaveToast(data.message || 'Candidate evaluation updated successfully.', isPositive ? 'success' : 'danger');
           } else {
             alert(data.message || 'Failed to update candidate status.');
@@ -499,7 +516,45 @@ const SuperAdminDashboard = () => {
     });
   };
 
-  const handleLogout  = () => setShowLogoutConfirm(true);
+  const handleScheduleContractSigning = async (e) => {
+    if (e) e.preventDefault();
+    if (!contractModalCandidate || !contractDate || !contractTime) {
+      alert('Please specify both scheduled date and time.');
+      return;
+    }
+    setContractSubmitting(true);
+    try {
+      const superAdminName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || (user.email || 'Super Admin') : 'Super Admin';
+      const res = await fetch('http://localhost/Hiring%20System/backend/super_admin/interviews/schedule_contract_signing.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          application_id: contractModalCandidate.id,
+          scheduled_date: contractDate,
+          scheduled_time: contractTime,
+          location: contractLocation,
+          notes: contractNotes,
+          actor_id: user?.id || 0,
+          actor_name: superAdminName
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        showSaveToast('Contract signing schedule sent successfully!', 'success');
+        setContractModalCandidate(null);
+        await fetchInterviews(true);
+      } else {
+        alert(data.message || 'Failed to schedule contract signing.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Connection error while scheduling contract signing.');
+    } finally {
+      setContractSubmitting(false);
+    }
+  };
+
+  const handleLogout = () => setShowLogoutConfirm(true);
   const confirmLogoutAction = () => {
     setShowLogoutConfirm(false);
     localStorage.removeItem('hiring_token');
@@ -518,7 +573,7 @@ const SuperAdminDashboard = () => {
 
   const { sessionExpiring, resetTimer } = useInactivityTimeout({
     timeoutMs: 30 * 60 * 1000, // 30 minutes
-    warningMs:  2 * 60 * 1000, // Warn 2 minutes before
+    warningMs: 2 * 60 * 1000, // Warn 2 minutes before
     onTimeout: handleInactivityTimeout,
   });
   // ──────────────────────────────────────────────────────────────────────────
@@ -546,24 +601,25 @@ const SuperAdminDashboard = () => {
   const padDate = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
   // ── Style constants ───────────────────────────────────────────────────────
-  const MODAL_OVERLAY  = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 };
-  const MODAL_CARD     = { background: '#ffffff', borderRadius: '18px', width: '480px', maxWidth: '94%', padding: '30px 32px', boxShadow: '0 24px 40px rgba(0,0,0,0.18)', fontFamily: "'Inter', sans-serif" };
-  const MODAL_HEADER   = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '22px' };
-  const MODAL_TITLE    = { fontFamily: "'Montserrat', sans-serif", fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 };
-  const MODAL_SUB      = { fontSize: '12.5px', color: '#64748b', margin: '4px 0 0 0' };
-  const MODAL_CLOSE    = { background: 'none', border: 'none', fontSize: '22px', color: '#94a3b8', cursor: 'pointer', lineHeight: 1 };
-  const LABEL_STYLE    = { display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' };
-  const BTN_CANCEL     = { padding: '9px 20px', borderRadius: '8px', border: '1.5px solid #cbd5e1', background: '#ffffff', color: '#475569', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: "'Inter', sans-serif" };
-  const BTN_PRIMARY    = { padding: '9px 22px', borderRadius: '8px', border: 'none', background: '#e6007e', color: '#ffffff', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", boxShadow: '0 4px 14px rgba(230,0,126,0.35)' };
+  const MODAL_OVERLAY = { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 };
+  const MODAL_CARD = { background: '#ffffff', borderRadius: '18px', width: '480px', maxWidth: '94%', padding: '30px 32px', boxShadow: '0 24px 40px rgba(0,0,0,0.18)', fontFamily: "'Inter', sans-serif" };
+  const MODAL_HEADER = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '22px' };
+  const MODAL_TITLE = { fontFamily: "'Montserrat', sans-serif", fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 };
+  const MODAL_SUB = { fontSize: '12.5px', color: '#64748b', margin: '4px 0 0 0' };
+  const MODAL_CLOSE = { background: 'none', border: 'none', fontSize: '22px', color: '#94a3b8', cursor: 'pointer', lineHeight: 1 };
+  const LABEL_STYLE = { display: 'block', fontSize: '12px', fontWeight: '700', color: '#334155', marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.4px' };
+  const BTN_CANCEL = { padding: '9px 20px', borderRadius: '8px', border: '1.5px solid #cbd5e1', background: '#ffffff', color: '#475569', fontWeight: '600', fontSize: '13px', cursor: 'pointer', fontFamily: "'Inter', sans-serif" };
+  const BTN_PRIMARY = { padding: '9px 22px', borderRadius: '8px', border: 'none', background: '#e6007e', color: '#ffffff', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif", boxShadow: '0 4px 14px rgba(230,0,126,0.35)' };
 
   // ── Sidebar nav order ─────────────────────────────────────────────────────
   const SIDEBAR_ITEMS = [
-    { key: 'admins',  label: 'Administrative Access', icon: 'bx-user-check' },
-    { key: 'jobs',    label: 'Job Postings',          icon: 'bx-briefcase' },
+    { key: 'admins', label: 'Administrative Access', icon: 'bx-user-check' },
+    { key: 'jobs', label: 'Job Postings', icon: 'bx-briefcase' },
     { key: 'resumes', label: 'Candidate Credentials', icon: 'bx-file-find' },
-    { key: 'slots',   label: 'Interview Schedule',    icon: 'bx-calendar-plus' },
-    { key: 'results', label: 'Candidate Evaluation',  icon: 'bx-trophy' },
-    { key: 'audit',   label: 'Audit Trail',           icon: 'bx-shield-quarter' },
+    { key: 'slots', label: 'Interview Schedule', icon: 'bx-calendar-plus' },
+    { key: 'results', label: 'Candidate Evaluation', icon: 'bx-trophy' },
+    { key: 'master_list', label: 'Application Audit Records', icon: 'bx-file' },
+    { key: 'audit', label: 'System Audit Trail', icon: 'bx-shield-quarter' },
   ];
 
   if (!user) return <div className="loading-container"><div className="spinner"></div></div>;
@@ -572,7 +628,7 @@ const SuperAdminDashboard = () => {
   const renderCalendar = () => {
     const slotsByDate = buildSlotsByDate();
     const daysInMonth = getDaysInMonth(calYear, calMonth);
-    const firstDay    = getFirstDayOfMonth(calYear, calMonth);
+    const firstDay = getFirstDayOfMonth(calYear, calMonth);
     const cells = [];
     for (let i = 0; i < firstDay; i++) cells.push(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
@@ -583,7 +639,7 @@ const SuperAdminDashboard = () => {
       <div style={{ display: 'flex', gap: '22px', alignItems: 'stretch', width: '100%', minHeight: '620px' }}>
         {/* Calendar grid container */}
         <div style={{ flex: 1, background: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-          
+
           {/* Calendar Top Navigation Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -652,12 +708,12 @@ const SuperAdminDashboard = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', flex: 1 }}>
             {cells.map((day, idx) => {
               if (!day) return <div key={`empty-${idx}`} style={{ background: '#f8fafc', borderRadius: '12px', opacity: 0.4 }} />;
-              const dateStr   = padDate(calYear, calMonth, day);
-              const daySlots  = slotsByDate[dateStr] || [];
-              const hasSlots  = daySlots.length > 0;
+              const dateStr = padDate(calYear, calMonth, day);
+              const daySlots = slotsByDate[dateStr] || [];
+              const hasSlots = daySlots.length > 0;
               const openCount = daySlots.filter(s => s.status === 'Open').length;
               const bookedCount = daySlots.length - openCount;
-              const isToday   = dateStr === today.toISOString().split('T')[0];
+              const isToday = dateStr === today.toISOString().split('T')[0];
               const isSelected = dateStr === calSelectedDay;
 
               return (
@@ -757,6 +813,16 @@ const SuperAdminDashboard = () => {
                         <div style={{ fontWeight: '800', fontSize: '13.5px', color: '#0f172a', fontFamily: "'Montserrat', sans-serif" }}>
                           {fmtTime(s.start_time)} – {fmtTime(s.end_time)}
                         </div>
+                        {s.applicant_name ? (
+                          <div style={{ fontSize: '12px', color: '#0369a1', fontWeight: '700', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <i className="bx bx-user" style={{ fontSize: '14px' }} />
+                            {s.applicant_name} {s.job_title ? `(${s.job_title})` : ''}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '11.5px', color: '#059669', fontWeight: '600', marginTop: '3px' }}>
+                            Available (Unassigned)
+                          </div>
+                        )}
                         <span style={{
                           display: 'inline-block', marginTop: '5px', padding: '2px 8px', borderRadius: '12px',
                           fontSize: '10.5px', fontWeight: '700', letterSpacing: '0.3px',
@@ -1068,25 +1134,25 @@ const SuperAdminDashboard = () => {
                               ) : (
                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                   <button
-                                     style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '5px 13px', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: "'Inter', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                     onClick={() => { setModalError(''); setEditAdmin({ id: a.User_ID, first_name: a.User_Fname, last_name: a.User_Lname, email: a.User_Email }); setEditModalOpen(true); }}
-                                     title="Update Admin details, reset password, or deactivate account"
-                                   >
-                                     <i className="bx bx-edit" style={{ fontSize: '14px' }}></i> Update
-                                   </button>
-                                 </div>
-                               )}
-                             </td>
-                           </tr>
-                         );
-                       })}
-                     </tbody>
-                   </table>
-                 )}
-               </div>
-             </>
-           );
-         })()}
+                                    style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', padding: '5px 13px', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: "'Inter', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                    onClick={() => { setModalError(''); setEditAdmin({ id: a.User_ID, first_name: a.User_Fname, last_name: a.User_Lname, email: a.User_Email }); setEditModalOpen(true); }}
+                                    title="Update Admin details, reset password, or deactivate account"
+                                  >
+                                    <i className="bx bx-edit" style={{ fontSize: '14px' }}></i> Update
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {/* ── Job Postings Tab ── */}
         {activeTab === 'jobs' && <JobsTab />}
@@ -1378,17 +1444,17 @@ const SuperAdminDashboard = () => {
         {selectedResume && (() => {
           let aiData = null;
           if (selectedResume.ai_summary?.trim().startsWith('{')) {
-            try { aiData = JSON.parse(selectedResume.ai_summary); } catch {}
+            try { aiData = JSON.parse(selectedResume.ai_summary); } catch { }
           }
-          const name  = selectedResume.candidate_name || `${selectedResume.User_Fname || ''} ${selectedResume.User_Lname || ''}`.trim();
+          const name = selectedResume.candidate_name || `${selectedResume.User_Fname || ''} ${selectedResume.User_Lname || ''}`.trim();
           const score = selectedResume.ai_match_score;
           const scoreLabel = score >= 80 ? 'Highly Recommended' : score >= 60 ? 'Good Match' : 'Low Match';
           const badgeClass = score >= 80 ? 'excellent' : score >= 60 ? 'good' : 'poor';
 
           return ReactDOM.createPortal(
             <div className="admin-drawer-overlay" onClick={() => { setSelectedResume(null); setDrawerExpanded(false); setDrawerShowRequirements(false); }}>
-              <div 
-                className="admin-drawer-container" 
+              <div
+                className="admin-drawer-container"
                 onClick={e => e.stopPropagation()}
                 style={{
                   width: drawerExpanded ? 'min(880px, 92vw)' : '460px',
@@ -1471,7 +1537,7 @@ const SuperAdminDashboard = () => {
                           </span>
                           <i className={`bx ${drawerShowRequirements ? 'bx-chevron-up' : 'bx-chevron-down'}`} style={{ fontSize: '16px', color: '#64748b' }}></i>
                         </button>
-                        
+
                         {drawerShowRequirements && (
                           <div style={{
                             marginTop: '8px',
@@ -1597,35 +1663,54 @@ const SuperAdminDashboard = () => {
                   <table className="admin-table">
                     <thead>
                       <tr>
-                        <th>Date</th><th>Start Time</th><th>End Time</th><th>Status</th>
+                        <th>Day</th>
+                        <th>Date</th>
+                        <th>Time Slot</th>
+                        <th>Booked / Scheduled Applicant</th>
+                        <th>Status</th>
                         <th style={{ textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {slots.map(s => (
-                        <tr key={s.slot_id}>
-                          <td><strong>{new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</strong></td>
-                          <td>{fmtTime(s.start_time)}</td>
-                          <td>{fmtTime(s.end_time)}</td>
-                          <td>
-                            <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.3px', background: s.status === 'Open' ? '#d1fae5' : '#fef3c7', color: s.status === 'Open' ? '#047857' : '#b45309', border: s.status === 'Open' ? '1px solid #a7f3d0' : '1px solid #fde68a' }}>
-                              {s.status.toUpperCase()}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            {s.status === 'Open' ? (
-                              <button
-                                style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '5px 13px', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: "'Inter', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                onClick={() => handleDeleteSlot(s.slot_id)}
-                              >
-                                <i className="bx bx-trash" style={{ fontSize: '14px' }}></i> Delete
-                              </button>
-                            ) : (
-                              <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Assigned</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {slots.map(s => {
+                        const dayName = s.day_name || (s.date ? new Date(s.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }) : '—');
+                        return (
+                          <tr key={s.slot_id}>
+                            <td><strong style={{ color: '#0f172a' }}>{dayName}</strong></td>
+                            <td>{new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+                            <td>{fmtTime(s.start_time)} – {fmtTime(s.end_time)}</td>
+                            <td>
+                              {s.applicant_name ? (
+                                <div>
+                                  <strong style={{ color: '#0f172a', fontSize: '13px' }}>{s.applicant_name}</strong>
+                                  {s.job_title && <span style={{ color: '#64748b', fontSize: '12px', display: 'block' }}>{s.job_title}</span>}
+                                </div>
+                              ) : (
+                                <span style={{ color: '#059669', fontSize: '12px', fontWeight: '600' }}>
+                                  <i className="bx bx-check" style={{ marginRight: '3px' }} /> Available (Unassigned)
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.3px', background: s.status === 'Open' ? '#d1fae5' : '#fef3c7', color: s.status === 'Open' ? '#047857' : '#b45309', border: s.status === 'Open' ? '1px solid #a7f3d0' : '1px solid #fde68a' }}>
+                                {s.status.toUpperCase()}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right' }}>
+                              {s.status === 'Open' ? (
+                                <button
+                                  style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', padding: '5px 13px', borderRadius: '7px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', fontFamily: "'Inter', sans-serif", display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                  onClick={() => handleDeleteSlot(s.slot_id)}
+                                >
+                                  <i className="bx bx-trash" style={{ fontSize: '14px' }}></i> Delete
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>Booked</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 )}
@@ -1642,14 +1727,17 @@ const SuperAdminDashboard = () => {
         {activeTab === 'results' && (() => {
           const isPendingStatus = (s) => ['CONFIRMED', 'INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'RESCHEDULING'].includes((s || '').toUpperCase());
           const isFinalApprovalStatus = (s) => ['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'].includes((s || '').toUpperCase());
-          const isEvaluatedStatus = (s) => ['PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED', 'PASSED', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED', 'REJECTED', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'].includes((s || '').toUpperCase());
+          const isOnboardingStatus = (s) => ['PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED', 'PASSED', 'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED', 'CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'].includes((s || '').toUpperCase());
+          const isEvaluatedStatus = (s) => ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED', 'REJECTED', 'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'].includes((s || '').toUpperCase());
 
           const pendingCandidates = interviews.filter(i => isPendingStatus(i.status));
           const finalApprovalCandidates = interviews.filter(i => isFinalApprovalStatus(i.status));
+          const onboardingCandidates = interviews.filter(i => isOnboardingStatus(i.status));
           const evaluatedCandidates = interviews.filter(i => isEvaluatedStatus(i.status));
 
           let activeList = pendingCandidates;
           if (evalTab === 'final_approval') activeList = finalApprovalCandidates;
+          else if (evalTab === 'onboarding') activeList = onboardingCandidates;
           else if (evalTab === 'evaluated') activeList = evaluatedCandidates;
 
           const filteredList = activeList.filter(i => {
@@ -1670,16 +1758,16 @@ const SuperAdminDashboard = () => {
             <>
               <div className="admin-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h1 className="admin-header-title">Candidate Evaluation &amp; Executive Approval</h1>
+                  <h1 className="admin-header-title">Candidate Evaluation &amp; Executive Pipeline</h1>
                   <p style={{ color: '#64748b', fontSize: '13.5px', margin: '4px 0 0 0' }}>
-                    Evaluate interview outcomes, review candidates awaiting President final sign-off, and track onboarding progress.
+                    Manage the 4-stage evaluation pipeline: F2F interview evaluation, President approval, physical requirements verification &amp; contract signing, and historical archives.
                   </p>
                 </div>
               </div>
 
-              {/* Status Filter Tabs & Search Top Bar */}
+              {/* 4 Status Filter Tabs & Search Top Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '18px', flexWrap: 'wrap' }}>
-                {/* 3 Tabs: [ Pending Final Interview ] | [ Final Approval ] | [ Evaluated & Onboarding ] */}
+                {/* 4 Tabs: [ Pending Final Interview ] | [ Final Approval ] | [ Onboarding & Requirements ] | [ Evaluated ] */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   {/* Tab 1: Pending Final Interview */}
                   <button
@@ -1749,7 +1837,41 @@ const SuperAdminDashboard = () => {
                     </span>
                   </button>
 
-                  {/* Tab 3: Evaluated & Onboarding */}
+                  {/* Tab 3: Onboarding & Requirements */}
+                  <button
+                    type="button"
+                    onClick={() => { setEvalTab('onboarding'); setEvalPage(1); }}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      border: evalTab === 'onboarding' ? '1.5px solid #0f172a' : '1.5px solid #e2e8f0',
+                      background: evalTab === 'onboarding' ? '#0f172a' : '#ffffff',
+                      color: evalTab === 'onboarding' ? '#ffffff' : '#64748b',
+                      fontWeight: '700',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: evalTab === 'onboarding' ? '0 4px 12px rgba(15,23,42,0.12)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e6007e', display: 'inline-block' }} />
+                    Onboarding
+                    <span style={{
+                      background: evalTab === 'onboarding' ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+                      color: evalTab === 'onboarding' ? '#ffffff' : '#475569',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '11.5px',
+                      fontWeight: '800'
+                    }}>
+                      {onboardingCandidates.length}
+                    </span>
+                  </button>
+
+                  {/* Tab 4: Evaluated (Master History) */}
                   <button
                     type="button"
                     onClick={() => { setEvalTab('evaluated'); setEvalPage(1); }}
@@ -1770,7 +1892,7 @@ const SuperAdminDashboard = () => {
                     }}
                   >
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#64748b', display: 'inline-block' }} />
-                    Evaluated &amp; Onboarding
+                    Evaluated
                     <span style={{
                       background: evalTab === 'evaluated' ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
                       color: evalTab === 'evaluated' ? '#ffffff' : '#475569',
@@ -1791,7 +1913,7 @@ const SuperAdminDashboard = () => {
                     type="text"
                     value={evalSearch}
                     onChange={(e) => { setEvalSearch(e.target.value); setEvalPage(1); }}
-                    placeholder="Search by candidate, email, or position..."
+                    placeholder="Search candidate, email, or position..."
                     style={{
                       width: '100%',
                       padding: '9px 36px 9px 36px',
@@ -1821,16 +1943,16 @@ const SuperAdminDashboard = () => {
 
               <div className="admin-table-card">
                 {loading ? (
-                  <div className="admin-loading">Loading candidate evaluations...</div>
+                  <div className="admin-loading">Loading candidate pipeline...</div>
                 ) : paginatedList.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '56px 24px', background: '#ffffff', borderRadius: '12px' }}>
                     <div style={{
                       width: '54px', height: '54px', borderRadius: '50%',
-                      background: evalTab === 'pending' ? '#fef3c7' : (evalTab === 'final_approval' ? '#ecfdf5' : '#f1f5f9'),
+                      background: evalTab === 'pending' ? '#fef3c7' : (evalTab === 'final_approval' ? '#ecfdf5' : (evalTab === 'onboarding' ? '#e0f2fe' : '#f1f5f9')),
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px',
-                      color: evalTab === 'pending' ? '#d97706' : (evalTab === 'final_approval' ? '#059669' : '#64748b')
+                      color: evalTab === 'pending' ? '#d97706' : (evalTab === 'final_approval' ? '#059669' : (evalTab === 'onboarding' ? '#0284c7' : '#64748b'))
                     }}>
-                      <i className={`bx ${evalTab === 'pending' ? 'bx-time' : (evalTab === 'final_approval' ? 'bx-user-check' : 'bx-check-double')}`} style={{ fontSize: '26px' }}></i>
+                      <i className={`bx ${evalTab === 'pending' ? 'bx-time' : (evalTab === 'final_approval' ? 'bx-user-check' : (evalTab === 'onboarding' ? 'bx-file' : 'bx-archive'))}`} style={{ fontSize: '26px' }}></i>
                     </div>
                     <h4 style={{ margin: '0 0 6px 0', fontSize: '15.5px', fontWeight: '700', color: '#0f172a', fontFamily: "'Montserrat', sans-serif" }}>
                       {evalSearch ? 'No Candidates Match Your Search' : (
@@ -1838,7 +1960,9 @@ const SuperAdminDashboard = () => {
                           ? 'No Pending Candidates Awaiting F2F Evaluation'
                           : (evalTab === 'final_approval'
                             ? 'No Candidates Currently Awaiting Final Approval'
-                            : 'No Evaluated & Onboarding Records Yet')
+                            : (evalTab === 'onboarding'
+                              ? 'No Active Hired Candidates in Onboarding'
+                              : 'No Evaluated Master Records Yet'))
                       )}
                     </h4>
                     <p style={{ margin: 0, fontSize: '13px', color: '#64748b', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto', lineHeight: '1.5' }}>
@@ -1847,8 +1971,10 @@ const SuperAdminDashboard = () => {
                         : (evalTab === 'pending'
                           ? 'Candidates scheduled for final interview will appear here for evaluation.'
                           : (evalTab === 'final_approval'
-                            ? 'Candidates who passed the final interview will automatically queue here for executive decision.'
-                            : 'Candidates evaluated, hired, or with updated post-hire status will be preserved here.'))}
+                            ? 'Candidates who passed the final interview will queue here for executive decision.'
+                            : (evalTab === 'onboarding'
+                              ? 'Hired candidates awaiting physical document verification and contract signing will appear here.'
+                              : 'Candidates evaluated, onboarded, or finalized will be preserved here.')))}
                     </p>
                   </div>
                 ) : (
@@ -1859,12 +1985,21 @@ const SuperAdminDashboard = () => {
                           <th style={{ padding: '14px 18px', textAlign: 'left' }}>Candidate</th>
                           <th style={{ padding: '14px 18px', textAlign: 'left' }}>Position</th>
                           <th style={{ padding: '14px 18px', textAlign: 'center' }}>
-                            {evalTab === 'evaluated' ? 'Decision Date' : 'Interview Schedule'}
+                            {evalTab === 'evaluated'
+                              ? 'Decision Date'
+                              : (evalTab === 'onboarding'
+                                ? 'Requirement Status'
+                                : 'Interview Schedule')}
                           </th>
+                          {evalTab === 'onboarding' && (
+                            <th style={{ padding: '14px 18px', textAlign: 'center' }}>Submission Deadline</th>
+                          )}
                           <th style={{ padding: '14px 18px', textAlign: 'center' }}>
-                            {evalTab === 'evaluated' ? 'Final Status' : 'Actions'}
+                            {evalTab === 'evaluated'
+                              ? 'Final Status'
+                              : (evalTab === 'onboarding' ? 'Onboarding Actions' : 'Actions')}
                           </th>
-                          {evalTab === 'evaluated' && (
+                          {evalTab === 'onboarding' && (
                             <th style={{ padding: '14px 18px', textAlign: 'center' }}>Action</th>
                           )}
                         </tr>
@@ -1875,15 +2010,23 @@ const SuperAdminDashboard = () => {
                           const candidateEmail = i.candidate_email || i.User_Email || '';
                           const dateStr = i.interview_date ? new Date(i.interview_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Awaiting Date';
                           const timeStr = i.start_time ? (i.end_time ? `${fmtTime(i.start_time)} – ${fmtTime(i.end_time)}` : fmtTime(i.start_time)) : '';
-                          
+
                           const normStatus = (i.status || '').toUpperCase();
                           const isPassedApproval = ['PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED', 'PASSED'].includes(normStatus);
+                          const isReqVerified = ['REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED'].includes(normStatus);
+                          const isContractScheduled = ['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'].includes(normStatus);
+                          const isContractSigned = ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED'].includes(normStatus);
                           const isFailedApproval = ['FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL'].includes(normStatus);
                           const isFailedInterview = ['FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED', 'REJECTED'].includes(normStatus);
                           const isPassedInterview = ['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'].includes(normStatus);
                           const isWithdrawn = ['CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW'].includes(normStatus);
                           const isIncompleteReq = ['INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS'].includes(normStatus);
                           const isFailedPreEmp = ['FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'].includes(normStatus);
+
+                          // Computed 7-day deadline from applied/updated date
+                          const refDate = i.updated_at || i.applied_at || new Date().toISOString();
+                          const deadlineObj = new Date(new Date(refDate).getTime() + 7 * 24 * 60 * 60 * 1000);
+                          const deadlineStr = deadlineObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 
                           return (
                             <tr key={i.application_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -1892,13 +2035,13 @@ const SuperAdminDashboard = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <div style={{
                                     width: '36px', height: '36px', borderRadius: '50%',
-                                    background: (isPassedApproval || isPassedInterview) ? '#ecfdf5' : ((isFailedInterview || isIncompleteReq || isFailedPreEmp) ? '#fef2f2' : (isFailedApproval ? '#f1f5f9' : '#f8fafc')),
-                                    border: (isPassedApproval || isPassedInterview) ? '1.5px solid #a7f3d0' : ((isFailedInterview || isIncompleteReq || isFailedPreEmp) ? '1.5px solid #fecaca' : (isFailedApproval ? '1.5px solid #cbd5e1' : '1.5px solid #cbd5e1')),
+                                    background: (isPassedApproval || isPassedInterview || isReqVerified || isContractScheduled || isContractSigned) ? '#ecfdf5' : ((isFailedInterview || isIncompleteReq || isFailedPreEmp) ? '#fef2f2' : (isFailedApproval ? '#f1f5f9' : '#f8fafc')),
+                                    border: (isPassedApproval || isPassedInterview || isReqVerified || isContractScheduled || isContractSigned) ? '1.5px solid #a7f3d0' : ((isFailedInterview || isIncompleteReq || isFailedPreEmp) ? '1.5px solid #fecaca' : (isFailedApproval ? '1.5px solid #cbd5e1' : '1.5px solid #cbd5e1')),
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                                   }}>
                                     <span style={{
                                       fontSize: '13px', fontWeight: '700',
-                                      color: (isPassedApproval || isPassedInterview) ? '#059669' : ((isFailedInterview || isFailedPreEmp) ? '#dc2626' : (isIncompleteReq ? '#be123c' : (isFailedApproval ? '#475569' : '#64748b')))
+                                      color: (isPassedApproval || isPassedInterview || isReqVerified || isContractScheduled || isContractSigned) ? '#059669' : ((isFailedInterview || isFailedPreEmp) ? '#dc2626' : (isIncompleteReq ? '#be123c' : (isFailedApproval ? '#475569' : '#64748b')))
                                     }}>
                                       {(candidateName[0] || 'A').toUpperCase()}
                                     </span>
@@ -1915,16 +2058,56 @@ const SuperAdminDashboard = () => {
                                 <strong style={{ color: '#0f172a', fontSize: '13px' }}>{i.job_title}</strong>
                               </td>
 
-                              {/* Schedule / Date */}
+                              {/* Column 3: Tab-dependent (Requirement Status / Schedule / Decision Date) */}
                               <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center', color: '#475569', fontSize: '13px' }}>
-                                <div style={{ fontWeight: '600', color: '#0f172a' }}>{dateStr}</div>
-                                {timeStr && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{timeStr}</div>}
+                                {evalTab === 'onboarding' ? (
+                                  <div>
+                                    {isContractScheduled ? (
+                                      <div style={{ fontWeight: '700', color: '#e6007e', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                        <i className="bx bx-calendar-check" style={{ fontSize: '15px' }} />
+                                        Contract Signing Scheduled
+                                      </div>
+                                    ) : isReqVerified ? (
+                                      <div style={{ fontWeight: '700', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                        <i className="bx bx-check-double" style={{ fontSize: '16px' }} />
+                                        Complete Requirements
+                                      </div>
+                                    ) : (
+                                      <div style={{ fontWeight: '700', color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                        <i className="bx bx-time" style={{ fontSize: '15px' }} />
+                                        Awaiting Requirements
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : evalTab === 'evaluated' ? (
+                                  <div>
+                                    <div style={{ fontWeight: '600', color: '#0f172a' }}>
+                                      {i.updated_at ? new Date(i.updated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : (i.applied_at ? new Date(i.applied_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : '—')}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <div style={{ fontWeight: '600', color: '#0f172a' }}>{dateStr}</div>
+                                    {timeStr && <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{timeStr}</div>}
+                                  </div>
+                                )}
                               </td>
 
-                              {/* Column 4: Tab-specific actions or Evaluated Badges */}
+                              {/* Column 4: Submission Deadline (Only rendered when in onboarding tab) */}
+                              {evalTab === 'onboarding' && (
+                                <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center', fontSize: '13px' }}>
+                                  {isContractScheduled || isReqVerified ? (
+                                    <span style={{ color: '#94a3b8', fontSize: '12px' }}>—</span>
+                                  ) : (
+                                    <strong style={{ color: '#b91c1c', fontSize: '13px' }}>{deadlineStr}</strong>
+                                  )}
+                                </td>
+                              )}
+
+                              {/* Column 5/4: Primary Actions or Status Badges */}
                               <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
                                 {evalTab === 'pending' && (
-                                  /* ── Pending Tab Actions: Pass Final Interview / Fail Final Interview ── */
+                                  /* ── Tab 1 Pending Actions ── */
                                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                     <button
                                       type="button"
@@ -1936,9 +2119,9 @@ const SuperAdminDashboard = () => {
                                         display: 'inline-flex', alignItems: 'center', gap: '5px',
                                         boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)', transition: 'all 0.15s'
                                       }}
-                                      title="Mark candidate as Passed Final Interview and forward to President for Final Approval"
+                                      title="Mark candidate as Passed Final Interview"
                                     >
-                                      <i className="bx bx-check" style={{ fontSize: '16px' }}></i> Pass Final Interview
+                                      <i className="bx bx-check" style={{ fontSize: '16px' }}></i> Pass interview
                                     </button>
                                     <button
                                       type="button"
@@ -1951,13 +2134,13 @@ const SuperAdminDashboard = () => {
                                       }}
                                       title="Mark candidate as Failed Final Interview"
                                     >
-                                      <i className="bx bx-x" style={{ fontSize: '16px' }}></i> Fail Final Interview
+                                      <i className="bx bx-x" style={{ fontSize: '16px' }}></i> Fail interview
                                     </button>
                                   </div>
                                 )}
 
                                 {evalTab === 'final_approval' && (
-                                  /* ── Final Approval Tab Actions: Hire / Reject ── */
+                                  /* ── Tab 2 Final Approval Actions ── */
                                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                     <button
                                       type="button"
@@ -1970,9 +2153,9 @@ const SuperAdminDashboard = () => {
                                         display: 'inline-flex', alignItems: 'center', gap: '6px',
                                         boxShadow: '0 2px 10px rgba(5, 150, 105, 0.3)', transition: 'all 0.15s'
                                       }}
-                                      title="Officially Approve and Hire candidate (Deducts job opening, sends onboarding email & notifications)"
+                                      title="Officially Approve and Hire candidate"
                                     >
-                                      <i className="bx bx-award" style={{ fontSize: '16px' }}></i> Hire (Pass Approval)
+                                      <i className="bx bx-award" style={{ fontSize: '16px' }}></i> Hire
                                     </button>
                                     <button
                                       type="button"
@@ -1985,33 +2168,61 @@ const SuperAdminDashboard = () => {
                                       }}
                                       title="Reject candidate at Final Approval stage"
                                     >
-                                      <i className="bx bx-x" style={{ fontSize: '16px' }}></i> Reject (Fail Approval)
+                                      <i className="bx bx-x" style={{ fontSize: '16px' }}></i> Reject
+                                    </button>
+                                  </div>
+                                )}
+
+                                {evalTab === 'onboarding' && (
+                                  /* ── Tab 3 Onboarding Actions ── */
+                                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setOnboardingDrawerCandidate(i)}
+                                      style={{
+                                        background: '#0f172a',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        padding: '7px 16px',
+                                        borderRadius: '7px',
+                                        cursor: 'pointer',
+                                        fontWeight: '700',
+                                        fontSize: '12px',
+                                        fontFamily: "'Montserrat', sans-serif",
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.3)',
+                                        transition: 'all 0.15s'
+                                      }}
+                                      title="Open side drawer to verify requirements and manage contract signing"
+                                    >
+                                      <i className="bx bx-slider-alt" style={{ fontSize: '16px' }}></i> Manage Onboarding
                                     </button>
                                   </div>
                                 )}
 
                                 {evalTab === 'evaluated' && (
-                                  /* ── Evaluated Final Status Badges & Onboarding Tracker ── */
+                                  /* ── Tab 4 Evaluated Final Status Badges ── */
                                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    {isPassedApproval && (
-                                      <>
-                                        <span style={{
-                                          display: 'inline-flex', alignItems: 'center', gap: '5px',
-                                          background: '#ecfdf5', color: '#047857', border: '1.5px solid #a7f3d0',
-                                          borderRadius: '20px', padding: '4px 12px', fontSize: '11.5px', fontWeight: '700'
-                                        }}>
-                                          <i className="bx bx-check-circle" style={{ fontSize: '14px' }}></i> Passed Final Approval (Hired)
-                                        </span>
-                                        {/* Onboarding Document Tracker Sub-Label */}
-                                        <span style={{ fontSize: '11px', color: '#64748b', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                          <i className="bx bx-file" style={{ fontSize: '12px', color: '#94a3b8' }} />
-                                          {i.requirements_submitted !== undefined && i.requirements_total !== undefined
-                                            ? (Number(i.requirements_submitted) >= Number(i.requirements_total) ? 'Requirements Complete' : `Pending Requirements (${i.requirements_submitted}/${i.requirements_total})`)
-                                            : (i.requirements_count !== undefined
-                                                ? `Pending Requirements (${i.requirements_count}/7)`
-                                                : 'Pending Requirements (0/7)')}
-                                        </span>
-                                      </>
+                                    {isContractSigned && (
+                                      <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                        background: '#ecfdf5', color: '#047857', border: '1.5px solid #a7f3d0',
+                                        borderRadius: '20px', padding: '4px 12px', fontSize: '11.5px', fontWeight: '700'
+                                      }}>
+                                        <i className="bx bx-check-double" style={{ fontSize: '15px', color: '#059669' }}></i> Officially Hired &amp; Signed
+                                      </span>
+                                    )}
+
+                                    {isPassedApproval && !isContractSigned && (
+                                      <span style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                        background: '#ecfdf5', color: '#047857', border: '1.5px solid #a7f3d0',
+                                        borderRadius: '20px', padding: '4px 12px', fontSize: '11.5px', fontWeight: '700'
+                                      }}>
+                                        <i className="bx bx-check-circle" style={{ fontSize: '14px' }}></i> Passed Final Approval (Hired)
+                                      </span>
                                     )}
 
                                     {isFailedInterview && (
@@ -2067,156 +2278,43 @@ const SuperAdminDashboard = () => {
                                 )}
                               </td>
 
-                              {/* Column 5: Action (Only in Evaluated Tab - Update Status Dropdown Menu) */}
-                              {evalTab === 'evaluated' && (
+                              {/* Column 5: Action (Available in Onboarding Tab only) */}
+                              {evalTab === 'onboarding' && (
                                 <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
-                                  <div style={{ position: 'relative', display: 'inline-block' }}>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setActiveActionDropdownId(activeActionDropdownId === i.application_id ? null : i.application_id);
-                                      }}
-                                      style={{
-                                        background: '#ffffff',
-                                        border: '1.5px solid #cbd5e1',
-                                        color: '#0f172a',
-                                        padding: '6px 12px',
-                                        borderRadius: '6px',
-                                        cursor: 'pointer',
-                                        fontSize: '12px',
-                                        fontWeight: '700',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        fontFamily: "'Montserrat', sans-serif",
-                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                                        transition: 'all 0.15s ease'
-                                      }}
-                                      title="Update candidate post-hire / evaluation status"
-                                    >
-                                      <span>Update Status</span>
-                                      <i className="bx bx-chevron-down" style={{ fontSize: '15px', color: '#64748b' }}></i>
-                                    </button>
-
-                                    {activeActionDropdownId === i.application_id && (
-                                      <div
-                                        style={{
-                                          position: 'absolute',
-                                          right: 0,
-                                          top: 'calc(100% + 4px)',
-                                          background: '#ffffff',
-                                          border: '1px solid #e2e8f0',
-                                          borderRadius: '8px',
-                                          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                                          zIndex: 50,
-                                          minWidth: '220px',
-                                          padding: '5px',
-                                          textAlign: 'left'
-                                        }}
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActiveActionDropdownId(null);
-                                            handleUpdateResult(i.application_id, 'Candidate Withdrew', candidateName, i.job_title);
-                                          }}
-                                          style={{
-                                            width: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            padding: '8px 12px',
-                                            background: 'none',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px',
-                                            fontWeight: '600',
-                                            color: '#334155',
-                                            textAlign: 'left',
-                                            fontFamily: "'Montserrat', sans-serif",
-                                            transition: 'background 0.15s'
-                                          }}
-                                          onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
-                                          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
-                                        >
-                                          <i className="bx bx-user-minus" style={{ fontSize: '16px', color: '#64748b' }} />
-                                          <div>
-                                            <div style={{ color: '#0f172a', fontWeight: '700' }}>Candidate Withdrew</div>
-                                            <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: '400' }}>Candidate backed out</div>
-                                          </div>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActiveActionDropdownId(null);
-                                            handleUpdateResult(i.application_id, 'Incomplete Requirements', candidateName, i.job_title);
-                                          }}
-                                          style={{
-                                            width: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            padding: '8px 12px',
-                                            background: 'none',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px',
-                                            fontWeight: '600',
-                                            color: '#be123c',
-                                            textAlign: 'left',
-                                            fontFamily: "'Montserrat', sans-serif",
-                                            transition: 'background 0.15s'
-                                          }}
-                                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fff1f2'; }}
-                                          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
-                                        >
-                                          <i className="bx bx-time-five" style={{ fontSize: '16px', color: '#e11d48' }} />
-                                          <div>
-                                            <div style={{ color: '#be123c', fontWeight: '700' }}>Incomplete Requirements</div>
-                                            <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: '400' }}>Missed 1-week deadline</div>
-                                          </div>
-                                        </button>
-
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActiveActionDropdownId(null);
-                                            handleUpdateResult(i.application_id, 'Failed Pre-Employment', candidateName, i.job_title);
-                                          }}
-                                          style={{
-                                            width: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px',
-                                            padding: '8px 12px',
-                                            background: 'none',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '12px',
-                                            fontWeight: '600',
-                                            color: '#b91c1c',
-                                            textAlign: 'left',
-                                            fontFamily: "'Montserrat', sans-serif",
-                                            transition: 'background 0.15s'
-                                          }}
-                                          onMouseEnter={(e) => { e.currentTarget.style.background = '#fef2f2'; }}
-                                          onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
-                                        >
-                                          <i className="bx bx-error-circle" style={{ fontSize: '16px', color: '#dc2626' }} />
-                                          <div>
-                                            <div style={{ color: '#b91c1c', fontWeight: '700' }}>Failed Pre-Employment</div>
-                                            <div style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: '400' }}>Medical / drug screening fail</div>
-                                          </div>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setUpdateStatusTarget({
+                                        id: i.application_id,
+                                        name: candidateName,
+                                        job: i.job_title,
+                                        status: i.status
+                                      });
+                                      setSelectedPostHireStatus('Candidate Withdrew');
+                                    }}
+                                    style={{
+                                      background: '#ffffff',
+                                      border: '1.5px solid #cbd5e1',
+                                      color: '#0f172a',
+                                      padding: '6px 14px',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      fontWeight: '700',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      fontFamily: "'Montserrat', sans-serif",
+                                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.background = '#f8fafc'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#ffffff'; }}
+                                    title="Update candidate post-hire status"
+                                  >
+                                    <i className="bx bx-edit-alt" style={{ fontSize: '15px', color: '#64748b' }}></i>
+                                    <span>Update Status</span>
+                                  </button>
                                 </td>
                               )}
                             </tr>
@@ -2308,7 +2406,10 @@ const SuperAdminDashboard = () => {
           );
         })()}
 
-        {/* ── Audit Records Tab ── */}
+        {/* ── Application Audit Records Tab (Identical to Admin MasterListTab) ── */}
+        {activeTab === 'master_list' && <MasterListTab />}
+
+        {/* ── System Audit Records Tab ── */}
         {activeTab === 'audit' && <SuperAdminAuditTab />}
 
       </main>
@@ -2548,6 +2649,286 @@ const SuperAdminDashboard = () => {
         document.body
       )}
 
+      {/* ── Update Candidate Status Modal ── */}
+      {updateStatusTarget && ReactDOM.createPortal(
+        <div style={MODAL_OVERLAY} onClick={() => setUpdateStatusTarget(null)}>
+          <div
+            style={{ ...MODAL_CARD, maxWidth: '520px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={MODAL_HEADER}>
+              <div>
+                <h3 style={MODAL_TITLE}>Update Candidate Status</h3>
+                <p style={MODAL_SUB}>
+                  Candidate: <strong style={{ color: '#0f172a' }}>{updateStatusTarget.name}</strong> • Position: <strong>{updateStatusTarget.job}</strong>
+                </p>
+              </div>
+              <button style={MODAL_CLOSE} onClick={() => setUpdateStatusTarget(null)}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '22px' }}>
+              {/* Option 1: Candidate Withdrew */}
+              <div
+                onClick={() => setSelectedPostHireStatus('Candidate Withdrew')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '14px',
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  border: selectedPostHireStatus === 'Candidate Withdrew' ? '2px solid #e6007e' : '1.5px solid #e2e8f0',
+                  background: selectedPostHireStatus === 'Candidate Withdrew' ? '#fdf2f8' : '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  background: selectedPostHireStatus === 'Candidate Withdrew' ? '#fce7f3' : '#f1f5f9',
+                  color: selectedPostHireStatus === 'Candidate Withdrew' ? '#e6007e' : '#475569',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  fontSize: '18px'
+                }}>
+                  <i className="bx bx-user-minus" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>Candidate Withdrew</strong>
+                    <span style={{ fontSize: '11px', fontWeight: '700', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '12px' }}>
+                      Restores 1 Opening
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                    The candidate voluntarily backed out or declined to proceed with the position.
+                  </p>
+                </div>
+              </div>
+
+              {/* Option 2: Incomplete Requirements */}
+              <div
+                onClick={() => setSelectedPostHireStatus('Incomplete Requirements')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '14px',
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  border: selectedPostHireStatus === 'Incomplete Requirements' ? '2px solid #e6007e' : '1.5px solid #e2e8f0',
+                  background: selectedPostHireStatus === 'Incomplete Requirements' ? '#fdf2f8' : '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  background: selectedPostHireStatus === 'Incomplete Requirements' ? '#fce7f3' : '#f1f5f9',
+                  color: selectedPostHireStatus === 'Incomplete Requirements' ? '#e6007e' : '#475569',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  fontSize: '18px'
+                }}>
+                  <i className="bx bx-time-five" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>Incomplete Requirements</strong>
+                    <span style={{ fontSize: '11px', fontWeight: '700', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '12px' }}>
+                      Restores 1 Opening
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                    The candidate missed the 1-week pre-employment physical document submission deadline.
+                  </p>
+                </div>
+              </div>
+
+              {/* Option 3: Failed Pre-Employment */}
+              <div
+                onClick={() => setSelectedPostHireStatus('Failed Pre-Employment')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '14px',
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  border: selectedPostHireStatus === 'Failed Pre-Employment' ? '2px solid #e6007e' : '1.5px solid #e2e8f0',
+                  background: selectedPostHireStatus === 'Failed Pre-Employment' ? '#fdf2f8' : '#ffffff',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  background: selectedPostHireStatus === 'Failed Pre-Employment' ? '#fce7f3' : '#f1f5f9',
+                  color: selectedPostHireStatus === 'Failed Pre-Employment' ? '#e6007e' : '#475569',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  fontSize: '18px'
+                }}>
+                  <i className="bx bx-error-circle" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <strong style={{ fontSize: '13.5px', color: '#0f172a' }}>Failed Pre-Employment</strong>
+                    <span style={{ fontSize: '11px', fontWeight: '700', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '12px' }}>
+                      Restores 1 Opening
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                    The candidate did not pass mandatory pre-employment clearance (medical or drug testing).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                style={BTN_CANCEL}
+                onClick={() => setUpdateStatusTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                style={{
+                  ...BTN_PRIMARY,
+                  background: 'linear-gradient(135deg, #e6007e 0%, #be006b 100%)',
+                  boxShadow: '0 4px 12px rgba(230, 0, 126, 0.25)'
+                }}
+                onClick={() => {
+                  const target = updateStatusTarget;
+                  setUpdateStatusTarget(null);
+                  handleUpdateResult(target.id, selectedPostHireStatus, target.name, target.job);
+                }}
+              >
+                <i className="bx bx-check" style={{ fontSize: '16px', marginRight: '6px' }} />
+                Confirm &amp; Update Status
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Freedom Time Contract Signing Schedule Modal ── */}
+      {contractModalCandidate && ReactDOM.createPortal(
+        <div style={MODAL_OVERLAY} onClick={() => !contractSubmitting && setContractModalCandidate(null)}>
+          <div
+            style={{ ...MODAL_CARD, maxWidth: '520px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={MODAL_HEADER}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fdf2f8', color: '#e6007e', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800', marginBottom: '6px' }}>
+                  <i className="bx bx-calendar-check" /> CONTRACT SIGNING &amp; ONBOARDING
+                </div>
+                <h3 style={MODAL_TITLE}>Schedule Contract Signing</h3>
+                <p style={MODAL_SUB}>
+                  Candidate: <strong style={{ color: '#0f172a' }}>{contractModalCandidate.name}</strong> • Position: <strong>{contractModalCandidate.job}</strong>
+                </p>
+              </div>
+              <button
+                style={MODAL_CLOSE}
+                disabled={contractSubmitting}
+                onClick={() => setContractModalCandidate(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleScheduleContractSigning}>
+              {/* Date with Dynamic Day of the Week calculation */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={LABEL_STYLE}>
+                  Scheduled Date &amp; Day <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '10px' }}>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={contractDate}
+                    onChange={(e) => setContractDate(e.target.value)}
+                    style={FIELD_STYLE}
+                  />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    color: contractDate ? '#e6007e' : '#94a3b8',
+                    padding: '0 10px'
+                  }}>
+                    {contractDate
+                      ? new Date(contractDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' })
+                      : 'Select Date'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Input (Plain text / picker, no presets) */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={LABEL_STYLE}>
+                  Scheduled Time <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. 10:00 AM"
+                  value={contractTime}
+                  onChange={(e) => setContractTime(e.target.value)}
+                  style={FIELD_STYLE}
+                />
+              </div>
+
+              {/* What to Bring / Special Instructions */}
+              <div style={{ marginBottom: '22px' }}>
+                <label style={LABEL_STYLE}>
+                  What to Bring / Special Instructions
+                </label>
+                <textarea
+                  rows={3}
+                  value={contractNotes}
+                  onChange={(e) => setContractNotes(e.target.value)}
+                  placeholder="e.g. Please bring 2 valid IDs and 1 black signing pen."
+                  style={{ ...FIELD_STYLE, resize: 'vertical', lineHeight: 1.5 }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  style={BTN_CANCEL}
+                  disabled={contractSubmitting}
+                  onClick={() => setContractModalCandidate(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={contractSubmitting}
+                  style={{
+                    ...BTN_PRIMARY,
+                    background: 'linear-gradient(135deg, #e6007e 0%, #be006b 100%)',
+                    boxShadow: '0 4px 12px rgba(230, 0, 126, 0.25)',
+                    cursor: contractSubmitting ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <i className="bx bx-send" style={{ fontSize: '16px', marginRight: '6px' }} />
+                  {contractSubmitting ? 'Scheduling...' : 'Confirm & Schedule Contract Signing'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* ── Inactivity Warning Modal ──────────────────────────────────────── */}
       <ConfirmModal
         isOpen={sessionExpiring}
@@ -2584,6 +2965,64 @@ const SuperAdminDashboard = () => {
         onConfirm={confirmModalState.onConfirm}
         onCancel={() => setConfirmModalState(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* ── Onboarding Side Drawer ── */}
+      {onboardingDrawerCandidate && (
+        <OnboardingDrawer
+          candidate={onboardingDrawerCandidate}
+          onClose={() => setOnboardingDrawerCandidate(null)}
+          onVerifyAndSchedule={async (appId, candName, candJob) => {
+            await handleUpdateResult(appId, 'Requirements Verified', candName, candJob);
+            setOnboardingDrawerCandidate(prev => prev ? ({ ...prev, status: 'Requirements Verified' }) : null);
+            await fetchInterviews(true);
+          }}
+          onScheduleContract={async (appId, scheduleData) => {
+            try {
+              const superAdminName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() || (user.email || 'Super Admin') : 'Super Admin';
+              const res = await fetch('http://localhost/Hiring%20System/backend/super_admin/interviews/schedule_contract_signing.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  application_id: appId,
+                  scheduled_date: scheduleData.date,
+                  scheduled_time: scheduleData.time,
+                  location: scheduleData.location,
+                  notes: scheduleData.notes,
+                  actor_id: user?.id || 0,
+                  actor_name: superAdminName
+                })
+              });
+              const data = await res.json();
+              if (data.status === 'success') {
+                showSaveToast('Contract signing schedule sent successfully!', 'success');
+                setOnboardingDrawerCandidate(null);
+                await fetchInterviews(true);
+              } else {
+                alert(data.message || 'Failed to schedule contract signing.');
+              }
+            } catch (err) {
+              console.error(err);
+              alert('Connection error while scheduling contract signing.');
+            }
+          }}
+          onMarkContractSigned={async (appId, candName, candJob) => {
+            await handleUpdateResult(appId, 'Contract Signed & Onboarded', candName, candJob);
+            setOnboardingDrawerCandidate(null);
+            await fetchInterviews(true);
+          }}
+          onUpdateStatus={(appId, newStatus) => {
+            const c = onboardingDrawerCandidate;
+            setOnboardingDrawerCandidate(null);
+            setUpdateStatusTarget({
+              id: appId,
+              name: c ? (c.candidate_name || `${c.User_Fname || ''} ${c.User_Lname || ''}`) : 'Candidate',
+              job: c ? c.job_title : 'Position',
+              status: c ? c.status : ''
+            });
+            setSelectedPostHireStatus(newStatus);
+          }}
+        />
+      )}
 
     </div>
   );

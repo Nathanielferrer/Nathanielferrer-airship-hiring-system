@@ -23,7 +23,7 @@ if (empty($rawMessage)) {
 $validUserId = null;
 if (!empty($userId)) {
     try {
-        $chk = $pdo->prepare("SELECT User_ID FROM user WHERE User_ID = :uid");
+        $chk = $pdo->prepare("SELECT user_id FROM users_tbl WHERE user_id = :uid");
         $chk->execute([':uid' => $userId]);
         if ($chk->fetch()) {
             $validUserId = (int)$userId;
@@ -38,7 +38,7 @@ function saveChatHistory($pdo, $applicantId, $userMsg, $botMsg) {
     if (!$applicantId) return;
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO chatbot_history (applicant_id, sender, message_text)
+            INSERT INTO chatbot_history_tbl (user_id, sender, message_text)
             VALUES (:aid1, 'user', :umsg), (:aid2, 'bot', :bmsg)
         ");
         $stmt->execute([
@@ -96,63 +96,132 @@ if ($isStatusQuery) {
         try {
             $appQ = $pdo->prepare("
                 SELECT
-                    a.id,
+                    a.application_id AS id,
+                    a.application_id,
                     a.status,
                     a.applied_at,
+                    a.updated_at,
+                    a.contract_signing_date,
+                    a.contract_signing_time,
+                    a.contract_signing_location,
+                    a.contract_signing_notes,
                     j.title AS job_title,
                     i.scheduled_date,
                     i.scheduled_time,
-                    i.location
-                FROM applications a
-                INNER JOIN jobs j ON a.job_id = j.id
-                LEFT JOIN interviews i ON i.application_id = a.id
+                    i.location,
+                    i.event_type
+                FROM applications_tbl a
+                INNER JOIN jobs_tbl j ON a.job_id = j.job_id
+                LEFT JOIN interviews_tbl i ON i.application_id = a.application_id
                 WHERE a.user_id = :uid
                 ORDER BY a.applied_at DESC
             ");
             $appQ->execute([':uid' => $validUserId]);
             $userApps = $appQ->fetchAll(PDO::FETCH_ASSOC);
 
-            if (empty($userApps)) { // If no applications found, it will display this message 
+            if (empty($userApps)) {
                 $respText = "It looks like you haven't submitted any applications yet. 📋 Visit our Vacancy page to browse current openings and apply!";
-            } else { // If applications are found, it will display the status of the applications
-                $statusLabels = [
-                    'pending'                 => 'Under Review',
-                    'review_required'         => 'Under Interview',
-                    'PASSED INITIAL'          => 'Passed Initial Screening',
-                    'PENDING SCHEDULED'       => 'Interview Being Arranged',
-                    'INTERVIEW_SCHEDULED'     => 'Interview Scheduled',
-                    'CONFIRMED'               => 'Interview Confirmed',
-                    'RESCHEDULING'            => 'Interview Rescheduling',
-                    'HIRED'                   => 'Hired',
-                    'rejected'                => 'Not Shortlisted',
-                    'FAILED INTERVIEW'        => 'Interview Not Passed',
-                    'FAILED'                  => 'Application Unsuccessful',
-                    'DECLINED - UNRESPONSIVE' => 'Declined - Unresponsive',
+            } else {
+                $statusMap = [
+                    'pending'                       => ['label' => 'Under Initial Review', 'desc' => 'Your application and resume are currently being reviewed by our recruitment team.'],
+                    'review_required'               => ['label' => 'Under Detailed Review', 'desc' => 'Your application is undergoing evaluation by our recruitment specialists.'],
+                    'PASSED INITIAL'                => ['label' => 'Passed Initial Screening', 'desc' => 'You passed the initial resume screening! Our HR team will arrange your face-to-face interview slot.'],
+                    'PENDING SCHEDULED'             => ['label' => 'Interview Slot Available (Action Required)', 'desc' => 'An interview appointment is available. Please visit your Application Status page to confirm or select your slot.'],
+                    'CONFIRMED'                     => ['label' => 'Face-to-Face Interview Confirmed', 'desc' => 'Your final face-to-face interview has been confirmed. Please arrive on time at our office.'],
+                    'INTERVIEW_SCHEDULED'           => ['label' => 'Face-to-Face Interview Scheduled', 'desc' => 'Your final face-to-face interview has been scheduled.'],
+                    'RESCHEDULING'                  => ['label' => 'Interview Reschedule Requested', 'desc' => 'Your interview reschedule request has been submitted and is being processed by HR.'],
+                    'Passed Final Interview'         => ['label' => 'Passed Final Interview (Pending Executive Approval)', 'desc' => 'Congratulations! You passed the final interview. Your profile is currently with the President for executive review.'],
+                    'PASSED_FINAL_INTERVIEW'        => ['label' => 'Passed Final Interview (Pending Executive Approval)', 'desc' => 'Congratulations! You passed the final interview. Your profile is currently with the President for executive review.'],
+                    'PASSED FINAL INTERVIEW'        => ['label' => 'Passed Final Interview (Pending Executive Approval)', 'desc' => 'Congratulations! You passed the final interview. Your profile is currently with the President for executive review.'],
+                    'Passed Final Approval'          => ['label' => 'Officially Hired (Pre-Employment Phase)', 'desc' => 'Congratulations! You have received Executive Hire Approval. Please submit your 6 mandatory physical pre-employment documents within 7 calendar days.'],
+                    'PASSED_FINAL_APPROVAL'         => ['label' => 'Officially Hired (Pre-Employment Phase)', 'desc' => 'Congratulations! You have received Executive Hire Approval. Please submit your 6 mandatory physical pre-employment documents within 7 calendar days.'],
+                    'PASSED FINAL APPROVAL'         => ['label' => 'Officially Hired (Pre-Employment Phase)', 'desc' => 'Congratulations! You have received Executive Hire Approval. Please submit your 6 mandatory physical pre-employment documents within 7 calendar days.'],
+                    'HIRED'                         => ['label' => 'Officially Hired (Pre-Employment Phase)', 'desc' => 'Congratulations! You have received Executive Hire Approval. Please submit your 6 mandatory physical pre-employment documents within 7 calendar days.'],
+                    'Requirements Verified'          => ['label' => 'Pre-Employment Requirements Verified', 'desc' => 'All mandatory physical pre-employment documents have been verified by HR. Our team is preparing your contract signing schedule.'],
+                    'REQUIREMENTS_VERIFIED'         => ['label' => 'Pre-Employment Requirements Verified', 'desc' => 'All mandatory physical pre-employment documents have been verified by HR. Our team is preparing your contract signing schedule.'],
+                    'REQUIREMENTS VERIFIED'         => ['label' => 'Pre-Employment Requirements Verified', 'desc' => 'All mandatory physical pre-employment documents have been verified by HR. Our team is preparing your contract signing schedule.'],
+                    'Contract Signing Scheduled'    => ['label' => 'Contract Signing Scheduled', 'desc' => 'Your employment contract signing appointment has been scheduled at our main office.'],
+                    'CONTRACT_SIGNING_SCHEDULED'    => ['label' => 'Contract Signing Scheduled', 'desc' => 'Your employment contract signing appointment has been scheduled at our main office.'],
+                    'CONTRACT SIGNING SCHEDULED'    => ['label' => 'Contract Signing Scheduled', 'desc' => 'Your employment contract signing appointment has been scheduled at our main office.'],
+                    'Contract Signed & Onboarded'   => ['label' => 'Officially Hired & Onboarded', 'desc' => 'Congratulations! Your employment contract has been executed and onboarding is complete. Your new hire training will begin the following next week!'],
+                    'CONTRACT_SIGNED_AND_ONBOARDED' => ['label' => 'Officially Hired & Onboarded', 'desc' => 'Congratulations! Your employment contract has been executed and onboarding is complete. Your new hire training will begin the following next week!'],
+                    'CONTRACT SIGNED & ONBOARDED'   => ['label' => 'Officially Hired & Onboarded', 'desc' => 'Congratulations! Your employment contract has been executed and onboarding is complete. Your new hire training will begin the following next week!'],
+                    'OFFICIALLY HIRED & SIGNED'     => ['label' => 'Officially Hired & Onboarded', 'desc' => 'Congratulations! Your employment contract has been executed and onboarding is complete. Your new hire training will begin the following next week!'],
+                    'OFFICIALLY HIRED'              => ['label' => 'Officially Hired & Onboarded', 'desc' => 'Congratulations! Your employment contract has been executed and onboarding is complete. Your new hire training will begin the following next week!'],
+                    'Candidate Withdrew'            => ['label' => 'Application Withdrawn', 'desc' => 'You have voluntarily withdrawn this application. You are welcome to browse and apply for open positions anytime on our Vacancy page.'],
+                    'CANDIDATE WITHDREW'            => ['label' => 'Application Withdrawn', 'desc' => 'You have voluntarily withdrawn this application. You are welcome to browse and apply for open positions anytime on our Vacancy page.'],
+                    'CANDIDATE_WITHDREW'            => ['label' => 'Application Withdrawn', 'desc' => 'You have voluntarily withdrawn this application. You are welcome to browse and apply for open positions anytime on our Vacancy page.'],
+                    'Incomplete Requirements'        => ['label' => 'Offer Expired (Incomplete Requirements)', 'desc' => 'The 7-calendar-day submission window for mandatory pre-employment documents has expired.'],
+                    'INCOMPLETE REQUIREMENTS'        => ['label' => 'Offer Expired (Incomplete Requirements)', 'desc' => 'The 7-calendar-day submission window for mandatory pre-employment documents has expired.'],
+                    'INCOMPLETE_REQUIREMENTS'        => ['label' => 'Offer Expired (Incomplete Requirements)', 'desc' => 'The 7-calendar-day submission window for mandatory pre-employment documents has expired.'],
+                    'Failed Pre-Employment'          => ['label' => 'Pre-Employment Clearance Not Met', 'desc' => 'The mandatory medical and clearance criteria were not met during the pre-employment stage.'],
+                    'FAILED PRE-EMPLOYMENT'          => ['label' => 'Pre-Employment Clearance Not Met', 'desc' => 'The mandatory medical and clearance criteria were not met during the pre-employment stage.'],
+                    'FAILED_PRE_EMPLOYMENT'          => ['label' => 'Pre-Employment Clearance Not Met', 'desc' => 'The mandatory medical and clearance criteria were not met during the pre-employment stage.'],
+                    'Failed Final Interview'         => ['label' => 'Interview Not Passed', 'desc' => 'Thank you for attending the final interview. Your application was not selected to advance.'],
+                    'FAILED FINAL INTERVIEW'         => ['label' => 'Interview Not Passed', 'desc' => 'Thank you for attending the final interview. Your application was not selected to advance.'],
+                    'FAILED_FINAL_INTERVIEW'         => ['label' => 'Interview Not Passed', 'desc' => 'Thank you for attending the final interview. Your application was not selected to advance.'],
+                    'Failed Final Approval'          => ['label' => 'Not Selected (Executive Review)', 'desc' => 'Thank you for your time. Your application was not selected at the executive review stage.'],
+                    'FAILED FINAL APPROVAL'          => ['label' => 'Not Selected (Executive Review)', 'desc' => 'Thank you for your time. Your application was not selected at the executive review stage.'],
+                    'rejected'                      => ['label' => 'Not Shortlisted', 'desc' => 'Thank you for your interest. Your application was not selected to proceed.'],
+                    'SCREENING_REJECTED'            => ['label' => 'Not Shortlisted', 'desc' => 'Thank you for your interest. Your application was not selected following initial screening.'],
+                    'DECLINED - UNRESPONSIVE'       => ['label' => 'Declined - Unresponsive', 'desc' => 'Application closed due to no response to interview scheduling invitations.']
                 ];
-                // message structure format to display the status of the applications
-                $lines = ["Here is the latest update on your application:\n"];
+
+                $lines = ["Here is the real-time status of your application(s):\n"];
                 foreach ($userApps as $idx => $app) {
                     $jobTitle  = $app['job_title'];
-                    $rawStatus = $app['status'];
-                    $label     = $statusLabels[$rawStatus] ?? ucwords(strtolower(str_replace('_', ' ', $rawStatus)));
+                    $rawStatus = trim($app['status'] ?? '');
+                    $upperStatus = strtoupper($rawStatus);
+
+                    $info = $statusMap[$rawStatus] ?? $statusMap[$upperStatus] ?? [
+                        'label' => ucwords(strtolower(str_replace('_', ' ', $rawStatus))),
+                        'desc'  => 'Your application is currently being processed.'
+                    ];
+
                     $appliedOn = date('F j, Y', strtotime($app['applied_at']));
 
-                    $lines[] = "Position: {$jobTitle}";
-                    $lines[] = "Current Status: {$label}";
-                    $lines[] = "";
-                    $lines[] = "Applied On: {$appliedOn}";
+                    $lines[] = "📋 Position: {$jobTitle}";
+                    $lines[] = "🔹 Status: {$info['label']}";
+                    $lines[] = "ℹ️ Note: {$info['desc']}";
+                    $lines[] = "📅 Applied On: {$appliedOn}";
 
-                    if (!empty($app['scheduled_date'])) {
-                        $intDateStr = date('l, F j, Y', strtotime($app['scheduled_date']));
-                        $timeRaw = !empty($app['scheduled_time']) ? $app['scheduled_time'] : '10:00:00';
-                        $intTimeStr = date('g:i A', strtotime($timeRaw));
-                        $intLoc = !empty($app['location']) ? $app['location'] : '352 T. Pinpin Escolta St., Binondo, Manila 1006';
-                        $lines[] = "Interview Date: {$intDateStr} at {$intTimeStr}";
-                        $lines[] = "Location: {$intLoc}";
+                    // Contract Signing Scheduled info
+                    if (in_array($upperStatus, ['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED']) && !empty($app['contract_signing_date'])) {
+                        $signDateStr = date('l, F j, Y', strtotime($app['contract_signing_date']));
+                        $signTimeStr = !empty($app['contract_signing_time']) ? $app['contract_signing_time'] : '09:00 AM';
+                        $signLoc     = !empty($app['contract_signing_location']) ? $app['contract_signing_location'] : '352 T. Pinpin Escolta St., Binondo, Manila 1006';
+                        $lines[] = "✍️ Contract Signing: {$signDateStr} at {$signTimeStr}";
+                        $lines[] = "📍 Venue: {$signLoc}";
+                        if (!empty($app['contract_signing_notes'])) {
+                            $lines[] = "📝 Instructions: {$app['contract_signing_notes']}";
+                        }
                     }
+                    // Interview Scheduled info
+                    elseif (in_array($upperStatus, ['CONFIRMED', 'INTERVIEW_SCHEDULED', 'PENDING SCHEDULED']) && !empty($app['scheduled_date'])) {
+                        $intDateStr = date('l, F j, Y', strtotime($app['scheduled_date']));
+                        $timeRaw    = !empty($app['scheduled_time']) ? $app['scheduled_time'] : '10:00:00';
+                        $intTimeStr = date('g:i A', strtotime($timeRaw));
+                        $intLoc     = !empty($app['location']) ? $app['location'] : '352 T. Pinpin Escolta St., Binondo, Manila 1006';
+                        $lines[] = "🕒 Interview Date: {$intDateStr} at {$intTimeStr}";
+                        $lines[] = "📍 Location: {$intLoc}";
+                    }
+                    // Officially Hired & Onboarded: Training Starts Next Week
+                    elseif (in_array($upperStatus, ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED', 'OFFICIALLY HIRED'])) {
+                        $lines[] = "🎉 Next Step: Your new hire training will begin the following next week! HR will contact you with orientation details.";
+                    }
+                    // Hired awaiting requirements: 7-day deadline
+                    elseif (in_array($upperStatus, ['PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED'])) {
+                        $baseD = $app['updated_at'] ?: $app['applied_at'];
+                        $dObj  = new DateTime($baseD);
+                        $dObj->modify('+7 days');
+                        $deadlineStr = $dObj->format('F j, Y');
+                        $lines[] = "⏳ Document Deadline: {$deadlineStr} (Submit 6 physical requirements to HR within 7 days).";
+                    }
+
                     $lines[] = "";
                 }
-                $lines[] = "For more details, please visit your Application Status page.";
+
+                $lines[] = "For more details and actions, visit your Application Status page.";
                 $lines[] = "Is there anything else I can assist you with today?";
                 $respText = implode("\n", $lines);
             }
@@ -190,7 +259,7 @@ foreach ($jobListKeywords as $kw) {
 
 if ($isJobListQuery) {
     try {
-        $jobsQ   = $pdo->query("SELECT title, description, requirements, availability FROM jobs WHERE status = 'Active' AND availability > 0 ORDER BY id ASC");
+        $jobsQ   = $pdo->query("SELECT title, description, requirements, availability FROM jobs_tbl WHERE status = 'Active' AND availability > 0 ORDER BY job_id ASC");
         $liveJobs = $jobsQ->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($liveJobs)) {
@@ -237,7 +306,7 @@ if ($isRequirementQuery) {
     // Try to find all active job titles and match against the user's message
     $matchedJob = null;
     try {
-        $allJobsStmt = $pdo->query("SELECT id, title, description, requirements, status, availability FROM jobs ORDER BY id ASC");
+        $allJobsStmt = $pdo->query("SELECT job_id AS id, job_id, title, description, requirements, status, availability FROM jobs_tbl ORDER BY job_id ASC");
         $allJobs = $allJobsStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $bestMatchScore = 0;
@@ -370,9 +439,9 @@ if (!empty($meaningfulTokens)) {
     $searchQuery = implode(' ', $meaningfulTokens);
     try {
         $ftsStmt = $pdo->prepare("
-            SELECT id, primary_question, predefined_answer, keyword_tags,
+            SELECT kb_id AS id, kb_id, primary_question, predefined_answer, keyword_tags,
                    MATCH(primary_question, keyword_tags) AGAINST(:q IN NATURAL LANGUAGE MODE) AS relevance
-            FROM   knowledge_base
+            FROM   chatbot_knowledge_base_tbl
             WHERE  MATCH(primary_question, keyword_tags) AGAINST(:q2 IN NATURAL LANGUAGE MODE)
             ORDER  BY relevance DESC
             LIMIT  5
@@ -392,8 +461,8 @@ if (!empty($meaningfulTokens)) {
         if (!empty($likeParts)) {
             try {
                 $likeStmt = $pdo->prepare(
-                    "SELECT id, primary_question, predefined_answer, keyword_tags, 0 AS relevance
-                     FROM knowledge_base WHERE " . implode(' OR ', $likeParts) . " LIMIT 5"
+                    "SELECT kb_id AS id, kb_id, primary_question, predefined_answer, keyword_tags, 0 AS relevance
+                     FROM chatbot_knowledge_base_tbl WHERE " . implode(' OR ', $likeParts) . " LIMIT 5"
                 );
                 $likeStmt->execute($likeParams);
                 $candidates = $likeStmt->fetchAll();
@@ -449,7 +518,7 @@ if ($bestScore >= $THRESHOLD && $bestAnswer !== null) {
 // Fetch live active job openings to give Gemini real-time context
 $activeJobsText = "None listed currently.";
 try {
-    $jobStmt = $pdo->query("SELECT title, description, requirements FROM jobs WHERE status = 'Active' AND availability > 0 LIMIT 10");
+    $jobStmt = $pdo->query("SELECT title, description, requirements FROM jobs_tbl WHERE status = 'Active' AND availability > 0 LIMIT 10");
     $activeJobs = $jobStmt->fetchAll(PDO::FETCH_ASSOC);
     if (!empty($activeJobs)) {
         $jobList = [];
@@ -471,9 +540,20 @@ $applicantContextText = "The user is not logged in or has no applications on fil
 if ($validUserId) {
     try {
         $ctxQ = $pdo->prepare("
-            SELECT a.status, j.title AS job_title, a.applied_at
-            FROM applications a
-            INNER JOIN jobs j ON a.job_id = j.id
+            SELECT 
+                a.status, 
+                j.title AS job_title, 
+                a.applied_at, 
+                a.updated_at,
+                a.contract_signing_date,
+                a.contract_signing_time,
+                a.contract_signing_location,
+                i.scheduled_date,
+                i.scheduled_time,
+                i.location AS interview_location
+            FROM applications_tbl a
+            INNER JOIN jobs_tbl j ON a.job_id = j.job_id
+            LEFT JOIN interviews_tbl i ON i.application_id = a.application_id
             WHERE a.user_id = :uid
             ORDER BY a.applied_at DESC
             LIMIT 5
@@ -481,9 +561,21 @@ if ($validUserId) {
         $ctxQ->execute([':uid' => $validUserId]);
         $ctxApps = $ctxQ->fetchAll(PDO::FETCH_ASSOC);
         if (!empty($ctxApps)) {
-            $ctxLines = ["This applicant (User ID: {$validUserId}) has the following applications:"];
+            $ctxLines = ["This applicant (User ID: {$validUserId}) has the following application records:"];
             foreach ($ctxApps as $ca) {
-                $ctxLines[] = "  - Applied for: {$ca['job_title']} | Status: {$ca['status']} | Date: " . date('Y-m-d', strtotime($ca['applied_at']));
+                $statusLine = "  - Applied for: {$ca['job_title']} | Status: {$ca['status']} | Applied on: " . date('Y-m-d', strtotime($ca['applied_at']));
+                if (!empty($ca['scheduled_date'])) {
+                    $statusLine .= " | Face-to-Face Interview Scheduled: {$ca['scheduled_date']} at {$ca['scheduled_time']} ({$ca['interview_location']})";
+                }
+                if (!empty($ca['contract_signing_date'])) {
+                    $statusLine .= " | Contract Signing Appointment: {$ca['contract_signing_date']} at {$ca['contract_signing_time']} ({$ca['contract_signing_location']})";
+                }
+                if (in_array(strtoupper($ca['status']), ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED', 'OFFICIALLY HIRED'])) {
+                    $statusLine .= " | Officially Hired & Onboarded (Training begins the following next week)";
+                } elseif (in_array(strtoupper($ca['status']), ['PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED'])) {
+                    $statusLine .= " | Passed Final Approval (6 physical pre-employment documents due within 7 days)";
+                }
+                $ctxLines[] = $statusLine;
             }
             $applicantContextText = implode("\n", $ctxLines);
         } else {
@@ -499,8 +591,8 @@ if ($validUserId) {
     try {
         $histStmt = $pdo->prepare("
             SELECT sender, message_text, created_at
-            FROM chatbot_history
-            WHERE applicant_id = :uid
+            FROM chatbot_history_tbl
+            WHERE user_id = :uid
             ORDER BY created_at DESC
             LIMIT 6
         ");
@@ -514,7 +606,15 @@ $geminiApiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
 
 if (!empty($geminiApiKey)) {
     $systemInstruction = <<<EOT
-ROLE: You are the intelligent HR & Hiring AI Assistant for "Airship Express", a courier, logistics, and delivery company in the Philippines. You have full knowledge of their hiring process, open positions, and applicant context.
+ROLE: You are the intelligent HR & Hiring AI Assistant for "Airship Express", a courier, logistics, and delivery company located in Binondo, Manila, Philippines. You have full knowledge of their hiring process, open positions, and applicant context.
+
+RECRUITMENT PIPELINE STAGES AT AIRSHIP EXPRESS:
+1. Applied & AI Screening: Candidate submits resume and basic profile on the Vacancy page.
+2. Face-to-Face Final Interview: Screened candidates attend a Face-to-Face interview at Airship Express Main Office (352 T. Pinpin Escolta St., Binondo, Manila).
+3. President's Executive Final Approval: Passed candidates are forwarded for final review by the Company President.
+4. Pre-Employment Requirements & Verification: Approved candidates are officially hired and have 7 calendar days to submit 6 physical documents (Medical Certificate, Drug Test, NBI Clearance, Police Clearance, COE, TOR/Diploma).
+5. Contract Signing & Onboarding: After requirements are verified, candidate signs their official employment contract. Upon contract execution, new hire training begins the following next week!
+6. Special Statuses: "Candidate Withdrew" (candidate voluntarily withdrew, can re-apply anytime on the Vacancy page), "Incomplete Requirements" (7-day document submission window expired).
 
 CURRENT OPEN POSITIONS AT AIRSHIP EXPRESS:
 {$activeJobsText}
@@ -647,11 +747,11 @@ EOT;
                 exit;
             }
 
-            // Genuine hiring query -> Log to unanswered_queries IF it's an HR knowledge gap
+            // Genuine hiring query -> Log to chatbot_unresolved_queries_tbl IF it's an HR knowledge gap
             if ($isKnowledgeGap && !$isAdminTest) {
                 try {
                     $logStmt = $pdo->prepare("
-                        INSERT INTO unanswered_queries (applicant_id, raw_question_text, status)
+                        INSERT INTO chatbot_unresolved_queries_tbl (user_id, raw_question_text, status)
                         VALUES (:uid, :q, 'pending review')
                     ");
                     if ($validUserId !== null) {
@@ -685,7 +785,7 @@ $fallbackText = "I don't have the exact predefined answer to that right now. I'v
 if (!$isAdminTest) {
     try {
         $logStmt = $pdo->prepare("
-            INSERT INTO unanswered_queries (applicant_id, raw_question_text, status)
+            INSERT INTO chatbot_unresolved_queries_tbl (user_id, raw_question_text, status)
             VALUES (:uid, :q, 'pending review')
         ");
         if ($validUserId !== null) {

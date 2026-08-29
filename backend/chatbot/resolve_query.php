@@ -3,7 +3,7 @@ require_once '../db.php';
 header('Content-Type: application/json');
 
 $body    = json_decode(file_get_contents('php://input'), true);
-$queryId = $body['query_id'] ?? null;
+$queryId = $body['query_id'] ?? ($body['id'] ?? null);
 $mode    = $body['mode']     ?? 'new'; // 'existing' | 'new'
 
 if (!$queryId) {
@@ -15,8 +15,7 @@ try {
     $pdo->beginTransaction();
 
     if ($mode === 'existing') {
-        // ── Map to an existing KB entry (append new tags) ─────────────────────
-        $kbId      = $body['kb_id']      ?? null;
+        $kbId      = $body['kb_id'] ?? ($body['id'] ?? null);
         $appendTags = trim($body['append_tags'] ?? '');
 
         if (!$kbId) {
@@ -24,20 +23,18 @@ try {
         }
 
         if (!empty($appendTags)) {
-            // Trim trailing comma/space from existing tags then append
             $stmt = $pdo->prepare("
-                UPDATE knowledge_base
+                UPDATE chatbot_knowledge_base_tbl
                 SET    keyword_tags = CONCAT(
                            TRIM(BOTH ', ' FROM keyword_tags),
                            ', ',
                            :tags
                        )
-                WHERE  id = :id
+                WHERE  kb_id = :id
             ");
             $stmt->execute([':tags' => $appendTags, ':id' => (int)$kbId]);
         }
     } else {
-        // ── Create a brand-new KB entry ───────────────────────────────────────
         $question = trim($body['primary_question']  ?? '');
         $answer   = trim($body['predefined_answer'] ?? '');
         $tags     = trim($body['keyword_tags']      ?? '');
@@ -47,14 +44,14 @@ try {
         }
 
         $stmt = $pdo->prepare("
-            INSERT INTO knowledge_base (primary_question, predefined_answer, keyword_tags)
+            INSERT INTO chatbot_knowledge_base_tbl (primary_question, predefined_answer, keyword_tags)
             VALUES (:q, :a, :t)
         ");
         $stmt->execute([':q' => $question, ':a' => $answer, ':t' => $tags]);
     }
 
     // Always remove from the review queue
-    $del = $pdo->prepare("DELETE FROM unanswered_queries WHERE id = :id");
+    $del = $pdo->prepare("DELETE FROM chatbot_unresolved_queries_tbl WHERE query_id = :id");
     $del->execute([':id' => (int)$queryId]);
 
     $pdo->commit();
@@ -64,3 +61,4 @@ try {
     if ($pdo->inTransaction()) $pdo->rollBack();
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
+?>

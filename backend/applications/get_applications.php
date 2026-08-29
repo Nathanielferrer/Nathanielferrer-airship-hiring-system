@@ -4,7 +4,6 @@ require_once '../db.php';
 
 header('Content-Type: application/json');
 
-// Check if requester is logged in (optional verification if session checking is globally set, but let's make it robust)
 $search       = isset($_GET['search']) ? trim($_GET['search']) : '';
 $jobId        = isset($_GET['job_id']) ? intval($_GET['job_id']) : 0;
 $status       = isset($_GET['status']) ? trim($_GET['status']) : '';
@@ -18,9 +17,9 @@ try {
     }
 
     // 1. Calculate stats dynamically based on date for active Resume Screening pipeline
-    $pendingCount       = intval($pdo->query("SELECT COUNT(*) FROM applications WHERE is_archived = 0 AND status IN ('pending', 'review_required')" . $statsDateCond)->fetchColumn());
-    $passedInitialCount = intval($pdo->query("SELECT COUNT(*) FROM applications WHERE is_archived = 0 AND status = 'PASSED INITIAL'" . $statsDateCond)->fetchColumn());
-    $rejectedCount      = intval($pdo->query("SELECT COUNT(*) FROM applications WHERE is_archived = 0 AND status IN ('rejected', 'SCREENING_REJECTED')" . $statsDateCond)->fetchColumn());
+    $pendingCount       = intval($pdo->query("SELECT COUNT(*) FROM applications_tbl WHERE is_archived = 0 AND status IN ('pending', 'review_required')" . $statsDateCond)->fetchColumn());
+    $passedInitialCount = intval($pdo->query("SELECT COUNT(*) FROM applications_tbl WHERE is_archived = 0 AND status = 'PASSED INITIAL'" . $statsDateCond)->fetchColumn());
+    $rejectedCount      = intval($pdo->query("SELECT COUNT(*) FROM applications_tbl WHERE is_archived = 0 AND status IN ('rejected', 'SCREENING_REJECTED')" . $statsDateCond)->fetchColumn());
 
     $stats = [
         "total"           => $pendingCount + $passedInitialCount + $rejectedCount,
@@ -28,12 +27,13 @@ try {
         "review_required" => $pendingCount,
         "passed_initial"  => $passedInitialCount,
         "rejected"        => $rejectedCount,
-        "new_today"       => intval($pdo->query("SELECT COUNT(*) FROM applications WHERE is_archived = 0 AND DATE(applied_at) = CURDATE()")->fetchColumn())
+        "new_today"       => intval($pdo->query("SELECT COUNT(*) FROM applications_tbl WHERE is_archived = 0 AND DATE(applied_at) = CURDATE()")->fetchColumn())
     ];
 
     // 2. Fetch the list of applications
     $sql = "SELECT 
-                a.id, 
+                a.application_id AS id,
+                a.application_id, 
                 a.user_id, 
                 a.job_id, 
                 a.resume_path, 
@@ -50,9 +50,9 @@ try {
                 u.User_Mobile,
                 j.title AS job_title,
                 j.requirements AS job_requirements
-            FROM applications a
-            INNER JOIN user u ON a.user_id = u.User_ID
-            INNER JOIN jobs j ON a.job_id = j.id
+            FROM applications_tbl a
+            INNER JOIN users_tbl u ON a.user_id = u.user_id
+            INNER JOIN jobs_tbl j ON a.job_id = j.job_id
             WHERE a.is_archived = 0";
 
     $params = [];
@@ -73,7 +73,6 @@ try {
     }
 
     if (empty($status) || $status === 'all') {
-        // Restrict to active candidates in the resume screening pipeline
         $sql .= " AND a.status IN ('pending', 'review_required', 'PASSED INITIAL', 'rejected', 'SCREENING_REJECTED')";
     } else {
         if ($status === 'pending') {
@@ -88,7 +87,6 @@ try {
         }
     }
 
-    // Apply sorting
     switch ($sort) {
         case 'oldest':
         case 'date_asc':
@@ -126,3 +124,4 @@ try {
         "message" => "Database fetch failed: " . $e->getMessage()
     ]);
 }
+?>

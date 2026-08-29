@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import './RescheduleModal.css';
 
@@ -88,6 +88,25 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
 
         {/* ── Body ── */}
         <div className="reschedule-modal__body">
+
+          {/* 2-Day Rescheduling Policy Notice */}
+          <div style={{
+            background: '#fffbeb',
+            border: '1.5px solid #fef3c7',
+            borderLeft: '4px solid #f59e0b',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            marginBottom: '18px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px'
+          }}>
+            <i className="bx bx-error-circle" style={{ color: '#d97706', fontSize: '20px', marginTop: '1px', flexShrink: 0 }} />
+            <div style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.5', fontFamily: "'Inter', sans-serif" }}>
+              <strong style={{ display: 'block', marginBottom: '2px', color: '#78350f', fontWeight: '700' }}>Important Rescheduling Notice</strong>
+              Rescheduling requests are <strong>only valid within 2 days</strong> of receiving your schedule assignment. If exceeded, your reschedule request will be void and invalid.
+            </div>
+          </div>
 
           {/* SECTION 1: Available Schedule Table */}
           <div>
