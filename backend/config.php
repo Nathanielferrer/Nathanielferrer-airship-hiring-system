@@ -5,17 +5,12 @@
 require_once __DIR__ . '/env_loader.php';
 
 // ── GEMINI AI MULTI-KEY & MODEL FAILOVER CONFIGURATION ────────────────────────
-// Keys are securely loaded from backend/.env or environment variables.
-$defaultGeminiKeys = [
-    'AQ.Ab8RN6Kc9S9CKzJcdXH6hMt1FX2J8aTtZdJbwdDLm1SK5bhumQ',
-    'AQ.Ab8RN6IWcPhDZUGPuUvT8ijJNGFKCn0PwzelFpWzK6edlok9Ww',
-    'AQ.Ab8RN6KkQN6yAhYXzduNxdsHga2AGU5_d0EY84oRuq-iUCjmMw'
-];
+// Keys are strictly loaded from environment variables (backend/.env or Railway).
 $envGeminiKeys = getenv('GEMINI_API_KEYS');
 if ($envGeminiKeys && is_string($envGeminiKeys)) {
-    define('GEMINI_API_KEYS', array_filter(array_map('trim', explode(',', $envGeminiKeys))));
+    define('GEMINI_API_KEYS', array_values(array_filter(array_map('trim', explode(',', $envGeminiKeys)))));
 } else {
-    define('GEMINI_API_KEYS', $defaultGeminiKeys);
+    define('GEMINI_API_KEYS', []);
 }
 
 // Backward compatibility with single-key references
