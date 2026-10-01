@@ -54,32 +54,7 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
     if (empty($toEmail)) return;
     try {
         $mail = new PHPMailer(true);
-
-        $mail->isSMTP();
-        $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = getenv('SMTP_USER') ?: 'airship.express07@gmail.com';
-        $mail->Password   = getenv('SMTP_PASS') ?: 'wqpb nije pcqz qwlc';
-        $port             = (int)(getenv('SMTP_PORT') ?: 587);
-        $mail->Port       = $port;
-        if ($port === 465) {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        } else {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        }
-        $mail->Timeout    = 10;
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
-            ]
-        ];
-
-        $mail->CharSet    = 'UTF-8';
-        $mail->Encoding   = 'base64';
-
-        $mail->setFrom($mail->Username, 'Airship Express Recruitment');
+        configure_smtp($mail, 'Airship Express Recruitment');
         $mail->addAddress($toEmail, $toName);
 
         $friendlyDate  = date('D, F j, Y', strtotime($date));
@@ -244,7 +219,16 @@ try {
 
         $toEmail = $app['candidate_email'] ?: $app['User_Email'];
         $toName  = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
-        sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTime, $fixedLocation);
+        if (!empty($toEmail)) {
+            $emailsToDispatch[] = [
+                'email'    => $toEmail,
+                'name'     => $toName,
+                'date'     => $date,
+                'time'     => $startTime,
+                'end_time' => $endTime,
+                'location' => $fixedLocation
+            ];
+        }
 
         log_system_audit(
             $pdo,
@@ -269,6 +253,24 @@ try {
     }
 
     $pdo->commit();
+
+    // Send emails post-commit so SMTP never holds database locks
+    if (!empty($emailsToDispatch)) {
+        foreach ($emailsToDispatch as $dispatch) {
+            try {
+                sendConfirmRescheduleEmail(
+                    $dispatch['email'],
+                    $dispatch['name'],
+                    $dispatch['date'],
+                    $dispatch['time'],
+                    $dispatch['end_time'],
+                    $dispatch['location']
+                );
+            } catch (\Throwable $e) {
+                error_log("[ConfirmReschedule] Failed to send email to {$dispatch['email']}: " . $e->getMessage());
+            }
+        }
+    }
 
     echo json_encode([
         'status'  => 'success',

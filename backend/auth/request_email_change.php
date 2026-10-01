@@ -1,7 +1,7 @@
 <?php
-require_once '../db.php';
-require_once '../rate_limit.php';
-require_once '../email_helper.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../rate_limit.php';
+require_once __DIR__ . '/../email_helper.php';
 
 header('Content-Type: application/json');
 

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../audit_helper.php';
 require_once __DIR__ . '/../../auth/auth_guard.php';
+require_once __DIR__ . '/../../email_helper.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -187,6 +188,7 @@ try {
 
     $processedCount = 0;
     $lastRespMsg = '';
+    $emailsToDispatch = [];
 
     foreach ($application_ids as $application_id) {
         $candStmt->execute([$application_id]);
@@ -286,12 +288,20 @@ try {
                 $notifStmt->execute([$userId, $application_id, $notifTitle, $notifMsg]);
             }
 
-            // Also dispatch email notification
-            require_once __DIR__ . '/../../email_helper.php';
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_NO_SHOW', $remarks, [
-                'interview_date' => $dateStr,
-                'interview_time' => $timeStr
-            ]);
+            // Queue email notification for post-commit dispatch
+            if (!empty($candEmail)) {
+                $emailsToDispatch[] = [
+                    'email'   => $candEmail,
+                    'name'    => $candName,
+                    'job'     => $jobTitle,
+                    'type'    => 'FINAL_NO_SHOW',
+                    'remarks' => $remarks,
+                    'details' => [
+                        'interview_date' => $dateStr,
+                        'interview_time' => $timeStr
+                    ]
+                ];
+            }
         }
 
         if ($newStatus === 'Contract Signing No Show') {
@@ -511,9 +521,17 @@ try {
                     $notifStmt->execute([$userId, $application_id, $notifTitle, $notifMsg]);
                 }
 
-                // Email Delivery via centralized email helper
-                require_once __DIR__ . '/../../email_helper.php';
-                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'WAITLIST_STANDBY', $remarks);
+                // Queue Email Delivery for post-commit dispatch
+                if (!empty($candEmail)) {
+                    $emailsToDispatch[] = [
+                        'email'   => $candEmail,
+                        'name'    => $candName,
+                        'job'     => $jobTitle,
+                        'type'    => 'WAITLIST_STANDBY',
+                        'remarks' => $remarks,
+                        'details' => []
+                    ];
+                }
                 break;
 
             case 'PASS_FINAL_APPROVAL':
@@ -581,9 +599,17 @@ try {
                     $notifStmt->execute([$userId, $application_id, $notifTitle, $notifMsg]);
                 }
 
-                // 2. Email Delivery via centralized email helper
-                require_once __DIR__ . '/../../email_helper.php';
-                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'CONTRACT_SIGNED', '');
+                // 2. Queue Email Delivery for post-commit dispatch
+                if (!empty($candEmail)) {
+                    $emailsToDispatch[] = [
+                        'email'   => $candEmail,
+                        'name'    => $candName,
+                        'job'     => $jobTitle,
+                        'type'    => 'CONTRACT_SIGNED',
+                        'remarks' => '',
+                        'details' => []
+                    ];
+                }
                 break;
 
             case 'Officially Hired':
@@ -644,15 +670,23 @@ try {
                     $notifStmt->execute([$userId, $application_id, $notifTitle, $notifMsg]);
                 }
 
-                // Email Delivery via centralized email helper
-                require_once __DIR__ . '/../../email_helper.php';
-                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'COMPLETED_REQUIREMENTS', $remarks, [
-                    'work_start_date' => $work_start_date,
-                    'work_start_time' => $work_start_time,
-                    'work_start_location' => $work_start_location,
-                    'work_start_reporting_to' => $work_start_reporting_to,
-                    'work_start_notes' => $work_start_notes
-                ]);
+                // Queue Email Delivery for post-commit dispatch
+                if (!empty($candEmail)) {
+                    $emailsToDispatch[] = [
+                        'email'   => $candEmail,
+                        'name'    => $candName,
+                        'job'     => $jobTitle,
+                        'type'    => 'COMPLETED_REQUIREMENTS',
+                        'remarks' => $remarks,
+                        'details' => [
+                            'work_start_date'        => $work_start_date,
+                            'work_start_time'        => $work_start_time,
+                            'work_start_location'    => $work_start_location,
+                            'work_start_reporting_to' => $work_start_reporting_to,
+                            'work_start_notes'       => $work_start_notes
+                        ]
+                    ];
+                }
                 break;
 
             case 'Partially Compliant':
@@ -733,17 +767,43 @@ try {
                 $notifStmt->execute([$userId, $application_id, $hireNotifTitle, $hireNotifMsg]);
             }
 
-            // 2. Email via centralized email helper
-            require_once __DIR__ . '/../../email_helper.php';
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'PRESIDENT_APPROVED', '');
+            // 2. Queue Email Delivery for post-commit dispatch
+            if (!empty($candEmail)) {
+                $emailsToDispatch[] = [
+                    'email'   => $candEmail,
+                    'name'    => $candName,
+                    'job'     => $jobTitle,
+                    'type'    => 'PRESIDENT_APPROVED',
+                    'remarks' => '',
+                    'details' => []
+                ];
+            }
         }
 
         // ── Email for Final Interview Pass / Fail / President Rejected ────────
-        require_once __DIR__ . '/../../email_helper.php';
-        if (in_array($statusToSave, ['Passed Final Interview'])) {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_PASSED', '');
-        } elseif (in_array($statusToSave, ['Failed Final Interview'])) {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_FAILED', '');
+        $normStatusToSave = strtoupper(trim($statusToSave));
+        if (in_array($normStatusToSave, ['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'])) {
+            if (!empty($candEmail)) {
+                $emailsToDispatch[] = [
+                    'email'   => $candEmail,
+                    'name'    => $candName,
+                    'job'     => $jobTitle,
+                    'type'    => 'FINAL_PASSED',
+                    'remarks' => $remarks,
+                    'details' => []
+                ];
+            }
+        } elseif (in_array($normStatusToSave, ['FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW'])) {
+            if (!empty($candEmail)) {
+                $emailsToDispatch[] = [
+                    'email'   => $candEmail,
+                    'name'    => $candName,
+                    'job'     => $jobTitle,
+                    'type'    => 'FINAL_FAILED',
+                    'remarks' => $remarks,
+                    'details' => []
+                ];
+            }
 
             // In-app notification for failed interview
             if ($userId > 0) {
@@ -753,8 +813,17 @@ try {
                 ");
                 $notifStmt->execute([$userId, $application_id, 'Interview Result', "Your final interview result for {$jobTitle} has been posted. Please check your Application Status." ]);
             }
-        } elseif ($statusToSave === 'Failed Final Approval') {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'PRESIDENT_REJECTED', '');
+        } elseif (in_array($normStatusToSave, ['FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL'])) {
+            if (!empty($candEmail)) {
+                $emailsToDispatch[] = [
+                    'email'   => $candEmail,
+                    'name'    => $candName,
+                    'job'     => $jobTitle,
+                    'type'    => 'PRESIDENT_REJECTED',
+                    'remarks' => $remarks,
+                    'details' => []
+                ];
+            }
 
             if ($userId > 0) {
                 $notifStmt = $pdo->prepare("
@@ -778,6 +847,26 @@ try {
     }
 
     $pdo->commit();
+
+    // ── Post-Commit Email Dispatch ──────────────────────────────────────────
+    // Emails are sent AFTER the database transaction commits so that slow SMTP 
+    // network calls never hold database row locks or cause transaction rollbacks.
+    if (!empty($emailsToDispatch)) {
+        foreach ($emailsToDispatch as $dispatch) {
+            try {
+                sendApplicationStatusEmail(
+                    $dispatch['email'],
+                    $dispatch['name'],
+                    $dispatch['job'],
+                    $dispatch['type'],
+                    $dispatch['remarks'] ?? '',
+                    $dispatch['details'] ?? []
+                );
+            } catch (\Throwable $mailErr) {
+                error_log("[Update Result Email Error] To: {$dispatch['email']}, Type: {$dispatch['type']}: " . $mailErr->getMessage());
+            }
+        }
+    }
 
     echo json_encode([
         "status" => "success",

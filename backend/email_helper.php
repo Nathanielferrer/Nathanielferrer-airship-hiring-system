@@ -710,4 +710,189 @@ function sendEmailChangeVerificationLink(string $newEmail, string $toName, strin
         return false;
     }
 }
+
+/**
+ * Send an email verification link to a newly registered user.
+ *
+ * @param string $toEmail          User's registered email address.
+ * @param string $toName           User's full name.
+ * @param string $verificationCode 6-digit or secure token code.
+ * @return bool
+ */
+function sendRegistrationVerificationEmail(string $toEmail, string $toName, string $verificationCode): bool {
+    if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
+    try {
+        $mail = new PHPMailer(true);
+        configure_smtp($mail, 'Airship Express Hiring Portal');
+        $mail->addAddress($toEmail, $toName);
+        $mail->isHTML(true);
+        $mail->Subject = 'Verify Your Email Address - Airship Express';
+
+        $safeName = htmlspecialchars($toName ?: 'Applicant');
+        $verificationLink = get_frontend_url() . "/verify?token=" . urlencode($verificationCode);
+
+        $mail->Body = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e4e7; border-radius: 8px; background-color: #ffffff;'>
+            <div style='text-align: center; border-bottom: 1px solid #e5e4e7; padding-bottom: 20px;'>
+                <h2 style='color: #e6007e; margin: 0; font-family: Montserrat, Arial, sans-serif;'>AIRSHIP EXPRESS</h2>
+                <p style='color: #64748b; margin: 5px 0 0 0;'>Hiring Management Portal</p>
+            </div>
+            <div style='padding: 24px 0;'>
+                <p style='font-size: 16px; color: #1e293b; margin: 0 0 12px;'>Hello <strong>{$safeName}</strong>,</p>
+                <p style='font-size: 15px; color: #475569; line-height: 1.6; margin: 0 0 20px;'>Thank you for registering with us! To complete your registration and activate your candidate account, please verify your email address by clicking the button below:</p>
+                <div style='text-align: center; margin: 30px 0;'>
+                    <a href='{$verificationLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(230, 0, 126, 0.2);'>Verify Email Address</a>
+                </div>
+                <p style='font-size: 13px; color: #64748b; line-height: 1.5;'>If the button above does not work, copy and paste this URL into your browser:<br><a href='{$verificationLink}' style='color: #e6007e; word-break: break-all;'>{$verificationLink}</a></p>
+            </div>
+            <div style='border-top: 1px solid #e5e4e7; padding-top: 20px; text-align: center; font-size: 12px; color: #9ca3af;'>
+                <p style='margin: 0;'>This is an automated message from Airship Express Hiring Management System. Please do not reply.</p>
+            </div>
+        </div>
+        ";
+        $mail->AltBody = "Hello {$safeName},\n\nTo complete your registration, please verify your email address by visiting this link:\n{$verificationLink}";
+
+        $mail->send();
+        return true;
+    } catch (\Throwable $e) {
+        error_log("[EmailHelper] Failed to send registration verification email to {$toEmail}: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Send password reset email to an Applicant, Admin, or Super Admin.
+ *
+ * @param string $toEmail    Recipient's email address.
+ * @param string $toName     Recipient's full name.
+ * @param string $resetToken 64-character hex reset token.
+ * @param int    $isAdmin    User's admin level (0 = Applicant, 1 = Admin, 3 = Super Admin).
+ * @return bool
+ */
+function sendPasswordResetEmail(string $toEmail, string $toName, string $resetToken, int $isAdmin = 0): bool {
+    if (empty($toEmail) || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+
+    try {
+        $mail = new PHPMailer(true);
+        configure_smtp($mail, 'Airship Express Security Portal');
+        $mail->addAddress($toEmail, $toName);
+        $mail->isHTML(true);
+
+        $safeName  = htmlspecialchars($toName ?: 'User');
+        $resetLink = get_frontend_url() . "/reset-password?token=" . urlencode($resetToken);
+
+        // Client IP determination
+        $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && !empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $clientIp = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+        }
+        if ($clientIp === '::1' || $clientIp === '::ffff:127.0.0.1') {
+            $clientIp = '127.0.0.1 (Localhost)';
+        }
+
+        date_default_timezone_set('Asia/Manila');
+        $requestTime = date('F j, Y, h:i A') . ' (Philippine Time)';
+
+        if ($isAdmin === 3) {
+            // High-Security Email for Root Super Administrator
+            $mail->Subject = '🔒 Super Admin Password Reset Authorization - Airship Express';
+            $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e4e7; border-radius: 8px; background-color: #ffffff;'>
+                <div style='text-align: center; border-bottom: 1px solid #e5e4e7; padding-bottom: 20px;'>
+                    <h2 style='color: #e6007e; margin: 0; font-family: Montserrat, Arial, sans-serif; letter-spacing: 0.5px;'>AIRSHIP EXPRESS</h2>
+                    <p style='color: #64748b; margin: 5px 0 0 0; font-size: 13px;'>Hiring Management Portal • Root Security</p>
+                </div>
+                <div style='padding: 24px 0;'>
+                    <div style='background-color: #fff1f2; border-left: 4px solid #e6007e; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px;'>
+                        <strong style='color: #9f1239; font-size: 14px;'>Privileged Access Recovery Request</strong>
+                        <p style='color: #475569; margin: 4px 0 0 0; font-size: 13px;'>A password reset was requested for the Super Administrator account.</p>
+                    </div>
+
+                    <p style='font-size: 16px; color: #1e293b; margin: 0 0 12px 0;'>Hello <strong>{$safeName}</strong>,</p>
+                    <p style='font-size: 14px; color: #475569; line-height: 1.6; margin: 0 0 16px 0;'>
+                        To authorize and complete this password reset, click the button below. For security, you will be required to provide your <strong>6-digit Google Authenticator code</strong> or an <strong>Emergency Backup Code</strong> before a new password can be set.
+                    </p>
+
+                    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 18px; margin: 20px 0; font-size: 13px; color: #334155; line-height: 1.6;'>
+                        <p style='margin: 0 0 6px 0; font-weight: bold; color: #0f172a;'>Request Details:</p>
+                        <p style='margin: 0 0 4px 0;'>• Timestamp: <strong>{$requestTime}</strong></p>
+                        <p style='margin: 0 0 4px 0;'>• Requesting IP: <strong>{$clientIp}</strong></p>
+                        <p style='margin: 0;'>• Validity Window: <strong>15 minutes</strong></p>
+                    </div>
+
+                    <div style='text-align: center; margin: 28px 0;'>
+                        <a href='{$resetLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 8px rgba(230, 0, 126, 0.25);'>Authorize & Reset Password</a>
+                    </div>
+                    <p style='font-size: 12.5px; color: #64748b; line-height: 1.5; margin: 0;'>If you did not initiate this request, someone may be attempting to access your account. Your account remains protected by your Two-Factor Authenticator.</p>
+                </div>
+                <div style='border-top: 1px solid #e5e4e7; padding-top: 18px; text-align: center; font-size: 12px; color: #9ca3af;'>
+                    <p style='margin: 0;'>This is an automated high-priority security dispatch. Do not reply.</p>
+                </div>
+            </div>
+            ";
+            $mail->AltBody = "Super Admin Password Reset Request\n\nVisit this link within 15 minutes to reset your password:\n{$resetLink}\n\nYou will be required to provide your Google Authenticator 6-digit code or an Emergency Backup Code.";
+        } elseif ($isAdmin === 1) {
+            // Admin Account Password Reset
+            $mail->Subject = '🔑 Admin Password Reset Request - Airship Express';
+            $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e4e7; border-radius: 8px; background-color: #ffffff;'>
+                <div style='text-align: center; border-bottom: 1px solid #e5e4e7; padding-bottom: 20px;'>
+                    <h2 style='color: #e6007e; margin: 0; font-family: Montserrat, Arial, sans-serif;'>AIRSHIP EXPRESS</h2>
+                    <p style='color: #64748b; margin: 5px 0 0 0;'>Hiring Management Portal • Admin Security</p>
+                </div>
+                <div style='padding: 24px 0;'>
+                    <p style='font-size: 16px; color: #1e293b; margin: 0 0 12px;'>Hello <strong>{$safeName}</strong>,</p>
+                    <p style='font-size: 15px; color: #475569; line-height: 1.6;'>We received a password reset request for your Administrator account. Click the button below to set a new password. This secure link expires in 15 minutes.</p>
+                    <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 18px; margin: 20px 0; font-size: 13px; color: #334155; line-height: 1.6;'>
+                        <p style='margin: 0 0 4px;'>• Timestamp: <strong>{$requestTime}</strong></p>
+                        <p style='margin: 0;'>• Validity: <strong>15 minutes</strong></p>
+                    </div>
+                    <div style='text-align: center; margin: 28px 0;'>
+                        <a href='{$resetLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(230, 0, 126, 0.2);'>Reset Admin Password</a>
+                    </div>
+                    <p style='font-size: 12.5px; color: #64748b;'>If you did not request a password reset, please notify your Super Administrator immediately.</p>
+                </div>
+                <div style='border-top: 1px solid #e5e4e7; padding-top: 18px; text-align: center; font-size: 12px; color: #9ca3af;'>
+                    <p style='margin: 0;'>This is an automated administrative notification from Airship Express.</p>
+                </div>
+            </div>
+            ";
+            $mail->AltBody = "Hello {$safeName},\n\nTo reset your admin password, please visit this link within 15 minutes:\n{$resetLink}";
+        } else {
+            // Standard Applicant Email
+            $mail->Subject = 'Reset Your Password - Airship Express';
+            $mail->Body = "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e4e7; border-radius: 8px; background-color: #ffffff;'>
+                <div style='text-align: center; border-bottom: 1px solid #e5e4e7; padding-bottom: 20px;'>
+                    <h2 style='color: #e6007e; margin: 0; font-family: Montserrat, Arial, sans-serif;'>AIRSHIP EXPRESS</h2>
+                    <p style='color: #64748b; margin: 5px 0 0 0;'>Hiring Management Portal</p>
+                </div>
+                <div style='padding: 24px 0;'>
+                    <p style='font-size: 16px; color: #1e293b; margin: 0 0 12px;'>Hello <strong>{$safeName}</strong>,</p>
+                    <p style='font-size: 15px; color: #475569; line-height: 1.6;'>We received a request to reset your password. Click the button below to choose a new password. This link will expire in 15 minutes.</p>
+                    <div style='text-align: center; margin: 30px 0;'>
+                        <a href='{$resetLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(230, 0, 126, 0.2);'>Reset Password</a>
+                    </div>
+                    <p style='font-size: 13px; color: #64748b;'>If you did not request this, you can safely ignore this email.</p>
+                </div>
+                <div style='border-top: 1px solid #e5e4e7; padding-top: 20px; text-align: center; font-size: 12px; color: #9ca3af;'>
+                    <p style='margin: 0;'>This is an automated email from Airship Express, please do not reply.</p>
+                </div>
+            </div>
+            ";
+            $mail->AltBody = "Hello {$safeName},\n\nTo reset your password, please visit this link (expires in 15 minutes):\n{$resetLink}";
+        }
+
+        $mail->send();
+        return true;
+    } catch (\Throwable $e) {
+        error_log("[EmailHelper] Failed to send password reset email to {$toEmail}: " . $e->getMessage());
+        return false;
+    }
+}
 ?>

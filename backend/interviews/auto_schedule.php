@@ -30,75 +30,6 @@ function insertNotification($pdo, $userId, $appId, $title, $message) {
     }
 }
 
-// ─── Helper: send email via PHPMailer SMTP ───────────────────────────────────
-function sendScheduledEmail($toEmail, $toName, $date = '', $startTime = '', $endTime = '') {
-    if (empty($toEmail)) return;
-    try {
-        $mail = new PHPMailer(true);
-
-        $mail->isSMTP();
-        $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = getenv('SMTP_USER') ?: 'airship.express07@gmail.com';
-        $mail->Password   = getenv('SMTP_PASS') ?: 'wqpb nije pcqz qwlc';
-        $port             = (int)(getenv('SMTP_PORT') ?: 587);
-        $mail->Port       = $port;
-        if ($port === 465) {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-        } else {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        }
-        $mail->Timeout    = 10;
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
-            ]
-        ];
-
-        $mail->CharSet    = 'UTF-8';
-        $mail->Encoding   = 'base64';
-
-        $mail->setFrom($mail->Username, 'Airship Express Recruitment');
-        $mail->addAddress($toEmail, $toName);
-
-        $friendlyDate  = !empty($date) ? date('D, F j, Y', strtotime($date)) : 'Scheduled Date';
-        $friendlyStart = !empty($startTime) ? date('g:i A', strtotime($startTime)) : '';
-        $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
-        $timeRange     = $friendlyEnd ? "$friendlyStart - $friendlyEnd" : $friendlyStart;
-
-        $slotInfoBlock = '';
-        if ($friendlyDate && $timeRange) {
-            $slotInfoBlock = "
-                <div style='background-color: #f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;'>
-                    <p style='margin: 5px 0;'><strong>Date:</strong> $friendlyDate</p>
-                    <p style='margin: 5px 0;'><strong>Time:</strong> $timeRange</p>
-                </div>
-            ";
-        }
-
-        $mail->isHTML(true);
-        $mail->Subject = 'Interview Scheduled - Airship Express';
-        $mail->Body    = "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;'>
-                <h2 style='color: #e6007e; margin-top: 0;'>Airship Express Hiring Platform</h2>
-                <p style='font-size: 15px; color: #1e293b;'>Dear <strong>" . htmlspecialchars($toName) . "</strong>,</p>
-                <p style='font-size: 14px; color: #475569; line-height: 1.6;'>You have been scheduled for an interview. Please review the details below and log in to confirm your attendance.</p>
-                $slotInfoBlock
-                <div style='margin: 24px 0;'>
-                    <a href='" . get_frontend_url() . "/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
-                </div>
-                <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
-            </div>
-        ";
-
-        $mail->send();
-    } catch (Exception $e) {
-        error_log("PHPMailer sending error in auto_schedule.php: " . $mail->ErrorInfo);
-    }
-}
-
 try {
     $pdo->beginTransaction();
 
@@ -234,11 +165,19 @@ try {
             "Set for {$friendlyDate} at {$friendlyTime}. Please review and confirm your attendance."
         );
 
-        // Send email notification
+        // Collect candidate email notification for post-commit dispatch
         $toEmail = $app['candidate_email'] ?: $app['User_Email'];
         if (!empty($toEmail)) {
             $jobTitle = $app['job_title'] ?? 'Office Staff';
-            sendInterviewScheduleEmail($toEmail, $candidateName, $jobTitle, $date, $time, $endTime, $fixedLocation);
+            $emailsToDispatch[] = [
+                'email'    => $toEmail,
+                'name'     => $candidateName,
+                'job'      => $jobTitle,
+                'date'     => $date,
+                'time'     => $time,
+                'end_time' => $endTime,
+                'location' => $fixedLocation
+            ];
         }
 
         $assignedCount++;
@@ -246,6 +185,25 @@ try {
     }
 
     $pdo->commit();
+
+    // Send emails post-commit so long SMTP connections never block DB transactions
+    if (!empty($emailsToDispatch)) {
+        foreach ($emailsToDispatch as $dispatch) {
+            try {
+                sendInterviewScheduleEmail(
+                    $dispatch['email'],
+                    $dispatch['name'],
+                    $dispatch['job'],
+                    $dispatch['date'],
+                    $dispatch['time'],
+                    $dispatch['end_time'],
+                    $dispatch['location']
+                );
+            } catch (\Throwable $e) {
+                error_log("[AutoSchedule] Failed to send email to {$dispatch['email']}: " . $e->getMessage());
+            }
+        }
+    }
 
     $json = file_get_contents('php://input');
     $data = json_decode($json, true) ?: [];

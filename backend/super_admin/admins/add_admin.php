@@ -1,7 +1,7 @@
 <?php
-require_once '../../db.php';
-require_once '../../auth/auth_guard.php';
-require_once '../../email_helper.php';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../auth/auth_guard.php';
+require_once __DIR__ . '/../../email_helper.php';
 
 header('Content-Type: application/json');
 

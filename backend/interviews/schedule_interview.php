@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../email_helper.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -86,32 +87,7 @@ try {
         
         try {
             $mail = new PHPMailer(true);
-
-            $mail->isSMTP();
-            $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = getenv('SMTP_USER') ?: 'airship.express07@gmail.com';
-            $mail->Password   = getenv('SMTP_PASS') ?: 'wqpb nije pcqz qwlc';
-            $port             = (int)(getenv('SMTP_PORT') ?: 587);
-            $mail->Port       = $port;
-            if ($port === 465) {
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            } else {
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            }
-            $mail->Timeout    = 10;
-            $mail->SMTPOptions = [
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ];
-
-            $mail->CharSet    = 'UTF-8';
-            $mail->Encoding   = 'base64';
-
-            $mail->setFrom($mail->Username, 'Airship Express Recruitment');
+            configure_smtp($mail, 'Airship Express Recruitment');
             $mail->addAddress($toEmail, $emailData['User_Fname']);
 
             $mail->isHTML(true);
