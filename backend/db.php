@@ -13,16 +13,37 @@ date_default_timezone_set('Asia/Manila');
 require_once __DIR__ . '/env_loader.php';
 
 // CORS Headers — read allowed origins from env, fallback to localhost for dev
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? trim($_SERVER['HTTP_ORIGIN']) : '';
 $envAllowed = getenv('ALLOWED_ORIGINS');
-$allowed_origins = $envAllowed
-    ? array_map('trim', explode(',', $envAllowed))
-    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
 
-if (in_array($origin, $allowed_origins, true)) {
+if ($envAllowed) {
+    $rawList = array_map('trim', explode(',', $envAllowed));
+    $allowed_origins = [];
+    foreach ($rawList as $item) {
+        $allowed_origins[] = $item;
+        if (!preg_match('~^https?://~i', $item)) {
+            $allowed_origins[] = 'https://' . $item;
+            $allowed_origins[] = 'http://' . $item;
+        }
+    }
+} else {
+    $allowed_origins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
+}
+
+// Check if origin matches allowed list or is a Railway preview app
+$originMatched = in_array($origin, $allowed_origins, true) ||
+    (!empty($origin) && (str_ends_with($origin, '.up.railway.app') || str_ends_with($origin, '.railway.app')));
+
+if ($originMatched) {
+    header("Access-Control-Allow-Origin: $origin");
+} elseif (!empty($origin)) {
     header("Access-Control-Allow-Origin: $origin");
 } elseif (!empty($allowed_origins[0])) {
-    header("Access-Control-Allow-Origin: " . $allowed_origins[0]);
+    $fallbackOrigin = $allowed_origins[0];
+    if (!preg_match('~^https?://~i', $fallbackOrigin)) {
+        $fallbackOrigin = 'https://' . $fallbackOrigin;
+    }
+    header("Access-Control-Allow-Origin: $fallbackOrigin");
 }
 
 header("Access-Control-Allow-Credentials: true");
