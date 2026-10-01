@@ -81,9 +81,9 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
             </div>
         ";
 
-        $mail->send();
-    } catch (Exception $e) {
-        error_log("PHPMailer sending error in confirm_reschedule.php: " . $mail->ErrorInfo);
+        send_email($recipientEmail, $recipientName, $mail->Subject, $mail->Body, '', 'Airship Express Recruitment Team');
+    } catch (\Throwable $e) {
+        error_log("Sending error in confirm_reschedule.php: " . $e->getMessage());
     }
 }
 

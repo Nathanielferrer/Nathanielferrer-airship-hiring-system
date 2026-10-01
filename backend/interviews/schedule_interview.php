@@ -115,9 +115,9 @@ try {
             </div>
             ";
             
-            $mail->send();
-        } catch (Exception $e) {
-            error_log("Email could not be sent. Mailer Error: {$mail->ErrorInfo}");
+            send_email($emailData['User_Email'], $emailData['User_Fname'] . ' ' . $emailData['User_Lname'], $mail->Subject, $mail->Body, '', 'Airship Express Recruitment Team');
+        } catch (\Throwable $e) {
+            error_log("Email could not be sent. Error: " . $e->getMessage());
         }
     }
 

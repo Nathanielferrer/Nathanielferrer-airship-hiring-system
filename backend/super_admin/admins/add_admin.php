@@ -114,15 +114,9 @@ try {
     $emailSent = false;
     $emailError = '';
     try {
-        $mail = new PHPMailer(true);
-        configure_smtp($mail, 'Airship Express Hiring Portal');
-        $mail->addAddress($email, "{$fname} {$lname}");
-
-        $adminLoginUrl = get_frontend_url() . '/admin/login';
-
-        $mail->isHTML(true);
-        $mail->Subject = 'Your Admin Account Has Been Created - Airship Express';
-        $mail->Body = "
+        $adminLoginUrl = get_frontend_url() . '/login';
+        $subject = 'Your Admin Account Has Been Created - Airship Express';
+        $htmlBody = "
         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e4e7; border-radius: 8px; background-color: #ffffff;'>
             <div style='text-align: center; border-bottom: 1px solid #e5e4e7; padding-bottom: 20px;'>
                 <h2 style='color: #e6007e; margin: 0; font-family: Montserrat, Arial, sans-serif;'>AIRSHIP EXPRESS</h2>
@@ -145,17 +139,17 @@ try {
                 <div style='text-align: center; margin: 28px 0;'>
                     <a href='{$adminLoginUrl}' style='background-color: #e6007e; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>Access Admin Portal</a>
                 </div>
+                <p style='font-size: 12.5px; color: #64748b; line-height: 1.5; margin-top: 14px; text-align: center;'>If the button above does not work, visit directly:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$adminLoginUrl}</span></p>
             </div>
             <div style='border-top: 1px solid #e5e4e7; padding-top: 16px; text-align: center; font-size: 12px; color: #9ca3af;'>
                 <p style='margin: 0;'>This is an automated administrative notification from Airship Express. Do not reply to this email.</p>
             </div>
         </div>
         ";
-        $mail->AltBody = "Hello {$fname},\n\nYour admin account has been created.\nEmail: {$email}\nTemporary Password: {$tempPassword}\n\nLog in at: {$adminLoginUrl}\nYou will be required to change your password on first login.";
+        $altBody = "Hello {$fname},\n\nYour admin account has been created.\nEmail: {$email}\nTemporary Password: {$tempPassword}\n\nLog in at: {$adminLoginUrl}\nYou will be required to change your password on first login.";
 
-        $mail->send();
-        $emailSent = true;
-    } catch (Exception $mailEx) {
+        $emailSent = send_email($email, "{$fname} {$lname}", $subject, $htmlBody, $altBody, 'Airship Express Hiring Portal');
+    } catch (\Throwable $mailEx) {
         $emailError = $mailEx->getMessage();
         $logContent = "=== ADMIN ACCOUNT CREATION EMAIL FALLBACK ===\n" .
                       "Date: " . date('Y-m-d H:i:s') . "\n" .

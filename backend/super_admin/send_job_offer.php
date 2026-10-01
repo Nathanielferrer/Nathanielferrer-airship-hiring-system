@@ -158,13 +158,14 @@ try {
                     <p style='font-size: 13px; color: #475569;'>
                         Please log into your <a href='{$portalUrl}' style='color: #e6007e; font-weight: bold;'>Applicant Portal</a> to review the terms and confirm your job offer acceptance before <strong>{$formattedExpiry}</strong>.
                     </p>
+                    <p style='font-size: 12px; color: #64748b; margin-top: 10px;'>Portal URL: <span style='color: #e6007e;'>{$portalUrl}</span></p>
                     <hr style='border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;'>
                     <p style='font-size: 11px; color: #94a3b8; text-align: center;'>Airship Express Logistics & Supply Chain Solutions Philippines</p>
                 </div>
             </div>";
 
-            $mail->send();
-        } catch (Exception $e) {
+            send_email($candidateEmail, $candidateName, $mail->Subject, $mail->Body, '', 'Airship Express Executive Recruitment');
+        } catch (\Throwable $e) {
             error_log("Failed to send Job Offer email: " . $e->getMessage());
         }
     }

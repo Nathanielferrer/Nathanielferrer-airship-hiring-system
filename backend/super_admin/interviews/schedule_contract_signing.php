@@ -293,8 +293,8 @@ try {
             </body>
             </html>";
 
-            $mail->send();
-        } catch (\Exception $e) {
+            send_email($candEmail, $candName, $mail->Subject, $mail->Body, '', 'Airship Express HR');
+        } catch (\Throwable $e) {
             error_log("Failed to send contract signing email to {$candEmail}: " . $e->getMessage());
         }
     }

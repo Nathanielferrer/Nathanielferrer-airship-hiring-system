@@ -173,7 +173,7 @@ try {
                 </div>
             </div>
             ";
-            $mail->send();
+            send_email($user['User_Email'], 'Super Administrator', $mail->Subject, $mail->Body, '', 'Airship Express Security Portal');
         } catch (Throwable $mailErr) {
             error_log("Failed to send Super Admin reset confirmation: " . $mailErr->getMessage());
         }
