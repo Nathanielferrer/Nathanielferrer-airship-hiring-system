@@ -47,7 +47,12 @@ try {
         ]);
 
         // 4. Send the recovery email using centralized email helper
-        sendPasswordResetEmail($email, $fullName, $token, $isAdmin);
+        try {
+            $resetResult = sendPasswordResetEmail($email, $fullName, $token, $isAdmin);
+            error_log("[ForgotPassword] Email send result for {$email}: " . ($resetResult ? 'SUCCESS' : 'FAILED'));
+        } catch (\Throwable $emailEx) {
+            error_log("[ForgotPassword] Email exception for {$email}: " . $emailEx->getMessage());
+        }
     }
 
     echo json_encode([

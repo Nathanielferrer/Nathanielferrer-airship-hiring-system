@@ -198,12 +198,27 @@ try {
 
     // 7. Send Verification Email using centralized email helper
     $fullName = trim($fname . ' ' . $lname) ?: 'Applicant';
-    sendRegistrationVerificationEmail($email, $fullName, $verificationCode);
+    $emailSent = false;
+    try {
+        $emailSent = sendRegistrationVerificationEmail($email, $fullName, $verificationCode);
+        error_log("[Register] Email send result for {$email}: " . ($emailSent ? 'SUCCESS' : 'FAILED'));
+    } catch (\Throwable $emailEx) {
+        error_log("[Register] Email exception for {$email}: " . $emailEx->getMessage());
+    }
 
-    echo json_encode([
-        "status" => "success",
-        "message" => "Registration successful. Please check your email to verify your account."
-    ]);
+    if ($emailSent) {
+        echo json_encode([
+            "status" => "success",
+            "message" => "Registration successful. Please check your email to verify your account."
+        ]);
+    } else {
+        // Registration succeeded but email failed — still return success but warn
+        echo json_encode([
+            "status" => "success",
+            "message" => "Registration successful. Please check your email to verify your account.",
+            "email_warning" => "Verification email may be delayed. If you don't receive it within a few minutes, please use the 'Resend Verification' option."
+        ]);
+    }
 
 } catch (PDOException $e) {
     http_response_code(500);
