@@ -125,7 +125,7 @@ try {
     $applications = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Fetch all distinct years that have application records
-    $yearsStmt = $pdo->query("SELECT DISTINCT YEAR(applied_at) AS yr FROM applications_tbl WHERE applied_at IS NOT NULL AND applied_at != '0000-00-00 00:00:00' ORDER BY yr DESC");
+    $yearsStmt = $pdo->query("SELECT DISTINCT YEAR(applied_at) AS yr FROM applications_tbl WHERE applied_at IS NOT NULL AND applied_at > '1970-01-01' ORDER BY yr DESC");
     $availableYears = array_values(array_filter(array_map('intval', $yearsStmt->fetchAll(PDO::FETCH_COLUMN))));
 
     echo json_encode([

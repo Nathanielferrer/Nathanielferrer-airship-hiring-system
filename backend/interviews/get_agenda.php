@@ -45,7 +45,6 @@ try {
             ) slot ON slot.application_id = a.application_id
             LEFT JOIN interview_slots_tbl req_slot ON a.reschedule_requested_slot_id = req_slot.slot_id
             WHERE a.is_archived = 0 AND a.status IN ('INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'CONFIRMED', 'RESCHEDULING', 'PASSED INITIAL', 'PASSED INITIAL SCREENING')
-            GROUP BY a.application_id
             ORDER BY interview_date ASC, start_time ASC";
 
     $stmt = $pdo->query($sql);

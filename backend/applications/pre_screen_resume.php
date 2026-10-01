@@ -128,7 +128,7 @@ if (empty($keysToTry) && defined('GEMINI_API_KEY') && !empty(GEMINI_API_KEY)) {
 }
 $modelsToTry = defined('GEMINI_MODELS') && is_array(GEMINI_MODELS) ? array_values(array_filter(GEMINI_MODELS)) : [];
 if (empty($modelsToTry)) {
-    $modelsToTry = [defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-2.5-flash'];
+    $modelsToTry = [defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3.5-flash-lite'];
 }
 
 $prompt = "ROLE: Accurate Resume Identity Extractor.\n"

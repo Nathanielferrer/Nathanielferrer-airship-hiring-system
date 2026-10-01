@@ -72,6 +72,11 @@ try {
     ];
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
+    // Compatibility with MySQL 8.0 on cloud hosts (disable ONLY_FULL_GROUP_BY and NO_ZERO_DATE errors)
+    try {
+        $pdo->exec("SET SESSION sql_mode = (SELECT REPLACE(REPLACE(REPLACE(@@sql_mode, 'ONLY_FULL_GROUP_BY,', ''), 'ONLY_FULL_GROUP_BY', ''), 'NO_ZERO_DATE,', ''))");
+    } catch (Throwable $e) {}
+
     // ── 1. users_tbl ─────────────────────────────────────────────────────────
     $pdo->exec("CREATE TABLE IF NOT EXISTS users_tbl (
         user_id INT AUTO_INCREMENT PRIMARY KEY,

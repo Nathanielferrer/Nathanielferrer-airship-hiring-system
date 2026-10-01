@@ -187,6 +187,7 @@ try {
             $mail->send();
             $pwResetSent = true;
         } catch (Exception $mailEx) {
+            error_log("[update_admin.php] Failed to email admin password reset: " . $mailEx->getMessage());
             $logContent = "=== ADMIN PASSWORD RESET EMAIL FALLBACK ===\n" .
                           "Date: " . date('Y-m-d H:i:s') . "\n" .
                           "To: {$email} ({$fname} {$lname})\n" .

@@ -161,8 +161,20 @@ try {
     }
 
     $pdo->commit();
+} catch (PDOException $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log("[Update Status Error] " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        "status" => "error",
+        "message" => "An internal system error occurred while updating the candidate application status."
+    ]);
+    exit();
+}
 
-    require_once '../audit_helper.php';
+require_once '../audit_helper.php';
     $actorId   = intval($data['actor_id']   ?? 0);
     $actorName = trim($data['actor_name']   ?? 'Admin');
     $candName  = $candInfo['candidate_name'] ?? "Application #{$id}";
@@ -202,104 +214,100 @@ try {
         "candidate_name" => $candName
     ]);
 
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+
     // ── Email Notifications for Initial Screening Results ─────────────────────
-    if (!empty($candInfo['user_id'])) {
-        $candEmail = $candInfo['candidate_email'] ?? '';
-        $candName  = $candInfo['candidate_name'] ?? "Applicant";
-        $jobTitle  = $candInfo['job_title'] ?? 'the position';
+    try {
+        if (!empty($candInfo['user_id'])) {
+            $candEmail = $candInfo['candidate_email'] ?? '';
+            $candName  = $candInfo['candidate_name'] ?? "Applicant";
+            $jobTitle  = $candInfo['job_title'] ?? 'the position';
 
-        require_once __DIR__ . '/../email_helper.php';
+            require_once __DIR__ . '/../email_helper.php';
 
-        if ($upperStatus === 'PASSED INITIAL') {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'INITIAL_PASSED', '');
+            if ($upperStatus === 'PASSED INITIAL') {
+                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'INITIAL_PASSED', '');
 
-            // In-app notification
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
-                VALUES (?, ?, ?, ?, 'status_update', '/application-status', 0, NOW())
-            ");
-            $notifStmt->execute([
-                $candInfo['user_id'], $id,
-                'Initial Screening Passed 🎉',
-                "Congratulations, {$candName}! You have successfully passed the initial screening for {$jobTitle}. Our recruitment team is currently assigning schedules for your final interview, and you will be notified here shortly with your designated date and time."
-            ]);
-        } elseif ($upperStatus === 'PASSED FINAL INTERVIEW' || $upperStatus === 'PASSED_FINAL_INTERVIEW') {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_PASSED', '');
+                // In-app notification
+                $notifStmt = $pdo->prepare("
+                    INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 'status_update', '/application-status', 0, NOW())
+                ");
+                $notifStmt->execute([
+                    $candInfo['user_id'], $id,
+                    'Initial Screening Passed 🎉',
+                    "Congratulations, {$candName}! You have successfully passed the initial screening for {$jobTitle}. Our recruitment team is currently assigning schedules for your final interview, and you will be notified here shortly with your designated date and time."
+                ]);
+            } elseif ($upperStatus === 'PASSED FINAL INTERVIEW' || $upperStatus === 'PASSED_FINAL_INTERVIEW') {
+                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_PASSED', '');
 
-            // In-app notification
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
-                VALUES (?, ?, ?, ?, 'interview_passed', '/application-status', 0, NOW())
-            ");
-            $notifStmt->execute([
-                $candInfo['user_id'], $id,
-                'Final Interview Passed 🎉',
-                "Congratulations, {$candName}! You have successfully passed your final interview for {$jobTitle}. Your application has been forwarded to the President for final approval, and you will receive an official update as soon as a decision is reached."
-            ]);
-        } elseif (in_array($upperStatus, ['HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL'])) {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'PRESIDENT_APPROVED', '');
+                // In-app notification
+                $notifStmt = $pdo->prepare("
+                    INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 'interview_passed', '/application-status', 0, NOW())
+                ");
+                $notifStmt->execute([
+                    $candInfo['user_id'], $id,
+                    'Final Interview Passed 🎉',
+                    "Congratulations, {$candName}! You have successfully passed your final interview for {$jobTitle}. Your application has been forwarded to the President for final approval, and you will receive an official update as soon as a decision is reached."
+                ]);
+            } elseif (in_array($upperStatus, ['HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL'])) {
+                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'PRESIDENT_APPROVED', '');
 
-            // In-app notification
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
-                VALUES (?, ?, ?, ?, 'hired', '/application-status', 0, NOW())
-            ");
-            $notifStmt->execute([
-                $candInfo['user_id'], $id,
-                "Job Offer Confirmed — Next Step: Contract Signing",
-                "Thank you for accepting the official job offer for the {$jobTitle} position, {$candName}! We are incredibly excited to welcome you to the Airship Express team! Our HR department is currently preparing your official employment contract. You will be notified here as soon as your contract signing schedule is ready."
-            ]);
-        } elseif (in_array($upperStatus, ['OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'CONTRACT SIGNED', 'CONTRACT_SIGNED'])) {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'CONTRACT_SIGNED', '');
+                // In-app notification
+                $notifStmt = $pdo->prepare("
+                    INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 'hired', '/application-status', 0, NOW())
+                ");
+                $notifStmt->execute([
+                    $candInfo['user_id'], $id,
+                    "Job Offer Confirmed — Next Step: Contract Signing",
+                    "Thank you for accepting the official job offer for the {$jobTitle} position, {$candName}! We are incredibly excited to welcome you to the Airship Express team! Our HR department is currently preparing your official employment contract. You will be notified here as soon as your contract signing schedule is ready."
+                ]);
+            } elseif (in_array($upperStatus, ['OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'CONTRACT SIGNED', 'CONTRACT_SIGNED'])) {
+                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'CONTRACT_SIGNED', '');
 
-            // In-app notification
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
-                VALUES (?, ?, ?, ?, 'contract_signed', '/application-status', 0, NOW())
-            ");
-            $notifStmt->execute([
-                $candInfo['user_id'], $id,
-                'Officially Hired 🎉',
-                "Welcome to the team, {$candName}! Your official employment contract for {$jobTitle} has been executed. You are now officially hired at Airship Express."
-            ]);
-        } elseif (in_array($upperStatus, ['FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED'])) {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_FAILED', '');
+                // In-app notification
+                $notifStmt = $pdo->prepare("
+                    INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 'contract_signed', '/application-status', 0, NOW())
+                ");
+                $notifStmt->execute([
+                    $candInfo['user_id'], $id,
+                    'Officially Hired 🎉',
+                    "Welcome to the team, {$candName}! Your official employment contract for {$jobTitle} has been executed. You are now officially hired at Airship Express."
+                ]);
+            } elseif (in_array($upperStatus, ['FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'INTERVIEW_FAILED'])) {
+                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'FINAL_FAILED', '');
 
-            // In-app notification
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
-                VALUES (?, ?, ?, ?, 'status_update', '/application-status', 0, NOW())
-            ");
-            $notifStmt->execute([
-                $candInfo['user_id'], $id,
-                'Final Interview Update',
-                "Dear {$candName}, your final interview result for {$jobTitle} has been posted. Please check your Application Status."
-            ]);
-        } elseif (in_array($upperStatus, ['SCREENING_REJECTED', 'REJECTED'])) {
-            sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'INITIAL_REJECTED', '');
+                // In-app notification
+                $notifStmt = $pdo->prepare("
+                    INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 'status_update', '/application-status', 0, NOW())
+                ");
+                $notifStmt->execute([
+                    $candInfo['user_id'], $id,
+                    'Final Interview Update',
+                    "Dear {$candName}, your final interview result for {$jobTitle} has been posted. Please check your Application Status."
+                ]);
+            } elseif (in_array($upperStatus, ['SCREENING_REJECTED', 'REJECTED'])) {
+                sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'INITIAL_REJECTED', '');
 
-            // In-app notification
-            $notifStmt = $pdo->prepare("
-                INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
-                VALUES (?, ?, ?, ?, 'status_update', '/application-status', 0, NOW())
-            ");
-            $notifStmt->execute([
-                $candInfo['user_id'], $id,
-                'Application Update',
-                "Dear {$candName}, thank you for your application for the {$jobTitle} position. We have decided not to advance your application at this time."
-            ]);
+                // In-app notification
+                $notifStmt = $pdo->prepare("
+                    INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read, created_at)
+                    VALUES (?, ?, ?, ?, 'status_update', '/application-status', 0, NOW())
+                ");
+                $notifStmt->execute([
+                    $candInfo['user_id'], $id,
+                    'Application Update',
+                    "Dear {$candName}, thank you for your application for the {$jobTitle} position. We have decided not to advance your application at this time."
+                ]);
+            }
         }
+    } catch (\Throwable $notifErr) {
+        error_log("[Update Status Post-Commit Notification Error] " . $notifErr->getMessage());
     }
-
-} catch (PDOException $e) {
-    if ($pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log("[Update Status Error] " . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        "status" => "error",
-        "message" => "An internal system error occurred while updating the candidate application status."
-    ]);
-}
 ?>

@@ -562,7 +562,7 @@ if (empty(GEMINI_API_KEY)) {
     $resumeTextCapped = mb_strlen($resumeText) > 12000 ? mb_substr($resumeText, 0, 12000) : $resumeText;
     $prompt .= "RESUME_TEXT:\n" . $resumeTextCapped . "\n\n";
 
-    $geminiModel = defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3.6-flash';
+    $geminiModel = defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3.5-flash-lite';
     $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$geminiModel}:generateContent?key=" . GEMINI_API_KEY;
 
     $postData = [
@@ -587,7 +587,7 @@ if (empty(GEMINI_API_KEY)) {
     }
     $modelsToTry = defined('GEMINI_MODELS') && is_array(GEMINI_MODELS) ? array_values(array_filter(GEMINI_MODELS)) : [];
     if (empty($modelsToTry)) {
-        $modelsToTry = [defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3.6-flash'];
+        $modelsToTry = [defined('GEMINI_MODEL') ? GEMINI_MODEL : 'gemini-3.5-flash-lite'];
     }
 
     $response = false;
