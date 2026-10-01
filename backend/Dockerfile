@@ -1,5 +1,10 @@
 FROM php:8.2-apache
 
+# Fix Apache MPM conflict (ensures only mpm_prefork is loaded)
+RUN a2dismod mpm_event || true \
+    && a2dismod mpm_worker || true \
+    && a2enmod mpm_prefork
+
 # Install PDO MySQL extension
 RUN docker-php-ext-install pdo pdo_mysql
 
