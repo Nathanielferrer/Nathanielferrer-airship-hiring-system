@@ -592,6 +592,7 @@ function sendApplicationStatusEmail(
                                 {$ctaText}
                             </a>
                         </div>
+                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$portalUrl}</span></p>
                         
                         <div style='margin-top: 32px; font-size: 14px; color: #94a3b8; line-height: 1.5;'>
                             Regards,<br>
@@ -660,6 +661,7 @@ function sendInterviewScheduleEmail(
         $friendlyStart = !empty($startTime) ? date('g:i A', strtotime($startTime)) : '';
         $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
         $timeRange     = $friendlyEnd ? "{$friendlyStart} - {$friendlyEnd}" : $friendlyStart;
+        $portalUrl     = get_frontend_url() . '/application-status';
 
         $mail->Subject = "Action Required: Final Interview Schedule - {$safeJobTitle}";
         $mail->Body    = "
@@ -691,10 +693,11 @@ function sendInterviewScheduleEmail(
                         </p>
                         
                         <div style='margin: 24px 0;'>
-                            <a href='" . get_frontend_url() . "/application-status' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
+                            <a href='{$portalUrl}' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
                                 Log In to Confirm or Reschedule
                             </a>
                         </div>
+                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$portalUrl}</span></p>
                         
                         <div style='margin-top: 32px; font-size: 14px; color: #94a3b8; line-height: 1.5;'>
                             Regards,<br>
@@ -1066,6 +1069,7 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $resetTo
                     <div style='text-align: center; margin: 28px 0;'>
                         <a href='{$resetLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 8px rgba(230, 0, 126, 0.25);'>Authorize & Reset Password</a>
                     </div>
+                    <p style='font-size: 12.5px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, copy and paste this link directly into your browser:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$resetLink}</span></p>
                     <p style='font-size: 12.5px; color: #64748b; line-height: 1.5; margin: 0;'>If you did not initiate this request, someone may be attempting to access your account. Your account remains protected by your Two-Factor Authenticator.</p>
                 </div>
                 <div style='border-top: 1px solid #e5e4e7; padding-top: 18px; text-align: center; font-size: 12px; color: #9ca3af;'>
@@ -1093,6 +1097,7 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $resetTo
                     <div style='text-align: center; margin: 28px 0;'>
                         <a href='{$resetLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(230, 0, 126, 0.2);'>Reset Admin Password</a>
                     </div>
+                    <p style='font-size: 12.5px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, copy and paste this link directly into your browser:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$resetLink}</span></p>
                     <p style='font-size: 12.5px; color: #64748b;'>If you did not request a password reset, please notify your Super Administrator immediately.</p>
                 </div>
                 <div style='border-top: 1px solid #e5e4e7; padding-top: 18px; text-align: center; font-size: 12px; color: #9ca3af;'>
