@@ -1104,6 +1104,7 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $resetTo
                     <div style='text-align: center; margin: 30px 0;'>
                         <a href='{$resetLink}' style='background-color: #e6007e; color: #ffffff; padding: 13px 32px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 4px 6px rgba(230, 0, 126, 0.2);'>Reset Password</a>
                     </div>
+                    <p style='font-size: 13px; color: #64748b; line-height: 1.5;'>If the button above does not work or your browser blocks redirects, copy and paste this link directly into your browser:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$resetLink}</span></p>
                     <p style='font-size: 13px; color: #64748b;'>If you did not request this, you can safely ignore this email.</p>
                 </div>
                 <div style='border-top: 1px solid #e5e4e7; padding-top: 20px; text-align: center; font-size: 12px; color: #9ca3af;'>
