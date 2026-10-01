@@ -22,9 +22,28 @@ const ChatbotWidget = () => {
   });
   const [showPopBubble, setShowPopBubble]   = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // ── Helper to resolve logged-in user ID ─────────────────────────────────────
+  const getUserId = () => {
+    const savedUser = localStorage.getItem('hiring_user');
+    if (!savedUser) return null;
+    try {
+      const u = JSON.parse(savedUser);
+      return u?.id ?? u?.User_ID ?? u?.user_id ?? null;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const getStorageKey = (uid) => {
+    const id = uid || getUserId();
+    return id ? `airship_chatbot_messages_${id}` : 'airship_chatbot_messages';
+  };
+
   const [messages, setMessages] = useState(() => {
     try {
-      const saved = sessionStorage.getItem('airship_chatbot_messages');
+      const uid = getUserId();
+      const saved = sessionStorage.getItem(getStorageKey(uid));
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -44,11 +63,12 @@ const ChatbotWidget = () => {
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  // ── Sync messages and isOpen state to sessionStorage for navbar cross-page persistence ────
+  // ── Sync messages and isOpen state to sessionStorage for cross-page persistence ────
   useEffect(() => {
     try {
       if (messages && messages.length > 0) {
-        sessionStorage.setItem('airship_chatbot_messages', JSON.stringify(messages));
+        const uid = getUserId();
+        sessionStorage.setItem(getStorageKey(uid), JSON.stringify(messages));
       }
     } catch (e) {
       // ignore storage quota errors
@@ -59,19 +79,48 @@ const ChatbotWidget = () => {
     sessionStorage.setItem('airship_chatbot_open', String(isOpen));
   }, [isOpen]);
 
-  // ── Helper to resolve logged-in user ID ─────────────────────────────────────
-  const getUserId = () => {
-    const savedUser = localStorage.getItem('hiring_user');
-    if (!savedUser) return null;
+  // ── Load Chat History from Server ───────────────────────────────────────────
+  const loadChatHistory = async (targetUid) => {
+    const uid = targetUid || getUserId();
+    if (!uid) {
+      // Guest: restore guest session or default greeting
+      try {
+        const saved = sessionStorage.getItem('airship_chatbot_messages');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMessages(parsed);
+            return;
+          }
+        }
+      } catch (e) {}
+      setMessages([DEFAULT_GREETING]);
+      return;
+    }
+
     try {
-      const u = JSON.parse(savedUser);
-      return u?.id ?? u?.User_ID ?? u?.user_id ?? null;
-    } catch (e) {
-      return null;
+      const res = await fetch(`${API_GET_HISTORY}?applicant_id=${uid}`);
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.history) && data.history.length > 0) {
+        const formatted = data.history.map(item => ({
+          id:     item.id,
+          sender: item.sender,
+          text:   item.message_text,
+          time:   new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }));
+        setMessages(formatted);
+        try {
+          sessionStorage.setItem(getStorageKey(uid), JSON.stringify(formatted));
+        } catch (e) {}
+      } else {
+        setMessages([DEFAULT_GREETING]);
+      }
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
     }
   };
 
-  // ── Parse user and name for personalized floating greeting ───────────────────
+  // ── Parse user and name for personalized floating greeting & auth sync ────────
   useEffect(() => {
     const checkAuthUser = () => {
       const savedUser = localStorage.getItem('hiring_user');
@@ -81,6 +130,7 @@ const ChatbotWidget = () => {
           setUser(u);
           const name = u.User_Fname || u.first_name || u.User_Name || u.name || '';
           if (name) setUserName(name.trim());
+          return u?.id ?? u?.User_ID ?? u?.user_id ?? null;
         } catch { 
           setUser(null);
         }
@@ -88,27 +138,44 @@ const ChatbotWidget = () => {
         setUser(null);
         setUserName('');
       }
+      return null;
     };
 
-    checkAuthUser();
+    const initialUid = checkAuthUser();
+    loadChatHistory(initialUid);
+
+    const handleAuthLogin = (e) => {
+      const u = e?.detail || null;
+      const uid = u?.id ?? u?.User_ID ?? u?.user_id ?? checkAuthUser();
+      loadChatHistory(uid);
+    };
 
     const handleAuthLogout = () => {
-      setUser(null);
-      setUserName('');
+      const currentUid = getUserId();
+      if (currentUid) {
+        try { sessionStorage.removeItem(`airship_chatbot_messages_${currentUid}`); } catch (e) {}
+      }
       try {
         sessionStorage.removeItem('airship_chatbot_messages');
         sessionStorage.removeItem('airship_chatbot_open');
       } catch (e) {}
+      setUser(null);
+      setUserName('');
       setMessages([DEFAULT_GREETING]);
       setIsOpen(false);
       setShowPopBubble(false);
       setInputValue('');
     };
 
+    window.addEventListener('auth_login', handleAuthLogin);
     window.addEventListener('auth_logout', handleAuthLogout);
-    window.addEventListener('storage', checkAuthUser);
+    window.addEventListener('storage', () => {
+      const uid = checkAuthUser();
+      loadChatHistory(uid);
+    });
 
     return () => {
+      window.removeEventListener('auth_login', handleAuthLogin);
       window.removeEventListener('auth_logout', handleAuthLogout);
       window.removeEventListener('storage', checkAuthUser);
     };
@@ -124,41 +191,6 @@ const ChatbotWidget = () => {
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, []);
-
-  // ── Fetch Chat History for Logged-in User ─────────────────────────────────
-  useEffect(() => {
-    const userId = getUserId();
-    if (!userId) return;
-
-    // If this browser session already has active cached messages, preserve them
-    const hasExistingSession = sessionStorage.getItem('airship_chatbot_messages');
-    if (hasExistingSession) {
-      return;
-    }
-
-    const loadChatHistory = async () => {
-      try {
-        const res  = await fetch(`${API_GET_HISTORY}?applicant_id=${userId}`);
-        const data = await res.json();
-        if (data.status === 'success' && Array.isArray(data.history) && data.history.length > 0) {
-          const formatted = data.history.map(item => ({
-            id:     item.id,
-            sender: item.sender,
-            text:   item.message_text,
-            time:   new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          }));
-          setMessages(formatted);
-          sessionStorage.setItem('airship_chatbot_messages', JSON.stringify(formatted));
-        } else {
-          setMessages([DEFAULT_GREETING]);
-        }
-      } catch (err) {
-        console.error('Failed to load chat history:', err);
-      }
-    };
-
-    loadChatHistory();
   }, []);
 
   useEffect(() => {
@@ -252,6 +284,9 @@ const ChatbotWidget = () => {
     }
 
     try {
+      if (userId) {
+        sessionStorage.removeItem(`airship_chatbot_messages_${userId}`);
+      }
       sessionStorage.removeItem('airship_chatbot_messages');
     } catch (e) {}
 

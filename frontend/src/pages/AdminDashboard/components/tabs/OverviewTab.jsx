@@ -25,12 +25,12 @@ const OverviewTab = ({ setActiveTab }) => {
     setFetchError(null);
     try {
       const [jobsRes, appsRes, agendaRes, kbRes] = await Promise.all([
-        fetch(`${API_BASE}/jobs/get_jobs.php`).then(r => r.json()).catch(() => ({})),
-        fetch(`${API_BASE}/applications/get_all_applications.php`, {
+        fetch(`${API_BASE_URL}/jobs/get_jobs.php`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE_URL}/applications/get_all_applications.php`, {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}` }
         }).then(r => r.json()).catch(() => ({})),
-        fetch(`${API_BASE}/interviews/get_agenda.php`).then(r => r.json()).catch(() => ({})),
-        fetch(`${API_BASE}/chatbot/get_unanswered.php`).then(r => r.json()).catch(() => ({}))
+        fetch(`${API_BASE_URL}/interviews/get_agenda.php`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE_URL}/chatbot/get_unanswered.php`).then(r => r.json()).catch(() => ({}))
       ]);
 
       const jobsList = jobsRes.status === 'success' ? (jobsRes.jobs || []) : [];

@@ -140,6 +140,7 @@ const Login = () => {
         localStorage.setItem('hiring_token', result.token);
       }
       localStorage.setItem('hiring_user', JSON.stringify(result.user));
+      try { window.dispatchEvent(new CustomEvent('auth_login', { detail: result.user })); } catch (e) {}
       sessionStorage.setItem('just_logged_in', 'true');
 
       // Redirect based on role

@@ -55,7 +55,14 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $dest_path = $uploadFileDir . $newFileName;
         
         if (move_uploaded_file($fileTmpPath, $dest_path)) {
-            $image_path = 'uploads/jobs/' . $newFileName;
+            // Encode as persistent Base64 Data URL so images survive cloud container restarts
+            $mimeType = mime_content_type($dest_path) ?: ('image/' . ($fileExtension === 'jpg' ? 'jpeg' : $fileExtension));
+            $rawContent = file_get_contents($dest_path);
+            if ($rawContent !== false && strlen($rawContent) > 0) {
+                $image_path = 'data:' . $mimeType . ';base64,' . base64_encode($rawContent);
+            } else {
+                $image_path = 'uploads/jobs/' . $newFileName;
+            }
         } else {
             http_response_code(500);
             echo json_encode(["status" => "error", "message" => "There was an error moving the uploaded file."]);

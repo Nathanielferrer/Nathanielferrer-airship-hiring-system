@@ -132,7 +132,7 @@ try {
         status VARCHAR(50) DEFAULT 'Active',
         category VARCHAR(100) DEFAULT 'Operations',
         location VARCHAR(255) DEFAULT 'Airship Express HQ',
-        image_path VARCHAR(255) DEFAULT NULL,
+        image_path MEDIUMTEXT DEFAULT NULL,
         is_archived TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
@@ -280,6 +280,11 @@ try {
         if (!$col->fetch()) {
             $pdo->exec("ALTER TABLE jobs_tbl ADD COLUMN location VARCHAR(255) DEFAULT 'Airship Express HQ' AFTER category");
         }
+    } catch (Exception $e) {}
+
+    // Ensure jobs_tbl.image_path supports persistent Base64 images (MEDIUMTEXT up to 16MB)
+    try {
+        $pdo->exec("ALTER TABLE jobs_tbl MODIFY COLUMN image_path MEDIUMTEXT DEFAULT NULL");
     } catch (Exception $e) {}
 
     // Add 'remarks' column to applications_tbl (evaluator feedback/notes)

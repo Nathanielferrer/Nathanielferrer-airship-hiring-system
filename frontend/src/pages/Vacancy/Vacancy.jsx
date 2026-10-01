@@ -943,7 +943,15 @@ const Vacancy = () => {
 
               <div className="vacancy-expanded-inner">
                 <div className="vacancy-expanded-image">
-                  <img src={selectedJob.image_path ? `${API_BASE_URL}/${selectedJob.image_path}` : "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80"} alt="Job Role" style={{objectFit: 'cover'}} />
+                  <img
+                    src={selectedJob.image_path ? (selectedJob.image_path.startsWith('data:') || selectedJob.image_path.startsWith('http') ? selectedJob.image_path : `${API_BASE_URL}/${selectedJob.image_path}`) : "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80"}
+                    alt={selectedJob.title || "Job Role"}
+                    style={{objectFit: 'cover'}}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80";
+                    }}
+                  />
                 </div>
 
                 <div className="vacancy-expanded-header-info">
@@ -1372,7 +1380,11 @@ const Vacancy = () => {
                 >
                   <div className="vacancy-card-img-wrapper">
                     <img
-                      src={job.image_path ? `${API_BASE_URL}/${job.image_path}` : "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80"}
+                      src={job.image_path ? (job.image_path.startsWith('data:') || job.image_path.startsWith('http') ? job.image_path : `${API_BASE_URL}/${job.image_path}`) : "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80"}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80";
+                      }}
                       alt={job.title}
                       className="vacancy-card-img"
                     />
