@@ -179,12 +179,14 @@ function send_email(
 ): bool {
     // Route 1: Resend HTTPS API (Railway / cloud deployments)
     if (getenv('RESEND_API_KEY')) {
-        return send_email_via_resend($toEmail, $toName, $subject, $htmlBody, $textBody, $fromName);
+        $sent = send_email_via_resend($toEmail, $toName, $subject, $htmlBody, $textBody, $fromName);
+        if ($sent) return true;
     }
 
     // Route 2: Brevo HTTPS API (Railway / cloud deployments)
     if (getenv('BREVO_API_KEY')) {
-        return send_email_via_brevo($toEmail, $toName, $subject, $htmlBody, $textBody, $fromName);
+        $sent = send_email_via_brevo($toEmail, $toName, $subject, $htmlBody, $textBody, $fromName);
+        if ($sent) return true;
     }
 
     // Route 2: PHPMailer SMTP (local XAMPP development)
@@ -603,10 +605,12 @@ function sendApplicationStatusEmail(
 
         // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
         if (getenv('RESEND_API_KEY')) {
-            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body);
+            $sent = send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body);
+            if ($sent) return true;
         }
         if (getenv('BREVO_API_KEY')) {
-            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body);
+            $sent = send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body);
+            if ($sent) return true;
         }
         $mail->send();
         return true;
@@ -704,10 +708,12 @@ function sendInterviewScheduleEmail(
 
         // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
         if (getenv('RESEND_API_KEY')) {
-            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body);
+            $sent = send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body);
+            if ($sent) return true;
         }
         if (getenv('BREVO_API_KEY')) {
-            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body);
+            $sent = send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body);
+            if ($sent) return true;
         }
         $mail->send();
         return true;
@@ -824,10 +830,12 @@ function sendEmailChangeSecurityAlert(string $oldEmail, string $toName, string $
 
         // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
         if (getenv('RESEND_API_KEY')) {
-            return send_email_via_resend($oldEmail, $toName, $mail->Subject, $mail->Body, '', 'Airship Express Security');
+            $sent = send_email_via_resend($oldEmail, $toName, $mail->Subject, $mail->Body, '', 'Airship Express Security');
+            if ($sent) return true;
         }
         if (getenv('BREVO_API_KEY')) {
-            return send_email_via_brevo($oldEmail, $toName, $mail->Subject, $mail->Body, '', 'Airship Express Security');
+            $sent = send_email_via_brevo($oldEmail, $toName, $mail->Subject, $mail->Body, '', 'Airship Express Security');
+            if ($sent) return true;
         }
         $mail->send();
         return true;
@@ -914,10 +922,12 @@ function sendEmailChangeVerificationLink(string $newEmail, string $toName, strin
 
         // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
         if (getenv('RESEND_API_KEY')) {
-            return send_email_via_resend($newEmail, $toName, $mail->Subject, $mail->Body);
+            $sent = send_email_via_resend($newEmail, $toName, $mail->Subject, $mail->Body);
+            if ($sent) return true;
         }
         if (getenv('BREVO_API_KEY')) {
-            return send_email_via_brevo($newEmail, $toName, $mail->Subject, $mail->Body);
+            $sent = send_email_via_brevo($newEmail, $toName, $mail->Subject, $mail->Body);
+            if ($sent) return true;
         }
         $mail->send();
         return true;
@@ -976,10 +986,12 @@ function sendRegistrationVerificationEmail(string $toEmail, string $toName, stri
 
         // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
         if (getenv('RESEND_API_KEY')) {
-            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody, 'Airship Express Hiring Portal');
+            $sent = send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody, 'Airship Express Hiring Portal');
+            if ($sent) return true;
         }
         if (getenv('BREVO_API_KEY')) {
-            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody, 'Airship Express Hiring Portal');
+            $sent = send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody, 'Airship Express Hiring Portal');
+            if ($sent) return true;
         }
         $mail->send();
         return true;
@@ -1117,10 +1129,12 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $resetTo
 
         // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
         if (getenv('RESEND_API_KEY')) {
-            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody ?? '', 'Airship Express Security Portal');
+            $sent = send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody ?? '', 'Airship Express Security Portal');
+            if ($sent) return true;
         }
         if (getenv('BREVO_API_KEY')) {
-            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody ?? '', 'Airship Express Security Portal');
+            $sent = send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody ?? '', 'Airship Express Security Portal');
+            if ($sent) return true;
         }
         $mail->send();
         return true;
