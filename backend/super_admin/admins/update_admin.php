@@ -1,5 +1,8 @@
 <?php
 require_once '../../db.php';
+require_once '../../auth/auth_guard.php';
+require_once '../../email_helper.php';
+
 header('Content-Type: application/json');
 
 use PHPMailer\PHPMailer\PHPMailer;
@@ -11,6 +14,9 @@ require_once '../../libs/PHPMailer/src/SMTP.php';
 
 ini_set('display_errors', 0);
 
+// ── AUTHENTICATION: Super Admin required ─────────────────────────────────────
+$superAdmin = require_super_admin();
+
 $json        = file_get_contents('php://input');
 $data        = json_decode($json, true);
 
@@ -18,7 +24,8 @@ $id          = intval($data['id'] ?? ($data['user_id'] ?? 0));
 $fname       = trim($data['first_name']     ?? '');
 $lname       = trim($data['last_name']      ?? '');
 $email       = trim($data['email']          ?? '');
-$actorId     = intval($data['actor_id']     ?? 0);
+// Identity strictly extracted from verified JWT token
+$actorId     = (int)$superAdmin['sub'];
 $resetPw     = !empty($data['reset_password']) && $data['reset_password'] === true;
 
 if (!$id || !$fname || !$lname || !$email) {
@@ -27,9 +34,29 @@ if (!$id || !$fname || !$lname || !$email) {
     exit();
 }
 
-if ($actorId <= 0) {
-    http_response_code(403);
-    echo json_encode(["status" => "error", "message" => "Unauthorized: actor ID is missing."]);
+// First name validation: 2 - 50 characters, letters, spaces, hyphen, apostrophe, period
+if (mb_strlen($fname) < 2 || mb_strlen($fname) > 50 || !preg_match("/^[a-zA-Z\s\-'\.]+$/", $fname)) {
+    http_response_code(400);
+    echo json_encode([
+        "status"  => "error",
+        "message" => "First name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, apostrophes, and periods."
+    ]);
+    exit();
+}
+
+// Last name validation: 2 - 50 characters, same rules as first name
+if (mb_strlen($lname) < 2 || mb_strlen($lname) > 50 || !preg_match("/^[a-zA-Z\s\-'\.]+$/", $lname)) {
+    http_response_code(400);
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Last name must be between 2 and 50 characters and can only contain letters, spaces, hyphens, apostrophes, and periods."
+    ]);
+    exit();
+}
+
+if (strlen($email) > 254) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Email address must not exceed 254 characters."]);
     exit();
 }
 
@@ -120,18 +147,10 @@ try {
 
         try {
             $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'nathanielferrer691@gmail.com';
-            $mail->Password   = 'enzc ppph jran heso';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-            $mail->CharSet    = 'UTF-8';
-            $mail->Encoding   = 'base64';
-
-            $mail->setFrom('nathanielferrer691@gmail.com', 'Airship Express Hiring Portal');
+            configure_smtp($mail, 'Airship Express Hiring Portal');
             $mail->addAddress($email, "{$fname} {$lname}");
+
+            $adminLoginUrl = get_frontend_url() . '/admin/login';
 
             $mail->isHTML(true);
             $mail->Subject = 'Your Admin Password Has Been Reset - Airship Express';
@@ -155,7 +174,7 @@ try {
                         <strong>Security Notice:</strong> You will be required to set a new permanent password immediately upon logging in.
                     </p>
                     <div style='text-align: center; margin: 28px 0;'>
-                        <a href='http://localhost:5173/admin/login' style='background-color: #e6007e; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>Access Admin Portal</a>
+                        <a href='{$adminLoginUrl}' style='background-color: #e6007e; color: #ffffff; padding: 12px 28px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 15px; display: inline-block;'>Access Admin Portal</a>
                     </div>
                 </div>
                 <div style='border-top: 1px solid #e5e4e7; padding-top: 16px; text-align: center; font-size: 12px; color: #9ca3af;'>
@@ -163,7 +182,7 @@ try {
                 </div>
             </div>
             ";
-            $mail->AltBody = "Hello {$fname},\n\nYour admin password has been reset.\nEmail: {$email}\nNew Temporary Password: {$tempPassword}\n\nLog in at: http://localhost:5173/admin/login";
+            $mail->AltBody = "Hello {$fname},\n\nYour admin password has been reset.\nEmail: {$email}\nNew Temporary Password: {$tempPassword}\n\nLog in at: {$adminLoginUrl}";
 
             $mail->send();
             $pwResetSent = true;
@@ -224,7 +243,8 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log("[Update Admin Error] " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "An internal system error occurred while updating the admin account."]);
 }
 ?>

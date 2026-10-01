@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../email_helper.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
@@ -36,17 +37,17 @@ function sendScheduledEmail($toEmail, $toName, $date = '', $startTime = '', $end
         $mail = new PHPMailer(true);
 
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
+        $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'nathanielferrer691@gmail.com';
-        $mail->Password   = 'enzc ppph jran heso'; // Google App Password
+        $mail->Username   = getenv('SMTP_USER') ?: 'nathanielferrer691@gmail.com';
+        $mail->Password   = getenv('SMTP_PASS') ?: 'enzc ppph jran heso';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
+        $mail->Port       = (int)(getenv('SMTP_PORT') ?: 587);
 
         $mail->CharSet    = 'UTF-8';
         $mail->Encoding   = 'base64';
 
-        $mail->setFrom('nathanielferrer691@gmail.com', 'Airship Express Recruitment');
+        $mail->setFrom($mail->Username, 'Airship Express Recruitment');
         $mail->addAddress($toEmail, $toName);
 
         $friendlyDate  = !empty($date) ? date('D, F j, Y', strtotime($date)) : 'Scheduled Date';
@@ -73,7 +74,7 @@ function sendScheduledEmail($toEmail, $toName, $date = '', $startTime = '', $end
                 <p style='font-size: 14px; color: #475569; line-height: 1.6;'>You have been scheduled for an interview. Please review the details below and log in to confirm your attendance.</p>
                 $slotInfoBlock
                 <div style='margin: 24px 0;'>
-                    <a href='http://localhost:5173/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
+                    <a href='" . get_frontend_url() . "/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
                 </div>
                 <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
             </div>
@@ -88,14 +89,15 @@ function sendScheduledEmail($toEmail, $toName, $date = '', $startTime = '', $end
 try {
     $pdo->beginTransaction();
 
-    // 1. Fetch applicants in 'PASSED INITIAL' status
+    // 1. Fetch applicants in 'PASSED INITIAL' status ordered strictly by applied_at (First-Come, First-Served)
     $appStmt = $pdo->query("
-        SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email, a.status,
+        SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email, a.status, a.applied_at, j.title AS job_title,
                u.User_Fname, u.User_Lname, u.User_Email
         FROM applications_tbl a
         INNER JOIN users_tbl u ON a.user_id = u.user_id
-        WHERE a.status = 'PASSED INITIAL'
-        ORDER BY a.applied_at ASC
+        INNER JOIN jobs_tbl j ON a.job_id = j.job_id
+        WHERE a.status IN ('PASSED INITIAL', 'PASSED INITIAL SCREENING')
+        ORDER BY a.applied_at ASC, a.application_id ASC
     ");
     $applicants = $appStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -109,7 +111,8 @@ try {
         exit();
     }
 
-    // 2. Fetch available open slots
+    // 2. Fetch available open slots in strict chronological sequence (earliest date and time first).
+    // FIFO Queue: Candidates who applied earliest are assigned the earliest available slots.
     $slotStmt = $pdo->query("SELECT slot_id, slot_date, start_time, end_time FROM interview_slots_tbl WHERE status = 'Open' ORDER BY slot_date ASC, start_time ASC");
     $slots = $slotStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -124,9 +127,10 @@ try {
     }
 
     $assignedCount     = 0;
+    $assignedNames     = [];
     $usedSlotIds       = [];
     $fixedLocation     = "352 T. Pinpin Escolta st. Binondo Manila, 1006";
-    $fixedRequirements = json_encode(["Resume"]);
+    $fixedRequirements = json_encode(["Printed Resume"]);
 
     foreach ($applicants as $app) {
         $appId  = $app['application_id'];
@@ -174,8 +178,8 @@ try {
         $bookStmt = $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Booked', application_id = :app_id WHERE slot_id = :slot_id");
         $bookStmt->execute(['app_id' => $appId, 'slot_id' => $slotId]);
 
-        // Update application status to PENDING SCHEDULED
-        $statusStmt = $pdo->prepare("UPDATE applications_tbl SET status = 'PENDING SCHEDULED' WHERE application_id = :id");
+        // Update application status to PENDING SCHEDULED and record invitation timestamp
+        $statusStmt = $pdo->prepare("UPDATE applications_tbl SET status = 'PENDING SCHEDULED', invitation_sent_at = NOW() WHERE application_id = :id");
         $statusStmt->execute(['id' => $appId]);
 
         // Insert or update interviews_tbl
@@ -213,17 +217,19 @@ try {
             $pdo,
             $userId,
             $appId,
-            'Interview Scheduled – Action Required',
-            "Your interview schedule has been updated to {$friendlyDate} at {$friendlyTime}. Log in to view details and confirm your attendance."
+            'Interview Scheduled',
+            "Set for {$friendlyDate} at {$friendlyTime}. Please review and confirm your attendance."
         );
 
         // Send email notification
         $toEmail = $app['candidate_email'] ?: $app['User_Email'];
         if (!empty($toEmail)) {
-            sendScheduledEmail($toEmail, $candidateName, $date, $time, $endTime);
+            $jobTitle = $app['job_title'] ?? 'Office Staff';
+            sendInterviewScheduleEmail($toEmail, $candidateName, $jobTitle, $date, $time, $endTime, $fixedLocation);
         }
 
         $assignedCount++;
+        $assignedNames[] = $candidateName;
     }
 
     $pdo->commit();
@@ -244,9 +250,18 @@ try {
         'Info'
     );
 
+    $msg = "Interview slots assigned successfully ({$assignedCount} candidate" . ($assignedCount === 1 ? '' : 's') . ").";
+    if ($assignedCount === 1 && !empty($assignedNames[0])) {
+        $msg = "Interview Scheduled. {$assignedNames[0]} moved to Final Interview.";
+    } elseif ($assignedCount > 1 && $assignedCount <= 3) {
+        $msg = "Interview Scheduled. " . implode(', ', $assignedNames) . " moved to Final Interview.";
+    } elseif ($assignedCount > 0) {
+        $msg = "Interview Scheduled for {$assignedCount} candidates moved to Final Interview.";
+    }
+
     echo json_encode([
         "status"         => "success",
-        "message"        => "Interview slots assigned successfully ({$assignedCount} candidate" . ($assignedCount === 1 ? '' : 's') . ").",
+        "message"        => $msg,
         "assigned_count" => $assignedCount
     ]);
 

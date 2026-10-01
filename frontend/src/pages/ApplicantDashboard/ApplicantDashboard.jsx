@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logoImg from '../../assets/images/Logo Airship Express.png';
-import ChatbotWidget    from '../../components/ChatbotWidget/ChatbotWidget';
 import ApplicantNavbar  from '../../components/ApplicantNavbar/ApplicantNavbar';
 import HeroSection      from './components/HeroSection';
 import PartnersCarousel from './components/PartnersCarousel';
@@ -9,6 +8,7 @@ import HowToApply       from './components/HowToApply';
 import FeaturedJobs     from './components/FeaturedJobs';
 import useApplicantData from '../../hooks/useApplicantData';
 import ConfirmModal     from '../../components/ConfirmModal/ConfirmModal';
+import LoadingScreen    from '../../components/LoadingScreen/LoadingScreen';
 import Footer           from '../../components/Footer/Footer';
 import './ApplicantDashboard.css';
 
@@ -22,24 +22,18 @@ const ApplicantDashboard = () => {
     setShowProfileMenu,
     handleNotificationClick,
     handleClearReadNotifications,
+    handleMarkAllAsRead,
     handleLogout,
     confirmModalState,
     closeConfirmModal,
     dropdownRef,
     notifRef,
-  } = useApplicantData({ navigateOnNotification: true });
+    isLoggingOut,
+  } = useApplicantData({ navigateOnNotification: true, requireAuth: false });
 
   useEffect(() => {
     document.title = 'Home - Airship Express Hiring Platform';
   }, []);
-
-  if (!user) {
-    return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="dashboard-wrapper animate-fade-in">
@@ -54,20 +48,19 @@ const ApplicantDashboard = () => {
         setShowProfileMenu={setShowProfileMenu}
         handleNotificationClick={handleNotificationClick}
         handleClearReadNotifications={handleClearReadNotifications}
+        handleMarkAllAsRead={handleMarkAllAsRead}
         handleLogout={handleLogout}
         notifRef={notifRef}
         dropdownRef={dropdownRef}
       />
 
-      <HeroSection />
+      <HeroSection user={user} />
       <PartnersCarousel />
       <HowToApply />
       <FeaturedJobs />
 
       {/* Footer */}
       <Footer />
-
-      <ChatbotWidget />
 
       <ConfirmModal
         isOpen={confirmModalState.isOpen}
@@ -78,6 +71,12 @@ const ApplicantDashboard = () => {
         type={confirmModalState.type}
         onConfirm={confirmModalState.onConfirm}
         onCancel={closeConfirmModal}
+      />
+
+      <LoadingScreen
+        isOpen={isLoggingOut}
+        title="Signing Out"
+        subtitle="Clearing your candidate session..."
       />
     </div>
   );

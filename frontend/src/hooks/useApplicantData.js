@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { API_BASE_URL } from '../utils/apiConfig';
 /**
  * Shared hook providing auth guard, applications data, notifications,
  * interview details, and schedule response logic for all applicant-facing pages.
@@ -9,11 +10,20 @@ import { useNavigate } from 'react-router-dom';
  * @param {boolean} options.navigateOnNotification - If true, clicking a notification
  *   navigates to /application-status after marking it as read. Set true on the
  *   dashboard, false on the status page itself.
+ * @param {boolean} options.requireAuth - If true, redirects unauthenticated guests
+ *   to /login. Set false on public/landing pages like the Home Dashboard.
  */
-const useApplicantData = ({ navigateOnNotification = false } = {}) => {
+const useApplicantData = ({ navigateOnNotification = false, requireAuth = true } = {}) => {
   const navigate = useNavigate();
 
-  const [user, setUser]                               = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('hiring_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
   const [applications, setApplications]               = useState([]);
   const [loadingApps, setLoadingApps]                 = useState(true);
   const [notifications, setNotifications]             = useState([]);
@@ -22,6 +32,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
   const [scheduleActionLoading, setScheduleActionLoading] = useState({});
   const [scheduleActionFeedback, setScheduleActionFeedback] = useState({});
   const [showProfileMenu, setShowProfileMenu]         = useState(false);
+  const [isHiredUser, setIsHiredUser]                 = useState(false);
 
   const dropdownRef = useRef(null);
   const notifRef    = useRef(null);
@@ -30,16 +41,30 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
   useEffect(() => {
     const savedUser = localStorage.getItem('hiring_user');
     if (!savedUser) {
-      navigate('/login');
+      if (requireAuth) {
+        navigate('/login');
+      } else {
+        setUser(null);
+        setLoadingApps(false);
+      }
       return;
     }
-    const userData = JSON.parse(savedUser);
-    if (userData.is_admin > 0) {
-      navigate('/admin-dashboard');
-      return;
+    try {
+      const userData = JSON.parse(savedUser);
+      if (userData.is_admin > 0) {
+        navigate('/admin-dashboard');
+        return;
+      }
+      setUser(userData);
+    } catch {
+      if (requireAuth) {
+        navigate('/login');
+      } else {
+        setUser(null);
+        setLoadingApps(false);
+      }
     }
-    setUser(userData);
-  }, [navigate]);
+  }, [navigate, requireAuth]);
 
   // ── Load data once user is available ─────────────────────────────────────
   useEffect(() => {
@@ -52,7 +77,10 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
 
   // ── Fetch interview details for scheduled applications ────────────────────
   useEffect(() => {
-    const scheduledStatuses = ['INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'CONFIRMED', 'RESCHEDULING'];
+    const scheduledStatuses = [
+      'INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'CONFIRMED', 'RESCHEDULING',
+      'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW', 'Candidate No Show'
+    ];
     applications
       .filter(app => scheduledStatuses.includes(app.status))
       .forEach(app => {
@@ -82,10 +110,39 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
   const fetchUserApplications = async () => {
     if (!user) return;
     try {
-      const res  = await fetch(`http://localhost/Hiring%20System/backend/applications/get_user_applications.php?user_id=${user.id}`);
+      const res  = await fetch(`${API_BASE_URL}/applications/get_user_applications.php?user_id=${user.id}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}` }
+      });
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setApplications(data.applications);
+
+        // Keep local user identity in sync if Admin updated their legal name in the database
+        if (data.user) {
+          const freshFn = (data.user.User_Fname || '').trim();
+          const freshMi = (data.user.User_MInitial || '').trim();
+          const freshLn = (data.user.User_Lname || '').trim();
+          const existing = JSON.parse(localStorage.getItem('hiring_user') || '{}');
+          if (existing.User_Fname !== freshFn || existing.User_Lname !== freshLn || (existing.User_MInitial || '') !== freshMi) {
+            const updated = {
+              ...existing,
+              first_name: freshFn,
+              middle_initial: freshMi,
+              last_name: freshLn,
+              User_Fname: freshFn,
+              User_MInitial: freshMi,
+              User_Lname: freshLn
+            };
+            localStorage.setItem('hiring_user', JSON.stringify(updated));
+            setUser(updated);
+          }
+        }
+        const hiredStatuses = [
+          'OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 
+          'HIRED - PRE-EMPLOYMENT', 'HIRED_PRE_EMPLOYMENT', 'COMPLETED REQUIREMENTS', 'COMPLETED_REQUIREMENTS', 
+          'OFFICIALLY HIRED & REQUIREMENTS COMPLETED', 'OFFICIALLY HIRED & SIGNED', 'PARTIALLY COMPLIANT', 'PARTIALLY_COMPLIANT'
+        ];
+        setIsHiredUser(data.applications.some(app => hiredStatuses.includes((app.status || '').toUpperCase())));
       }
     } catch (err) {
       console.error('Failed to load user applications:', err);
@@ -97,7 +154,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
   const fetchNotifications = async () => {
     if (!user) return;
     try {
-      const res  = await fetch(`http://localhost/Hiring%20System/backend/notifications/get_notifications.php?user_id=${user.id}`);
+      const res  = await fetch(`${API_BASE_URL}/notifications/get_notifications.php?user_id=${user.id}`);
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setNotifications(data.notifications);
@@ -110,7 +167,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
   const handleNotificationClick = async (notif) => {
     if (!notif.is_read) {
       try {
-        await fetch('http://localhost/Hiring%20System/backend/notifications/mark_read.php', {
+        await fetch(`${API_BASE_URL}/notifications/mark_read.php`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify({ id: notif.id }),
@@ -123,8 +180,14 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
       }
     }
     setShowNotifications(false);
-    if (navigateOnNotification) {
-      navigate('/application-status');
+
+    const targetPath = (notif?.link && notif.link !== '/applicant-dashboard') ? notif.link : '/application-status';
+    
+    // If already on application status, refresh data immediately
+    if (window.location.pathname.includes('/application-status')) {
+      fetchUserApplications();
+    } else {
+      navigate(targetPath);
     }
   };
 
@@ -168,7 +231,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
       onConfirm: async () => {
         closeConfirmModal();
         try {
-          const res = await fetch('http://localhost/Hiring%20System/backend/notifications/clear_read_notifications.php', {
+          const res = await fetch(`${API_BASE_URL}/notifications/clear_read_notifications.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: user.id }),
@@ -184,10 +247,27 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
     });
   };
 
+  const handleMarkAllAsRead = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/notifications/mark_all_read.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+      }
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+    }
+  };
+
   const fetchInterviewDetails = async (appId) => {
     if (!user) return;
     try {
-      const res  = await fetch(`http://localhost/Hiring%20System/backend/interviews/get_details.php?application_id=${appId}&user_id=${user.id}`);
+      const res  = await fetch(`${API_BASE_URL}/interviews/get_details.php?application_id=${appId}&user_id=${user.id}`);
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setInterviewDetails(prev => ({ ...prev, [appId]: data.interview }));
@@ -200,7 +280,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
   const handleScheduleResponse = async (appId, action, extra = {}) => {
     setScheduleActionLoading(prev => ({ ...prev, [appId]: true }));
     try {
-      const res  = await fetch('http://localhost/Hiring%20System/backend/interviews/respond_schedule.php', {
+      const res  = await fetch(`${API_BASE_URL}/interviews/respond_schedule.php`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -226,6 +306,8 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
     }
   };
 
+  const [isLoggingOut, setIsLoggingOut]               = useState(false);
+
   const handleLogout = () => {
     setConfirmModalState({
       isOpen: true,
@@ -236,13 +318,19 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
       type: 'danger',
       onConfirm: () => {
         closeConfirmModal();
+        setIsLoggingOut(true);
         localStorage.removeItem('hiring_user');
-        navigate('/login');
+        localStorage.removeItem('hiring_token');
+        sessionStorage.clear();
+        window.dispatchEvent(new Event('auth_logout'));
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 900);
       },
     });
   };
 
-  const handleWithdrawApplication = async (appId, jobTitle = 'this position') => {
+  const handleWithdrawApplication = async (appId, jobTitle = 'this position', onResult = null) => {
     if (!user) return;
     setConfirmModalState({
       isOpen: true,
@@ -254,7 +342,7 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
       onConfirm: async () => {
         closeConfirmModal();
         try {
-          const res = await fetch('http://localhost/Hiring%20System/backend/applications/withdraw.php', {
+          const res = await fetch(`${API_BASE_URL}/applications/withdraw.php`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -266,19 +354,47 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
           const data = await res.json();
           if (res.ok && data.status === 'success') {
             fetchUserApplications();
+            if (typeof onResult === 'function') onResult(true, data.message || 'Application successfully withdrawn.');
           } else {
-            alert(data.message || 'Failed to withdraw application.');
+            if (typeof onResult === 'function') onResult(false, data.message || 'Failed to withdraw application.');
           }
         } catch (err) {
           console.error('Withdraw application error:', err);
+          if (typeof onResult === 'function') onResult(false, 'Connection error while withdrawing application.');
         }
       }
     });
   };
 
+  const handleRespondJobOffer = async (appId, action, reason = '') => {
+    if (!user) return { status: 'error', message: 'User not logged in' };
+    try {
+      const res = await fetch(`${API_BASE_URL}/applications/respond_job_offer.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          application_id: appId,
+          user_id: user.id,
+          action,
+          reason
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        fetchUserApplications();
+        fetchNotifications();
+      }
+      return data;
+    } catch (err) {
+      console.error('Job offer response error:', err);
+      return { status: 'error', message: 'Failed to submit response. Please try again.' };
+    }
+  };
+
   // ── Return ─────────────────────────────────────────────────────────────────
   return {
     user,
+    setUser,
     applications,
     loadingApps,
     notifications,
@@ -291,14 +407,19 @@ const useApplicantData = ({ navigateOnNotification = false } = {}) => {
     setShowProfileMenu,
     handleNotificationClick,
     handleClearReadNotifications,
+    handleMarkAllAsRead,
     handleScheduleResponse,
     handleWithdrawApplication,
+    handleRespondJobOffer,
     fetchUserApplications,
     handleLogout,
     confirmModalState,
+    setConfirmModalState,
     closeConfirmModal,
     dropdownRef,
     notifRef,
+    isHiredUser,
+    isLoggingOut,
   };
 };
 

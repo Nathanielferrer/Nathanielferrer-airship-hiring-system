@@ -1,48 +1,34 @@
-import React, { useState, useCallback, useRef } from 'react';
-import ReactDOM from 'react-dom';
-import './Toast.css';
+import React, { useState, useCallback } from 'react';
+import { ToastContainer } from './ToastNotification';
 
 /**
- * useToast — Universal standard toast notification
+ * useToast — Universal Standard Toast Notification Hook
+ * Provides consistent, high-fidelity card toast notifications across
+ * Applicant, Admin, and Superadmin dashboards.
  */
-const useToast = () => {
-  const [toast, setToast] = useState(null);
-  const timerRef = useRef(null);
+export const useToast = () => {
+  const [toasts, setToasts] = useState([]);
 
-  const showToast = useCallback((msg, type = 'success') => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    const message = typeof msg === 'object' ? (msg.message || msg.title || '') : msg;
-    const toastType = typeof msg === 'object' ? (msg.type || type) : type;
-
-    setToast({ message, type: toastType });
-
-    timerRef.current = setTimeout(() => {
-      setToast(null);
-    }, 4000);
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const ToastPortal = () => {
-    if (!toast) return null;
+  const showToast = useCallback((msg, type = 'success', title = null, duration = 3500) => {
+    const message = typeof msg === 'object' ? (msg.message || msg.title || '') : String(msg || '');
+    const toastType = typeof msg === 'object' ? (msg.type || type) : type;
+    const toastTitle = typeof msg === 'object' ? (msg.title || title) : title;
+    const toastDuration = typeof msg === 'object' && msg.duration !== undefined ? msg.duration : duration;
+    const id = Date.now() + Math.random().toString(36).substring(2, 9);
 
-    return ReactDOM.createPortal(
-      <div className={`system-toast system-toast--${toast.type || 'success'}`}>
-        <i
-          className={`bx ${
-            toast.type === 'error' || toast.type === 'danger'
-              ? 'bx-error-circle'
-              : 'bx-check-circle'
-          }`}
-          style={{ fontSize: '20px' }}
-        />
-        <span>{toast.message}</span>
-      </div>,
-      document.body
-    );
-  };
+    setToasts((prev) => [...prev, { id, message, type: toastType, title: toastTitle, duration: toastDuration }]);
+    return id;
+  }, []);
 
-  return { showToast, ToastPortal };
+  const ToastPortal = useCallback(() => {
+    return <ToastContainer toasts={toasts} onClose={removeToast} />;
+  }, [toasts, removeToast]);
+
+  return { toasts, showToast, removeToast, ToastPortal };
 };
 
 export default useToast;
-

@@ -19,6 +19,7 @@ if (empty($token) || empty($newPassword)) {
 // Validate password strength server-side
 $strongPassword = (
     strlen($newPassword) >= 8 &&
+    strlen($newPassword) <= 64 &&
     preg_match('/[A-Z]/', $newPassword) &&
     preg_match('/[a-z]/', $newPassword) &&
     preg_match('/[0-9]/', $newPassword) &&
@@ -29,7 +30,7 @@ if (!$strongPassword) {
     http_response_code(400);
     echo json_encode([
         "status"  => "error",
-        "message" => "Password must be at least 8 characters and include uppercase, lowercase, a number, and a special character."
+        "message" => "Password must be between 8 and 64 characters and include uppercase, lowercase, a number, and a special character."
     ]);
     exit();
 }

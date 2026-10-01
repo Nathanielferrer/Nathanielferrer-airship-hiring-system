@@ -1,0 +1,24 @@
+# ── Airship Express Backend Security Rules ────────────────────
+# Deny access to sensitive files, environment configs, and private folders
+
+# 1. Deny access to all hidden files (.env, .git, etc.)
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 2. Deny access to sensitive extensions
+<FilesMatch "\.(env|log|sql|json|lock|phar|md|yml|yaml)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# 3. Disable directory listing for all directories
+Options -Indexes
+
+# 4. Protect private directory (Candidate resumes & credentials)
+# Resumes must be downloaded via backend/applications/download_resume.php
+RewriteEngine On
+RewriteRule ^private/.*$ - [F,L]
+RewriteRule ^vendor/.*$ - [F,L]
+RewriteRule ^migrations/.*$ - [F,L]

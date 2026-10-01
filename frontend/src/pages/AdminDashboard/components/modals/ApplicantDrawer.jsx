@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 
+import { API_BASE_URL } from '../../../../utils/apiConfig';
 const ApplicantDrawer = ({
   drawerApp,
   setDrawerApp,
@@ -104,10 +105,18 @@ const ApplicantDrawer = ({
             <i className='bx bx-user' style={{ fontSize: '44px' }}></i>
           </div>
 
-          <div className="admin-drawer-profile-text" style={{ paddingRight: '70px' }}>
-            <span className="admin-drawer-name">{aiData?.applicant_info?.name || drawerApp.candidate_name || `${drawerApp.User_Fname} ${drawerApp.User_Lname}`}</span>
-            <span className="admin-drawer-role">{drawerApp.job_title}</span>
-          </div>
+          {(() => {
+            const resumeName = aiData?.applicant_info?.name || '';
+            const accountName = (drawerApp.candidate_name || `${drawerApp.User_Fname || ''} ${drawerApp.User_Lname || ''}`).trim();
+            const drawerTitle = resumeName || accountName || 'Applicant';
+
+            return (
+              <div className="admin-drawer-profile-text" style={{ paddingRight: '70px' }}>
+                <span className="admin-drawer-name">{drawerTitle}</span>
+                <span className="admin-drawer-role">{drawerApp.job_title}</span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Main drawer content */}
@@ -120,13 +129,20 @@ const ApplicantDrawer = ({
             </div>
             <div className="admin-contact-item">
               <i className='bx bx-phone admin-contact-icon'></i>
-              <span>{drawerApp.User_Mobile || "Not provided"}</span>
+              {(drawerApp.candidate_mobile || drawerApp.User_Mobile) ? (
+                <span style={{ color: '#334155', fontWeight: '500' }}>
+                  {drawerApp.candidate_mobile || drawerApp.User_Mobile}
+                </span>
+              ) : (
+                <span>Not provided</span>
+              )}
             </div>
             <div className="admin-contact-item">
               <i className='bx bx-map admin-contact-icon'></i>
               <span>{aiData?.applicant_info?.location || drawerApp.Address || drawerApp.location || "Location not provided"}</span>
             </div>
           </div>
+
 
           {/* AI recommendation alert header box */}
           {drawerApp.ai_match_score !== null && (
@@ -278,13 +294,68 @@ const ApplicantDrawer = ({
             )}
           </div>
 
+          {drawerApp.remarks && (
+            <div>
+              <h4 className="admin-drawer-section-title">Evaluator Remarks</h4>
+              {(() => {
+                let actualRemarks = (drawerApp.remarks || '').trim();
+                let evalName = '';
+                let evalDate = '';
+                if (actualRemarks.includes('|||SIG|||')) {
+                  const parts = actualRemarks.split('|||SIG|||');
+                  actualRemarks = parts[0].trim();
+                  if (parts[1]) {
+                    const sigParts = parts[1].split('|||');
+                    evalName = sigParts[0]?.trim() || '';
+                    evalDate = sigParts[1]?.trim() || '';
+                  }
+                }
+                if (!actualRemarks) {
+                  actualRemarks = 'No remarks provided.';
+                }
+                const fallbackEvaluator = (() => {
+                  try {
+                    const user = JSON.parse(localStorage.getItem('hiring_user') || '{}');
+                    return (user?.first_name || user?.User_Fname)
+                      ? `${user.first_name || user.User_Fname} ${user.last_name || user.User_Lname || ''}`.trim()
+                      : 'Kurtney Cruz';
+                  } catch {
+                    return 'Kurtney Cruz';
+                  }
+                })();
+                return (
+                  <>
+                    <div style={{
+                      padding: '12px 14px',
+                      background: '#f8fafc',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      fontSize: '13px',
+                      color: '#334155',
+                      lineHeight: '1.5',
+                      whiteSpace: 'pre-line',
+                      fontStyle: 'italic',
+                      marginBottom: '10px'
+                    }}>
+                      "{actualRemarks}"
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: '#64748b', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <i className='bx bx-info-circle' style={{ fontSize: '14px' }}></i>
+                      Interviewed by: <strong>{evalName || fallbackEvaluator}</strong> {evalDate ? `on ${evalDate}` : ''}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Documents attachment rows */}
           <div>
             <h4 className="admin-drawer-section-title">Documents</h4>
             <div className="admin-drawer-doc-list">
               <button 
                 className="admin-drawer-doc-btn"
-                onClick={() => window.open(`http://localhost/Hiring%20System/backend/applications/download_resume.php?id=${drawerApp.id}`, '_blank')}
+                onClick={() => window.open(`${API_BASE_URL}/applications/download_resume.php?id=${drawerApp.id}&token=${encodeURIComponent(localStorage.getItem('hiring_token') || '')}`, '_blank')}
               >
                 <div className="admin-drawer-doc-btn-left">
                   <i className='bx bxs-file-pdf admin-drawer-doc-icon' style={{ fontSize: '16px' }}></i>
@@ -323,7 +394,14 @@ const ApplicantDrawer = ({
                     boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
                     transition: 'all 0.15s ease'
                   }}
-                  onClick={() => confirmPass ? confirmPass(drawerApp) : handleUpdateStatus(drawerApp.id, 'PASSED INITIAL')}
+                  onClick={() => {
+                    setDrawerApp(null);
+                    if (confirmPass) {
+                      confirmPass(drawerApp);
+                    } else {
+                      handleUpdateStatus(drawerApp.id, 'PASSED INITIAL');
+                    }
+                  }}
                 >
                   <span>Pass Initial Screening</span>
                 </button>
@@ -348,7 +426,14 @@ const ApplicantDrawer = ({
                     whiteSpace: 'nowrap',
                     transition: 'all 0.15s ease'
                   }}
-                  onClick={() => confirmReject ? confirmReject(drawerApp) : handleUpdateStatus(drawerApp.id, 'SCREENING_REJECTED')}
+                  onClick={() => {
+                    setDrawerApp(null);
+                    if (confirmReject) {
+                      confirmReject(drawerApp);
+                    } else {
+                      handleUpdateStatus(drawerApp.id, 'SCREENING_REJECTED');
+                    }
+                  }}
                 >
                   <span>Reject</span>
                 </button>

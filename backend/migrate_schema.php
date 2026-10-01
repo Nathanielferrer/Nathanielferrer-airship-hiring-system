@@ -199,6 +199,32 @@ try {
         }
     }
 
+    // 12. Add new columns for jobs soft delete and onboarding checklist
+    if (tableExists($pdo, 'jobs_tbl')) {
+        if (!columnExists($pdo, 'jobs_tbl', 'is_archived')) {
+            $pdo->exec("ALTER TABLE `jobs_tbl` ADD COLUMN `is_archived` TINYINT(1) DEFAULT 0");
+            echo "  ✓ jobs_tbl: Added column `is_archived`\n";
+        }
+        if (!columnExists($pdo, 'jobs_tbl', 'is_hidden')) {
+            $pdo->exec("ALTER TABLE `jobs_tbl` ADD COLUMN `is_hidden` TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`");
+            echo "  ✓ jobs_tbl: Added column `is_hidden`\n";
+        }
+        if (!columnExists($pdo, 'jobs_tbl', 'salary')) {
+            $pdo->exec("ALTER TABLE `jobs_tbl` ADD COLUMN `salary` VARCHAR(100) DEFAULT NULL AFTER `requirements`");
+            echo "  ✓ jobs_tbl: Added column `salary`\n";
+        }
+        if (!columnExists($pdo, 'jobs_tbl', 'employment_type')) {
+            $pdo->exec("ALTER TABLE `jobs_tbl` ADD COLUMN `employment_type` VARCHAR(50) DEFAULT 'Full Time' AFTER `salary`");
+            echo "  ✓ jobs_tbl: Added column `employment_type`\n";
+        }
+    }
+    if (tableExists($pdo, 'applications_tbl')) {
+        if (!columnExists($pdo, 'applications_tbl', 'pre_employment_checklist')) {
+            $pdo->exec("ALTER TABLE `applications_tbl` ADD COLUMN `pre_employment_checklist` TEXT DEFAULT NULL");
+            echo "  ✓ applications_tbl: Added column `pre_employment_checklist`\n";
+        }
+    }
+
     // ── STEP 4: Add New Foreign Key Constraints ──────────────────────────────
     echo "\n[Step 4] Adding new Foreign Key constraints...\n";
 

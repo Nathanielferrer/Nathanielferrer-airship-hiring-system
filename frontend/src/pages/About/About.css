@@ -8,7 +8,7 @@
   background: #ffffff;
   color: #1e293b;
   font-family: 'Inter', sans-serif;
-  overflow-x: clip;
+  overflow-x: visible;
 }
 
 /* Header Navbar - Consistent with dark header in previous interfaces */

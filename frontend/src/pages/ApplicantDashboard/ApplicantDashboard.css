@@ -7,218 +7,8 @@
   background: #f8fafc;
   /* Clean background for the portal section */
   position: relative;
-  overflow-x: clip;
+  overflow-x: visible;
   box-sizing: border-box;
-}
-
-/* 1. Header/Navbar styling - Solid black */
-.dashboard-navbar {
-  box-sizing: border-box;
-  background: #000000;
-  width: 100%;
-  height: 75px;
-  padding: 0 48px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.dashboard-navbar-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.dashboard-navbar-logo-img {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-}
-
-.dashboard-navbar-brand-text {
-  display: flex;
-  flex-direction: column;
-  text-align: left;
-}
-
-.brand-name {
-  font-family: 'Montserrat', sans-serif;
-  color: #ffffff;
-  font-size: 19px;
-  font-weight: 900; /* Montserrat Black */
-  letter-spacing: 0.5px;
-  line-height: 1.2;
-}
-
-.brand-platform {
-  font-family: 'Inter', sans-serif;
-  color: #cbd5e1; /* Light grey */
-  font-size: 12px;
-  font-weight: 400; /* Inter Regular */
-  letter-spacing: 0.5px;
-}
-
-/* Navbar Center / Navigation links */
-.dashboard-navbar-nav {
-  display: flex;
-  gap: 32px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  align-items: center;
-}
-
-.nav-link-item {
-  color: #cbd5e1; /* Light grey */
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 600; /* Inter Semi-Bold */
-  text-decoration: none;
-  transition: color 0.2s ease, border-color 0.2s ease;
-  cursor: pointer;
-  padding: 6px 0;
-  border-bottom: 2px solid transparent;
-}
-
-.nav-link-item:hover {
-  color: #e6007e;
-}
-
-.nav-link-item.active {
-  color: #e6007e; /* Highlighted with magenta text */
-  border-bottom: 2px solid #e6007e; /* Thin magenta underline */
-}
-
-/* Navbar Right / Profile + Notifications */
-.dashboard-navbar-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.notification-bell-btn {
-  background: transparent;
-  border: none;
-  color: #ffffff;
-  cursor: pointer;
-  padding: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s ease;
-}
-
-.notification-bell-btn:hover {
-  opacity: 0.8;
-}
-
-.avatar-profile-btn {
-  background: transparent;
-  border: 2px solid #e6007e; /* Magenta circular user profile outline */
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-  position: relative;
-}
-
-.avatar-profile-btn:hover {
-  transform: scale(1.05);
-  border-color: #ff008c;
-}
-
-.avatar-silhouette-svg {
-  width: 24px;
-  height: 24px;
-  color: #e6007e; /* Magenta user outline */
-}
-
-/* Interactive Dropdown Styles */
-.profile-dropdown-menu {
-  position: fixed;
-  top: 75px;
-  right: 20px;
-  background: rgba(12, 10, 15, 0.97);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 14px;
-  width: 248px;
-  padding: 16px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-  z-index: 1200;
-  text-align: left;
-  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes dropdownFadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.dropdown-user-info {
-  margin-bottom: 12px;
-}
-
-.dropdown-user-name {
-  display: block;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.dropdown-user-email {
-  display: block;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  color: #94a3b8;
-  word-break: break-all;
-}
-
-.dropdown-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 12px 0;
-}
-
-.dropdown-logout-btn {
-  width: 100%;
-  background: transparent;
-  border: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: #ef4444;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 8px 10px;
-  border-radius: 6px;
-  transition: background-color 0.2s ease;
-  text-align: left;
-}
-
-.dropdown-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
 }
 
 /* 2. Hero Section */
@@ -275,6 +65,12 @@
   line-height: 1.15;
   margin: 0 0 16px 0;
   letter-spacing: -1.5px;
+}
+
+.hero-name-accent {
+  color: #ffffff;
+  background: none;
+  -webkit-text-fill-color: #ffffff;
 }
 
 .hero-subtitle {
@@ -937,26 +733,6 @@
 
   .brand-platform {
     font-size: 10px;
-  }
-
-  .dashboard-navbar-logo-img {
-    height: 32px;
-  }
-
-  .dashboard-navbar-right {
-    gap: 12px;
-  }
-
-  /* Profile dropdown on mobile */
-  .profile-dropdown-menu {
-    top: 64px;
-    right: 12px;
-    width: 220px;
-  }
-
-  /* Mobile nav dropdown height synced to shorter navbar */
-  .mobile-nav-dropdown {
-    top: 64px;
   }
 
   /* Hero section */

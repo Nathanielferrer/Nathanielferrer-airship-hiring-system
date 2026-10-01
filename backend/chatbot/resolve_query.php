@@ -39,8 +39,8 @@ try {
         $answer   = trim($body['predefined_answer'] ?? '');
         $tags     = trim($body['keyword_tags']      ?? '');
 
-        if (empty($question) || empty($answer)) {
-            throw new Exception('Question and answer are required when creating a new KB entry');
+        if (empty($question) || empty($answer) || empty($tags)) {
+            throw new Exception('Question, predefined answer, and keyword tags are all required when creating a new KB entry');
         }
 
         $stmt = $pdo->prepare("

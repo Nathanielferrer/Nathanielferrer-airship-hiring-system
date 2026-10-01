@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import './RescheduleModal.css';
 
+import { API_BASE_URL } from '../../../utils/apiConfig';
 /**
  * RescheduleModal — Single-screen reschedule flow:
  * - Top section: Scrollable table of available interview schedules
@@ -33,7 +34,7 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
   const fetchSlots = async () => {
     setLoadingSlots(true);
     try {
-      const res  = await fetch('http://localhost/Hiring%20System/backend/interviews/get_available_slots.php');
+      const res  = await fetch(`${API_BASE_URL}/interviews/get_available_slots.php`);
       const data = await res.json();
       if (data.status === 'success') setSlots(data.slots || []);
     } catch (err) {

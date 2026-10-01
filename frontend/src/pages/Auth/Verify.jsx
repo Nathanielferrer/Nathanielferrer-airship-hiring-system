@@ -4,6 +4,7 @@ import bgImage from '../../assets/images/log_bg.png';
 import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
 import './Login.css';
 
+import { API_BASE_URL } from '../../utils/apiConfig';
 const Verify = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -28,7 +29,7 @@ const Verify = () => {
       }
 
       try {
-        const response = await fetch(`http://localhost/Hiring%20System/backend/auth/verify.php?token=${encodeURIComponent(token)}`, {
+        const response = await fetch(`${API_BASE_URL}/auth/verify.php?token=${encodeURIComponent(token)}`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json'

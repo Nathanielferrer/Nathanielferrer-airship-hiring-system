@@ -1,9 +1,21 @@
 <?php
 // Gated Secure Resume Download / Viewing Endpoint
 require_once '../db.php';
+require_once __DIR__ . '/../auth/auth_guard.php';
+
+// ── AUTHENTICATION REQUIRED ──────────────────────────────────────────────────
+// Token is accepted via Authorization header, ?token= query param, or POST body.
+// This ensures both fetch() API calls and window.open() new-tab downloads work.
+$authUser = get_authenticated_user();
+
+if (!$authUser) {
+    http_response_code(401);
+    header('Content-Type: application/json');
+    echo json_encode(["status" => "error", "message" => "Unauthorized: Authentication required to access resume files."]);
+    exit();
+}
 
 $appId  = isset($_GET['id']) ? intval($_GET['id']) : (isset($_GET['application_id']) ? intval($_GET['application_id']) : 0);
-$userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
 
 if ($appId <= 0) {
     http_response_code(400);
@@ -25,29 +37,22 @@ try {
         exit();
     }
 
-    // 2. Security Check: Authorization
+    // 2. Security Check: Authorization (token-verified identity only)
     $isAuthorized = false;
 
-    if ($userId > 0) {
-        $userStmt = $pdo->prepare("SELECT is_admin FROM users_tbl WHERE user_id = :user_id LIMIT 1");
-        $userStmt->execute(['user_id' => $userId]);
-        $user = $userStmt->fetch();
-
-        if ($user) {
-            if ((int)$user['is_admin'] === 1 || (int)$user['is_admin'] === 3) {
-                $isAuthorized = true;
-            } else if ((int)$app['user_id'] === $userId) {
-                $isAuthorized = true;
-            }
-        }
-    } else {
+    // Admin or Super Admin (is_admin >= 1) can view any resume
+    if (isset($authUser['is_admin']) && (int)$authUser['is_admin'] >= 1) {
+        $isAuthorized = true;
+    }
+    // Candidate can only view their own resume
+    else if (isset($authUser['sub']) && (int)$authUser['sub'] === (int)$app['user_id']) {
         $isAuthorized = true;
     }
 
     if (!$isAuthorized) {
         http_response_code(403);
         header('Content-Type: application/json');
-        echo json_encode(["status" => "error", "message" => "Unauthorized access: You do not have permission to view this document."]);
+        echo json_encode(["status" => "error", "message" => "Forbidden: You do not have permission to view this document."]);
         exit();
     }
 
@@ -82,9 +87,10 @@ try {
     exit();
 
 } catch (PDOException $e) {
+    error_log('[Resume Download Error] ' . $e->getMessage());
     http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(["status" => "error", "message" => "Database error: " . $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "An internal server error occurred while retrieving the resume."]);
     exit();
 }
 ?>

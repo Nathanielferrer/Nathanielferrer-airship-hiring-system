@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth/auth_guard.php';
+global $pdo;
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Admin required ──────────────────────────────────────────
+require_admin();
 
 $page           = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $limit          = 20; // 20 logs per page
@@ -15,10 +20,11 @@ $category_filter= isset($_GET['action_category']) ? trim($_GET['action_category'
 $search_query   = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 try {
-    // ── ADMIN-ONLY AUDIT TRAIL QUERY (Super Admin actions are strictly excluded) ──
+    // ── ADMIN-ONLY AUDIT TRAIL QUERY (Track regular Admin actions only for non-repudiation; Super Admin, System, and Applicants are strictly excluded) ──
     $where = [
+        "u.is_admin = 1",
         "sal.admin_name NOT LIKE '%Super Admin%'",
-        "(u.is_admin IS NULL OR u.is_admin = 1)"
+        "sal.admin_name != 'System'"
     ];
     $params = [];
 
@@ -44,10 +50,11 @@ try {
         $where[] = "sal.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
     }
 
-    // Admin Filter
+    // Admin Filter (distinct parameter placeholders to prevent PDO duplicate parameter errors)
     if (!empty($admin_filter) && $admin_filter !== 'All' && $admin_filter !== '') {
-        $where[] = "(COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) = :admin_filter OR sal.admin_name = :admin_filter)";
-        $params['admin_filter'] = $admin_filter;
+        $where[] = "(COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) = :admin_filter1 OR sal.admin_name = :admin_filter2)";
+        $params['admin_filter1'] = $admin_filter;
+        $params['admin_filter2'] = $admin_filter;
     }
 
     // Action Category Filter
@@ -56,27 +63,29 @@ try {
         $params['category_filter'] = $category_filter;
     }
 
-    // Search Query
+    // Search Query (distinct parameter placeholders to prevent PDO duplicate parameter errors)
     if (!empty($search_query)) {
-        $where[] = "(sal.admin_name LIKE :search OR sal.action_category LIKE :search OR sal.details LIKE :search)";
-        $params['search'] = "%{$search_query}%";
+        $where[] = "(COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) LIKE :search1 OR sal.action_category LIKE :search2 OR sal.details LIKE :search3)";
+        $params['search1'] = "%{$search_query}%";
+        $params['search2'] = "%{$search_query}%";
+        $params['search3'] = "%{$search_query}%";
     }
 
     $whereClause = implode(" AND ", $where);
 
-    // Total Records Count
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM system_audit_logs_tbl sal LEFT JOIN users_tbl u ON sal.admin_id = u.user_id WHERE {$whereClause}");
+    // Total Records Count (strictly Admin is_admin = 1)
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM system_audit_logs_tbl sal INNER JOIN users_tbl u ON sal.admin_id = u.user_id WHERE {$whereClause}");
     $countStmt->execute($params);
     $totalRecords = (int)$countStmt->fetchColumn();
 
     $totalPages = max(1, ceil($totalRecords / $limit));
 
-    // Fetch Records
+    // Fetch Records (strictly Admin is_admin = 1)
     $sql = "SELECT sal.log_id AS id, sal.log_id, sal.admin_id, 
                    COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) AS admin_name,
                    sal.action_category, sal.details, sal.ip_address, sal.created_at
             FROM system_audit_logs_tbl sal
-            LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
+            INNER JOIN users_tbl u ON sal.admin_id = u.user_id
             WHERE {$whereClause}
             ORDER BY sal.log_id DESC
             LIMIT :limit OFFSET :offset";
@@ -91,13 +100,14 @@ try {
 
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Fetch distinct filter options
+    // Fetch distinct filter options (Strictly Admin is_admin = 1 only)
     $adminsList = $pdo->query("
         SELECT DISTINCT COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) AS admin_name 
         FROM system_audit_logs_tbl sal
-        LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
-        WHERE sal.admin_name NOT LIKE '%Super Admin%'
-          AND (u.is_admin IS NULL OR u.is_admin = 1)
+        INNER JOIN users_tbl u ON sal.admin_id = u.user_id
+        WHERE u.is_admin = 1
+          AND sal.admin_name NOT LIKE '%Super Admin%'
+          AND sal.admin_name != 'System'
           AND COALESCE(NULLIF(TRIM(CONCAT(u.User_Fname, ' ', u.User_Lname)), ''), sal.admin_name) != ''
         ORDER BY admin_name ASC
     ")->fetchAll(PDO::FETCH_COLUMN);
@@ -105,9 +115,10 @@ try {
     $categoriesList = $pdo->query("
         SELECT DISTINCT sal.action_category 
         FROM system_audit_logs_tbl sal
-        LEFT JOIN users_tbl u ON sal.admin_id = u.user_id
-        WHERE sal.admin_name NOT LIKE '%Super Admin%'
-          AND (u.is_admin IS NULL OR u.is_admin = 1)
+        INNER JOIN users_tbl u ON sal.admin_id = u.user_id
+        WHERE u.is_admin = 1
+          AND sal.admin_name NOT LIKE '%Super Admin%'
+          AND sal.admin_name != 'System'
           AND sal.action_category != ''
         ORDER BY sal.action_category ASC
     ")->fetchAll(PDO::FETCH_COLUMN);
@@ -139,11 +150,12 @@ try {
         ]
     ]);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
+    error_log("[Get Audit Logs Error] " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status"  => "error",
-        "message" => "Database error: " . $e->getMessage()
+        "message" => "An internal system error occurred while retrieving system audit logs."
     ]);
 }
 ?>

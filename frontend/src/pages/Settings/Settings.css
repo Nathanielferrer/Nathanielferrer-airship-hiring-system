@@ -1,0 +1,783 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   Account Settings Page - Airship Express Design System
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.settings-page-wrapper {
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+}
+
+.settings-main-container {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 40px 32px 60px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+.settings-header {
+  margin-bottom: 32px;
+}
+
+.settings-page-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.5px;
+}
+
+.settings-page-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Grid of Settings Cards ── */
+.settings-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+@media (max-width: 992px) {
+  .settings-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.settings-card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 28px 32px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.settings-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 22px;
+}
+
+.settings-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.settings-card-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+}
+
+.settings-card-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* User Identity Banner */
+.settings-user-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  box-sizing: border-box;
+}
+
+.settings-user-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.settings-user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.settings-user-fullname {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+.settings-user-email {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+.settings-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.settings-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.settings-form-row-name {
+  grid-template-columns: 1.4fr 0.6fr 1.4fr;
+}
+
+@media (max-width: 480px) {
+  .settings-form-row-name {
+    grid-template-columns: 1fr 1fr;
+  }
+  .settings-form-group-mi {
+    grid-column: span 2;
+  }
+}
+
+.settings-form-group {
+  margin-bottom: 18px;
+}
+
+.settings-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.settings-locked-notice {
+  margin: 0 0 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.settings-locked-notice i {
+  font-size: 15px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settings-input:focus {
+  border-color: #e6007e;
+  box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.12);
+}
+
+.settings-input:disabled {
+  background: #f8fafc;
+  color: #1e293b;
+  font-weight: 500;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+}
+
+/* ── Change Email & Pending Verification Styles ── */
+.settings-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.settings-change-email-btn {
+  background: none;
+  border: none;
+  color: #e6007e;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.settings-change-email-btn:hover {
+  background: rgba(230, 0, 126, 0.08);
+  color: #c5006b;
+}
+
+.settings-pending-email-card {
+  margin-top: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #e6007e;
+  border-radius: 8px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.settings-pending-email-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.settings-pending-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+}
+
+.settings-pending-badge i {
+  color: #e6007e;
+  font-size: 15px;
+}
+
+.settings-pending-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-pending-btn {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  line-height: 1.2;
+  transition: all 0.15s ease;
+}
+
+.settings-pending-btn.resend {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+.settings-pending-btn.resend:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.settings-pending-btn.cancel {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.settings-pending-btn.cancel:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.settings-pending-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-pending-email-text {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.settings-pending-email-text strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Password with Eye Toggle */
+.settings-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.settings-password-wrapper .settings-input {
+  padding-right: 42px;
+}
+
+.settings-password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 18px;
+  transition: color 0.15s ease;
+}
+
+.settings-password-toggle:hover {
+  color: #0f172a;
+}
+
+/* Password Requirements Box */
+.settings-requirements-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  box-sizing: border-box;
+}
+
+.settings-req-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.settings-req-item.met {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.settings-req-item.unmet {
+  color: #94a3b8;
+}
+
+/* Alert Box */
+.settings-alert {
+  padding: 11px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.settings-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.settings-alert-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+}
+
+/* Actions */
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.settings-btn-primary {
+  background: #e6007e;
+  color: #ffffff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(230, 0, 126, 0.25);
+  transition: all 0.15s ease;
+}
+
+.settings-btn-primary:hover:not(:disabled) {
+  background: #d00070;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(230, 0, 126, 0.35);
+}
+
+.settings-btn-primary:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Smartphone & Mobile Responsive Styles
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .settings-main-container {
+    padding: 24px 20px 48px;
+  }
+
+  .settings-header {
+    margin-bottom: 22px;
+  }
+
+  .settings-page-title {
+    font-size: 24px;
+  }
+
+  .settings-page-subtitle {
+    font-size: 13px;
+  }
+
+  .settings-card {
+    padding: 24px 20px;
+    border-radius: 14px;
+  }
+
+  .settings-card-header {
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+
+  .settings-card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .settings-card-title {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-bottom: 0;
+  }
+
+  .settings-user-identity {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .settings-actions {
+    width: 100%;
+  }
+
+  .settings-btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-main-container {
+    padding: 18px 14px 40px;
+  }
+
+  .settings-header {
+    margin-bottom: 18px;
+  }
+
+  .settings-page-title {
+    font-size: 21px;
+  }
+
+  .settings-card {
+    padding: 20px 14px;
+    border-radius: 12px;
+  }
+
+  .settings-card-header {
+    gap: 10px;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+
+  .settings-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-radius: 8px;
+  }
+
+  .settings-card-title {
+    font-size: 16px;
+  }
+
+  .settings-card-desc {
+    font-size: 12px;
+  }
+
+  .settings-user-identity {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .settings-user-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .settings-user-fullname {
+    font-size: 13.5px;
+  }
+
+  .settings-user-email {
+    font-size: 12px;
+  }
+
+  .settings-badge {
+    font-size: 10.5px;
+    padding: 2px 8px;
+  }
+
+  .settings-requirements-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .settings-req-item {
+    font-size: 11.5px;
+  }
+
+  .settings-input {
+    padding: 9px 12px;
+    font-size: 13.5px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Danger Zone & Account Deletion Styles
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Delete Account / Danger Zone - Standard Minimalistic Design
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.settings-card-danger {
+  grid-column: 1 / -1;
+  border-color: #fee2e2;
+  background: #ffffff;
+  transition: all 0.2s ease;
+}
+
+.settings-card-danger:hover {
+  border-color: #fca5a5;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.05);
+}
+
+.settings-card-icon-danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fecaca;
+  font-size: 20px;
+}
+
+.settings-card-title-danger {
+  color: #991b1b;
+}
+
+.settings-danger-body {
+  padding-top: 4px;
+}
+
+/* Active Application Locked Alert */
+.settings-danger-alert {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.settings-danger-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #92400e;
+  line-height: 1.45;
+  flex: 1;
+  min-width: 260px;
+}
+
+.settings-danger-alert-content i {
+  font-size: 20px;
+  color: #b45309;
+  flex-shrink: 0;
+}
+
+.settings-danger-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid #d97706;
+  color: #b45309;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.settings-danger-link-btn:hover {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #b45309;
+}
+
+/* Standard Danger Row (Eligible State) */
+.settings-danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 6px 0;
+  flex-wrap: wrap;
+}
+
+.settings-danger-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.settings-danger-row-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.settings-danger-row-desc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.settings-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 18px;
+  background-color: #dc2626;
+  color: #ffffff;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.settings-btn-danger:hover {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+}
+
+
+

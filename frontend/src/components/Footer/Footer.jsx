@@ -38,7 +38,7 @@ const Footer = () => {
         {/* Navigation Links */}
         <div className="footer-nav-col">
           <ul className="footer-nav-list">
-            <li><button className="footer-nav-btn" onClick={() => handleNavClick('/applicant-dashboard')}>Home</button></li>
+            <li><button className="footer-nav-btn" onClick={() => handleNavClick('/')}>Home</button></li>
             <li><button className="footer-nav-btn" onClick={() => handleNavClick('/vacancy')}>Vacancy</button></li>
             <li><button className="footer-nav-btn" onClick={() => handleNavClick('/about')}>About Us</button></li>
           </ul>

@@ -1,16 +1,39 @@
 <?php
 require_once '../db.php';
+require_once __DIR__ . '/../auth/auth_guard.php';
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Admin required ──────────────────────────────────────────
+$admin = require_admin();
 
 $title = trim($_POST['title'] ?? '');
 $description = trim($_POST['description'] ?? '');
 $requirements = trim($_POST['requirements'] ?? '');
 $availability = intval($_POST['availability'] ?? 1);
 $status = trim($_POST['status'] ?? 'Active');
+$category = trim($_POST['category'] ?? 'Operations');
+$location = trim($_POST['location'] ?? 'Airship Express HQ');
+if (empty($location)) $location = 'Airship Express HQ';
+
+$salary = trim($_POST['salary'] ?? '');
+$employment_type = trim($_POST['employment_type'] ?? 'Full Time');
+if (empty($employment_type)) $employment_type = 'Full Time';
 
 if (!$title || !$requirements) {
     http_response_code(400);
     echo json_encode(["status" => "error", "message" => "Title and requirements are required."]);
+    exit();
+}
+
+// ── Check for duplicate job posting title ───────────
+$dupCheck = $pdo->prepare("SELECT COUNT(*) FROM jobs_tbl WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) AND is_archived = 0");
+$dupCheck->execute([$title]);
+if ($dupCheck->fetchColumn() > 0) {
+    http_response_code(400);
+    echo json_encode([
+        "status"  => "error",
+        "message" => "Duplicate Job Posting Error: A job posting with the title \"{$title}\" already exists."
+    ]);
     exit();
 }
 
@@ -45,26 +68,28 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     }
 }
 try {
-    $stmt = $pdo->prepare("INSERT INTO jobs_tbl (title, description, requirements, availability, status, image_path) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->execute([$title, $description, $requirements, $availability, $status, $image_path]);
+    $stmt = $pdo->prepare("INSERT INTO jobs_tbl (title, description, requirements, salary, employment_type, availability, status, image_path, category, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->execute([$title, $description, $requirements, $salary, $employment_type, $availability, $status, $image_path, $category, $location]);
     $newJobId = (int)$pdo->lastInsertId();
 
     require_once '../audit_helper.php';
-    $actorId = intval($_POST['actor_id'] ?? 0);
-    $actorName = trim($_POST['actor_name'] ?? 'Admin');
+    // Identity strictly extracted from verified JWT token
+    $actorId = (int)$admin['sub'];
+    $actorName = trim(($admin['first_name'] ?? '') . ' ' . ($admin['last_name'] ?? '')) ?: 'Admin';
     log_system_audit(
         $pdo,
         $actorId,
         $actorName,
         'Job Creation',
         'Jobs Module',
-        "Posted new job vacancy: Title=\"{$title}\", Openings={$availability}, Status={$status}.",
+        "Posted new job vacancy: Title=\"{$title}\", Category=\"{$category}\", Location=\"{$location}\", Openings={$availability}, Status={$status}.",
         'Info'
     );
 
     echo json_encode(["status" => "success", "message" => "Job added successfully.", "job_id" => $newJobId]);
 } catch (PDOException $e) {
+    error_log("[Add Job Error] " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "An internal system error occurred while creating the job vacancy."]);
 }
 ?>

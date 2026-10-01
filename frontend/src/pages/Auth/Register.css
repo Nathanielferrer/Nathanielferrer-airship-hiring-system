@@ -180,6 +180,19 @@
   gap: 12px;
 }
 
+.register-form-row-name {
+  grid-template-columns: 1.4fr 0.6fr 1.4fr;
+}
+
+@media (max-width: 480px) {
+  .register-form-row-name {
+    grid-template-columns: 1fr 1fr;
+  }
+  .register-form-group-mi {
+    grid-column: span 2;
+  }
+}
+
 .register-form-group {
   display: flex;
   flex-direction: column;

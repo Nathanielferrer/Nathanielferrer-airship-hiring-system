@@ -1,12 +1,17 @@
 <?php
 require_once '../../db.php';
+require_once '../../auth/auth_guard.php';
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Super Admin required ─────────────────────────────────────
+$superAdmin = require_super_admin();
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 $id = intval($data['id'] ?? ($data['user_id'] ?? 0));
-$actorId = intval($data['actor_id'] ?? 0);
-$actorName = trim($data['actor_name'] ?? 'Super Admin');
+// Identity strictly extracted from verified JWT token
+$actorId = (int)$superAdmin['sub'];
+$actorName = trim(($superAdmin['first_name'] ?? '') . ' ' . ($superAdmin['last_name'] ?? '')) ?: 'Super Admin';
 
 if (!$id) {
     http_response_code(400);
@@ -44,7 +49,8 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log("[Deactivate Admin Error] " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "An internal system error occurred while deactivating the admin account."]);
 }
 ?>

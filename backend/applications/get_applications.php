@@ -1,8 +1,11 @@
 <?php
-// Include database connection (sets CORS headers)
-require_once '../db.php';
+require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../auth/auth_guard.php';
 
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Admin required ──────────────────────────────────────────
+require_admin();
 
 $search       = isset($_GET['search']) ? trim($_GET['search']) : '';
 $jobId        = isset($_GET['job_id']) ? intval($_GET['job_id']) : 0;
@@ -40,9 +43,11 @@ try {
                 a.ai_match_score, 
                 a.ai_summary, 
                 a.status, 
+                a.remarks,
                 a.applied_at, 
                 a.candidate_name,
                 a.candidate_email,
+                COALESCE(a.candidate_mobile, u.User_Mobile) AS candidate_mobile,
                 a.viewed,
                 u.User_Fname, 
                 u.User_Lname, 
@@ -63,7 +68,7 @@ try {
     }
 
     if (!empty($search)) {
-        $sql .= " AND (u.User_Fname LIKE :search OR u.User_Lname LIKE :search OR u.User_Email LIKE :search OR a.candidate_name LIKE :search OR a.candidate_email LIKE :search)";
+        $sql .= " AND (u.User_Fname LIKE :search OR u.User_Lname LIKE :search OR u.User_Email LIKE :search OR a.candidate_name LIKE :search OR a.candidate_email LIKE :search OR u.User_Mobile LIKE :search OR a.candidate_mobile LIKE :search)";
         $params['search'] = '%' . $search . '%';
     }
 
@@ -118,10 +123,11 @@ try {
     ]);
 
 } catch (PDOException $e) {
+    error_log("[Get Applications Error] " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => "error",
-        "message" => "Database fetch failed: " . $e->getMessage()
+        "message" => "An internal system error occurred while retrieving candidate applications."
     ]);
 }
 ?>

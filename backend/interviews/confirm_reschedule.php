@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../email_helper.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -13,12 +14,20 @@ header('Content-Type: application/json');
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-$applicationId = isset($data['application_id']) ? intval($data['application_id']) : (isset($data['id']) ? intval($data['id']) : 0);
+$rawAppIds = $data['application_ids'] ?? null;
+if (is_array($rawAppIds)) {
+    $applicationIds = array_values(array_filter(array_map('intval', $rawAppIds)));
+} elseif (isset($data['application_id']) || isset($data['id'])) {
+    $singleId = intval($data['application_id'] ?? ($data['id'] ?? 0));
+    $applicationIds = $singleId > 0 ? [$singleId] : [];
+} else {
+    $applicationIds = [];
+}
 $actorId       = intval($data['actor_id']  ?? 0);
 $actorName     = trim($data['actor_name']  ?? 'Admin');
 $fixedLocation = '352 T. Pinpin Escolta st. Binondo Manila, 1006';
 
-if ($applicationId <= 0) {
+if (empty($applicationIds)) {
     http_response_code(400);
     echo json_encode(['status' => 'error', 'message' => 'Invalid application ID.']);
     exit();
@@ -28,7 +37,7 @@ function insertNotification($pdo, $userId, $appId, $title, $message) {
     try {
         $stmt = $pdo->prepare("
             INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read)
-            VALUES (:user_id, :app_id, :title, :message, 'interview_scheduled', '/applicant-dashboard', 0)
+            VALUES (:user_id, :app_id, :title, :message, 'interview_scheduled', '/application-status', 0)
         ");
         $stmt->execute([
             'user_id' => $userId,
@@ -47,17 +56,17 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
         $mail = new PHPMailer(true);
 
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
+        $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'nathanielferrer691@gmail.com';
-        $mail->Password   = 'enzc ppph jran heso';
+        $mail->Username   = getenv('SMTP_USER') ?: 'nathanielferrer691@gmail.com';
+        $mail->Password   = getenv('SMTP_PASS') ?: 'enzc ppph jran heso';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
+        $mail->Port       = (int)(getenv('SMTP_PORT') ?: 587);
 
         $mail->CharSet    = 'UTF-8';
         $mail->Encoding   = 'base64';
 
-        $mail->setFrom('nathanielferrer691@gmail.com', 'Airship Express Recruitment');
+        $mail->setFrom($mail->Username, 'Airship Express Recruitment');
         $mail->addAddress($toEmail, $toName);
 
         $friendlyDate  = date('D, F j, Y', strtotime($date));
@@ -78,7 +87,7 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
                     <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
                 </div>
                 <div style='margin: 24px 0;'>
-                    <a href='http://localhost:5173/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
+                    <a href='" . get_frontend_url() . "/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
                 </div>
                 <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
             </div>
@@ -93,133 +102,168 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
 try {
     $pdo->beginTransaction();
 
-    // 1. Fetch application + candidate info + requested slot
     $appStmt = $pdo->prepare("
         SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email,
-               a.status, a.reschedule_requested_slot_id,
+               a.status, j.title AS job_title, a.reschedule_requested_slot_id,
                u.User_Fname, u.User_Lname, u.User_Email
         FROM applications_tbl a
         INNER JOIN users_tbl u ON a.user_id = u.user_id
+        INNER JOIN jobs_tbl j ON a.job_id = j.job_id
         WHERE a.application_id = :app_id
     ");
-    $appStmt->execute(['app_id' => $applicationId]);
-    $app = $appStmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!$app) {
-        throw new Exception("Application not found.");
-    }
-
-    if ($app['status'] !== 'RESCHEDULING') {
-        echo json_encode(['status' => 'error', 'message' => 'Application is not in RESCHEDULING status.']);
-        $pdo->rollBack();
-        exit();
-    }
-
-    $slotId = intval($app['reschedule_requested_slot_id'] ?? 0);
-    if ($slotId <= 0) {
-        echo json_encode(['status' => 'error', 'message' => 'No requested slot found for this application.']);
-        $pdo->rollBack();
-        exit();
-    }
-
-    // 2. Fetch slot details
     $slotStmt = $pdo->prepare("SELECT slot_date, start_time, end_time, status FROM interview_slots_tbl WHERE slot_id = :slot_id");
-    $slotStmt->execute(['slot_id' => $slotId]);
-    $slot = $slotStmt->fetch(PDO::FETCH_ASSOC);
-
-    if (!$slot) {
-        throw new Exception("Requested slot not found.");
-    }
-
-    if ($slot['status'] !== 'Open') {
-        echo json_encode(['status' => 'error', 'message' => 'The requested slot is no longer available.']);
-        $pdo->rollBack();
-        exit();
-    }
-
-    $date      = $slot['slot_date'];
-    $startTime = $slot['start_time'];
-    $endTime   = $slot['end_time'] ?? '';
-
-    // 3. Book the slot
     $bookStmt = $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Booked', application_id = :app_id WHERE slot_id = :slot_id");
-    $bookStmt->execute(['app_id' => $applicationId, 'slot_id' => $slotId]);
-
-    // 4. Update application: PENDING SCHEDULED, clear reschedule fields
     $updateApp = $pdo->prepare("
         UPDATE applications_tbl
-        SET status = 'PENDING SCHEDULED',
+        SET status = 'CONFIRMED',
             reschedule_reason = NULL,
             reschedule_requested_slot_id = NULL
         WHERE application_id = :id
     ");
-    $updateApp->execute(['id' => $applicationId]);
-
-    // 5. Insert or update interviews_tbl
     $checkInt = $pdo->prepare("SELECT COUNT(*) FROM interviews_tbl WHERE application_id = :app_id");
-    $checkInt->execute(['app_id' => $applicationId]);
+    $insertInt = $pdo->prepare("
+        INSERT INTO interviews_tbl (application_id, scheduled_date, scheduled_time, location, requirements)
+        VALUES (:app_id, :date, :time, :location, :req)
+    ");
+    $updateInt = $pdo->prepare("
+        UPDATE interviews_tbl SET scheduled_date = :date, scheduled_time = :time, location = :location
+        WHERE application_id = :app_id
+    ");
 
-    if ($checkInt->fetchColumn() == 0) {
-        $insertInt = $pdo->prepare("
-            INSERT INTO interviews_tbl (application_id, scheduled_date, scheduled_time, location, requirements)
-            VALUES (:app_id, :date, :time, :location, :req)
-        ");
-        $insertInt->execute([
-            'app_id'   => $applicationId,
-            'date'     => $date,
-            'time'     => $startTime,
-            'location' => $fixedLocation,
-            'req'      => json_encode(["Resume"])
-        ]);
-    } else {
-        $updateInt = $pdo->prepare("
-            UPDATE interviews_tbl SET scheduled_date = :date, scheduled_time = :time, location = :location
-            WHERE application_id = :app_id
-        ");
-        $updateInt->execute([
-            'app_id'   => $applicationId,
-            'date'     => $date,
-            'time'     => $startTime,
-            'location' => $fixedLocation
-        ]);
+    require_once __DIR__ . '/../audit_helper.php';
+
+    $confirmedCount = 0;
+    $lastFriendlyDate = '';
+    $lastFriendlyTime = '';
+
+    foreach ($applicationIds as $applicationId) {
+        $appStmt->execute(['app_id' => $applicationId]);
+        $app = $appStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$app) {
+            if (count($applicationIds) === 1) {
+                throw new Exception("Application not found.");
+            }
+            continue;
+        }
+
+        if ($app['status'] !== 'RESCHEDULING') {
+            if (count($applicationIds) === 1) {
+                echo json_encode(['status' => 'error', 'message' => 'Application is not in RESCHEDULING status.']);
+                $pdo->rollBack();
+                exit();
+            }
+            continue;
+        }
+
+        $slotId = intval($app['reschedule_requested_slot_id'] ?? 0);
+        if ($slotId <= 0) {
+            if (count($applicationIds) === 1) {
+                echo json_encode(['status' => 'error', 'message' => 'No requested slot found for this application.']);
+                $pdo->rollBack();
+                exit();
+            }
+            continue;
+        }
+
+        $slotStmt->execute(['slot_id' => $slotId]);
+        $slot = $slotStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$slot) {
+            if (count($applicationIds) === 1) {
+                throw new Exception("Requested slot not found.");
+            }
+            continue;
+        }
+
+        if ($slot['status'] !== 'Open') {
+            if (count($applicationIds) === 1) {
+                echo json_encode(['status' => 'error', 'message' => 'The requested slot is no longer available.']);
+                $pdo->rollBack();
+                exit();
+            }
+            continue;
+        }
+
+        $date      = $slot['slot_date'];
+        $startTime = $slot['start_time'];
+        $endTime   = $slot['end_time'] ?? '';
+
+        // Book slot
+        $bookStmt->execute(['app_id' => $applicationId, 'slot_id' => $slotId]);
+
+        // Update application
+        $updateApp->execute(['id' => $applicationId]);
+
+        // Insert or update interview
+        $checkInt->execute(['app_id' => $applicationId]);
+        if ($checkInt->fetchColumn() == 0) {
+            $insertInt->execute([
+                'app_id'   => $applicationId,
+                'date'     => $date,
+                'time'     => $startTime,
+                'location' => $fixedLocation,
+                'req'      => json_encode(["Printed Resume"])
+            ]);
+        } else {
+            $updateInt->execute([
+                'app_id'   => $applicationId,
+                'date'     => $date,
+                'time'     => $startTime,
+                'location' => $fixedLocation
+            ]);
+        }
+
+        // Notification & email
+        $friendlyDate  = date('D, M j, Y', strtotime($date));
+        $friendlyStart = date('g:i A', strtotime($startTime));
+        $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
+        $friendlyTime  = $friendlyEnd ? "{$friendlyStart} - {$friendlyEnd}" : $friendlyStart;
+
+        insertNotification(
+            $pdo,
+            $app['user_id'],
+            $applicationId,
+            'Reschedule Request Approved',
+            "Approved for {$friendlyDate} at {$friendlyTime}. Your interview schedule is confirmed. We look forward to meeting you."
+        );
+
+        $toEmail = $app['candidate_email'] ?: $app['User_Email'];
+        $toName  = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
+        sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTime, $fixedLocation);
+
+        log_system_audit(
+            $pdo,
+            $actorId,
+            $actorName,
+            'Interview Reschedule',
+            'Screening Module',
+            "Confirmed reschedule request for candidate \"{$toName}\" (App ID #{$applicationId}) to {$friendlyDate} at {$friendlyTime}.",
+            'Info'
+        );
+
+        $confirmedCount++;
+        $lastFriendlyDate = $friendlyDate;
+        $lastFriendlyTime = $friendlyTime;
+    } // end foreach
+
+    if ($confirmedCount === 0) {
+        $pdo->rollBack();
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => 'No eligible reschedule requests could be confirmed.']);
+        exit();
     }
-
-    // 6. Send in-app notification
-    $friendlyDate  = date('D, M j, Y', strtotime($date));
-    $friendlyStart = date('g:i A', strtotime($startTime));
-    $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
-    $friendlyTime  = $friendlyEnd ? "{$friendlyStart} - {$friendlyEnd}" : $friendlyStart;
-
-    insertNotification(
-        $pdo,
-        $app['user_id'],
-        $applicationId,
-        'Reschedule Request Approved',
-        "Your rescheduled interview has been approved for {$friendlyDate} at {$friendlyTime}. Please log in to confirm your attendance."
-    );
-
-    // 7. Send email notification
-    $toEmail = $app['candidate_email'] ?: $app['User_Email'];
-    $toName  = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
-    sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTime, $fixedLocation);
 
     $pdo->commit();
 
-    // 8. Audit log
-    require_once __DIR__ . '/../audit_helper.php';
-    log_system_audit(
-        $pdo,
-        $actorId,
-        $actorName,
-        'Interview Reschedule',
-        'Screening Module',
-        "Confirmed reschedule request for candidate \"{$toName}\" (App ID #{$applicationId}) to {$friendlyDate} at {$friendlyTime}.",
-        'Info'
-    );
-
     echo json_encode([
         'status'  => 'success',
-        'message' => "Reschedule confirmed for {$friendlyDate} at {$friendlyTime}. Candidate notified."
+        'message' => count($applicationIds) > 1
+            ? "Reschedule confirmed for {$confirmedCount} candidates."
+            : "Reschedule Confirmed. {$toName}.",
+        'candidate_name' => $toName,
+        'count'   => $confirmedCount
     ]);
 
 } catch (Exception $e) {

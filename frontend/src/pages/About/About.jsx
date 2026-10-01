@@ -2,14 +2,23 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import companyImg from '../../assets/images/Company Picture.png';
 import ApplicantNavbar from '../../components/ApplicantNavbar/ApplicantNavbar';
-import ChatbotWidget from '../../components/ChatbotWidget/ChatbotWidget';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
+import LoadingScreen from '../../components/LoadingScreen/LoadingScreen';
 import Footer from '../../components/Footer/Footer';
 import './About.css';
 
+import { API_BASE_URL } from '../../utils/apiConfig';
 const About = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('hiring_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Navbar states matching Vacancy / Dashboard
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -37,7 +46,7 @@ const About = () => {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch(`http://localhost/Hiring%20System/backend/notifications/get_notifications.php?user_id=${user.id}`);
+      const response = await fetch(`${API_BASE_URL}/notifications/get_notifications.php?user_id=${user.id}`);
       const data = await response.json();
       if (response.ok && data.status === 'success') {
         setNotifications(data.notifications);
@@ -50,7 +59,7 @@ const About = () => {
   const handleNotificationClick = async (notif) => {
     if (!notif.is_read) {
       try {
-        await fetch('http://localhost/Hiring%20System/backend/notifications/mark_read.php', {
+        await fetch(`${API_BASE_URL}/notifications/mark_read.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: notif.id })
@@ -61,18 +70,64 @@ const About = () => {
       }
     }
     setShowNotifications(false);
+    const targetPath = (notif?.link && notif.link.trim() !== '' && notif.link !== '/applicant-dashboard') 
+      ? notif.link 
+      : '/application-status';
+    navigate(targetPath);
   };
 
-  const handleClearReadNotifications = async () => {
+  const handleClearReadNotifications = () => {
+    if (!user) return;
+    const hasRead = notifications.some(n => n.is_read);
+    if (!hasRead) {
+      setConfirmModalState({
+        isOpen: true,
+        title: 'No Reviewed Notifications',
+        message: 'You have no reviewed notifications to clear at this time.',
+        confirmText: 'OK',
+        cancelText: 'Close',
+        type: 'primary',
+        onConfirm: closeConfirmModal,
+      });
+      return;
+    }
+
+    setConfirmModalState({
+      isOpen: true,
+      title: 'Clear Reviewed Notifications',
+      message: 'Are you sure you want to clear your reviewed notifications? Active unreviewed notifications will remain intact.',
+      confirmText: 'Clear Notifications',
+      cancelText: 'Cancel',
+      type: 'danger',
+      onConfirm: async () => {
+        closeConfirmModal();
+        try {
+          const res = await fetch(`${API_BASE_URL}/notifications/clear_read_notifications.php`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: user.id }),
+          });
+          const data = await res.json();
+          if (res.ok && data.status === 'success') {
+            setNotifications(prev => prev.filter(n => !n.is_read));
+          }
+        } catch (err) {
+          console.error('Failed to clear read notifications:', err);
+        }
+      },
+    });
+  };
+
+  const handleMarkAllAsRead = async () => {
     try {
-      await fetch('http://localhost/Hiring%20System/backend/notifications/clear_read.php', {
+      await fetch(`${API_BASE_URL}/notifications/mark_all_read.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: user?.id })
       });
-      setNotifications(prev => prev.filter(n => !n.is_read));
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
     } catch (err) {
-      console.error("Failed to clear notifications:", err);
+      console.error("Failed to mark all notifications as read:", err);
     }
   };
 
@@ -116,8 +171,14 @@ const About = () => {
       type: 'danger',
       onConfirm: () => {
         closeConfirmModal();
+        setIsLoggingOut(true);
         localStorage.removeItem('hiring_user');
-        navigate('/login');
+        localStorage.removeItem('hiring_token');
+        sessionStorage.clear();
+        window.dispatchEvent(new Event('auth_logout'));
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 900);
       },
     });
   };
@@ -134,6 +195,7 @@ const About = () => {
         setShowProfileMenu={setShowProfileMenu}
         handleNotificationClick={handleNotificationClick}
         handleClearReadNotifications={handleClearReadNotifications}
+        handleMarkAllAsRead={handleMarkAllAsRead}
         handleLogout={handleLogout}
         notifRef={notifRef}
         dropdownRef={dropdownRef}
@@ -243,8 +305,6 @@ const About = () => {
       {/* Standard Web Footer */}
       <Footer />
 
-      <ChatbotWidget />
-
       <ConfirmModal
         isOpen={confirmModalState.isOpen}
         title={confirmModalState.title}
@@ -254,6 +314,12 @@ const About = () => {
         type={confirmModalState.type}
         onConfirm={confirmModalState.onConfirm}
         onCancel={closeConfirmModal}
+      />
+
+      <LoadingScreen
+        isOpen={isLoggingOut}
+        title="Signing Out"
+        subtitle="Clearing your candidate session..."
       />
     </div>
   );

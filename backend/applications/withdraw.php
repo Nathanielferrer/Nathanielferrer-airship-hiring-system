@@ -26,7 +26,7 @@ try {
     // Look up application record
     if ($appId > 0) {
         $stmt = $pdo->prepare("
-            SELECT a.application_id, a.user_id, a.job_id, a.status, a.candidate_name, j.title as job_title, j.availability, j.status as job_status
+            SELECT a.application_id, a.user_id, a.job_id, a.status, a.candidate_name, a.remarks, j.title as job_title, j.availability, j.status as job_status
             FROM applications_tbl a
             LEFT JOIN jobs_tbl j ON a.job_id = j.job_id
             WHERE a.application_id = :app_id " . ($userId > 0 ? "AND a.user_id = :user_id" : "") . "
@@ -37,7 +37,7 @@ try {
         $stmt->execute($params);
     } else {
         $stmt = $pdo->prepare("
-            SELECT a.application_id, a.user_id, a.job_id, a.status, a.candidate_name, j.title as job_title, j.availability, j.status as job_status
+            SELECT a.application_id, a.user_id, a.job_id, a.status, a.candidate_name, a.remarks, j.title as job_title, j.availability, j.status as job_status
             FROM applications_tbl a
             LEFT JOIN jobs_tbl j ON a.job_id = j.job_id
             WHERE a.user_id = :user_id AND a.job_id = :job_id
@@ -61,25 +61,62 @@ try {
     $candName = $app['candidate_name'] ?: "Applicant #{$userId}";
     $jobTitle = $app['job_title'] ?: "Position";
 
-    // 1. Update application status to 'Candidate Withdrew'
-    $upd = $pdo->prepare("UPDATE applications_tbl SET status = 'Candidate Withdrew', updated_at = NOW() WHERE application_id = :id");
-    $upd->execute(['id' => $realAppId]);
+    // Disallow withdrawal once application has progressed to Job Offer, Contract Signing, Onboarding, or Hired
+    $nonWithdrawableStatuses = [
+        'APPROVED FOR JOB OFFER', 'APPROVED_FOR_JOB_OFFER', 'PRESIDENT APPROVED', 'PRESIDENT_APPROVED',
+        'JOB OFFER PENDING', 'JOB_OFFER_PENDING', 'OFFER EXTENDED', 'JOB OFFER EXTENDED',
+        'JOB OFFER ACCEPTED', 'JOB_OFFER_ACCEPTED', 'OFFER ACCEPTED', 'OFFER_ACCEPTED',
+        'CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED',
+        'CONTRACT SIGNED', 'CONTRACT_SIGNED', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED',
+        'REQUIREMENT PENDING', 'REQUIREMENTS PENDING', 'REQUIREMENT_PENDING', 'REQUIREMENTS_PENDING',
+        'REQUIREMENTS VERIFIED', 'REQUIREMENTS_VERIFIED',
+        'PARTIALLY COMPLIANT', 'PARTIALLY_COMPLIANT',
+        'OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'OFFICIALLY HIRED & SIGNED',
+        'COMPLETED REQUIREMENTS', 'COMPLETED_REQUIREMENTS', 'OFFICIALLY HIRED & REQUIREMENTS COMPLETED',
+        'HIRED - PRE-EMPLOYMENT', 'HIRED_PRE_EMPLOYMENT', 'HIRED', 'PASSED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL'
+    ];
 
-    // 2. If previously hired / passed final approval, restore 1 opening slot for the job
-    if (in_array($prevStatus, ['HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'PASSED', 'REQUIREMENTS VERIFIED', 'CONTRACT SIGNING SCHEDULED'])) {
-        if ($realJobId > 0) {
-            $incStmt = $pdo->prepare("UPDATE jobs_tbl SET availability = availability + 1 WHERE job_id = :jid");
-            $incStmt->execute(['jid' => $realJobId]);
+    if (in_array($prevStatus, $nonWithdrawableStatuses)) {
+        $pdo->rollBack();
+        http_response_code(400);
+        echo json_encode(["status" => "error", "message" => "Application withdrawal is no longer available at this stage."]);
+        exit();
+    }
 
-            $checkJob = $pdo->prepare("SELECT availability, status FROM jobs_tbl WHERE job_id = :jid");
-            $checkJob->execute(['jid' => $realJobId]);
-            $jobData = $checkJob->fetch(PDO::FETCH_ASSOC);
+    // Determine which stage the candidate withdrew from
+    $withdrawnStage = 2; // Default: 2. Screening
+    if (in_array($prevStatus, ['PASSED INITIAL', 'PENDING SCHEDULED', 'CONFIRMED', 'INTERVIEW_SCHEDULED', 'RESCHEDULING'])) {
+        $withdrawnStage = 3; // 3. Final Interview
+    } elseif (in_array($prevStatus, ['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'])) {
+        $withdrawnStage = 4; // 4. President Review
+    } elseif (in_array($prevStatus, ['APPROVED FOR JOB OFFER', 'PRESIDENT APPROVED', 'JOB OFFER PENDING', 'OFFER EXTENDED', 'JOB_OFFER_PENDING'])) {
+        $withdrawnStage = 5; // 5. Job Offer
+    } elseif (in_array($prevStatus, ['JOB OFFER ACCEPTED', 'JOB_OFFER_ACCEPTED', 'OFFER ACCEPTED', 'CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'])) {
+        $withdrawnStage = 6; // 6. Contract Signed
+    } elseif (in_array($prevStatus, ['CONTRACT SIGNED', 'CONTRACT_SIGNED', 'REQUIREMENT PENDING', 'REQUIREMENTS PENDING', 'HIRED', 'OFFICIALLY HIRED', 'OFFICIALLY_HIRED'])) {
+        $withdrawnStage = 7; // 7. Officially Hired
+    }
 
-            if ($jobData && intval($jobData['availability']) > 0 && $jobData['status'] === 'Closed') {
-                $reopenStmt = $pdo->prepare("UPDATE jobs_tbl SET status = 'Active' WHERE job_id = :jid");
-                $reopenStmt->execute(['jid' => $realJobId]);
-            }
-        }
+    $existingRemarks = trim($app['remarks'] ?? '');
+    $stageTag = "[WITHDRAWN_STAGE:{$withdrawnStage}]";
+    $updatedRemarks = strpos($existingRemarks, '[WITHDRAWN_STAGE:') !== false 
+        ? preg_replace('/\[WITHDRAWN_STAGE:\d+\]/', $stageTag, $existingRemarks)
+        : ($existingRemarks ? "{$existingRemarks} {$stageTag}" : $stageTag);
+
+    // 1. Update application status to 'Candidate Withdrew' and record the stage
+    $upd = $pdo->prepare("UPDATE applications_tbl SET status = 'Candidate Withdrew', remarks = :remarks, withdrawn_at = NOW(), updated_at = NOW() WHERE application_id = :id");
+    $upd->execute(['remarks' => $updatedRemarks, 'id' => $realAppId]);
+
+    // 2. If candidate held a reserved slot, release it according to waitlist rules
+    $slotHoldingStatuses = [
+        'APPROVED FOR JOB OFFER', 'APPROVED_FOR_JOB_OFFER', 'PRESIDENT APPROVED', 'PRESIDENT_APPROVED',
+        'READY FOR OFFER', 'READY_FOR_OFFER', 'JOB OFFER PENDING', 'OFFER EXTENDED', 'JOB_OFFER_PENDING',
+        'JOB OFFER ACCEPTED', 'OFFER ACCEPTED', 'CONTRACT SIGNING SCHEDULED', 'HIRED', 'PASSED FINAL APPROVAL',
+        'PASSED_FINAL_APPROVAL', 'PASSED', 'REQUIREMENTS VERIFIED'
+    ];
+    if ($realJobId > 0 && in_array($prevStatus, $slotHoldingStatuses)) {
+        require_once __DIR__ . '/slot_release_helper.php';
+        handle_released_slot($pdo, $realJobId, 'withdrawn', $candName ?: 'Candidate', $jobTitle);
     }
 
     // 3. Clear any booked interview slots for this candidate
@@ -87,10 +124,6 @@ try {
     $freeSlot->execute(['aid' => $realAppId]);
 
     $pdo->commit();
-
-    // 4. Audit trail logging
-    $auditMsg = "Candidate \"{$candName}\" voluntarily withdrew application for position \"{$jobTitle}\" (App ID: #{$realAppId}). Reason: {$reason}";
-    log_system_audit($pdo, $userId, $candName, 'Candidate Withdrawal', 'Applicant Portal', $auditMsg, 'Warning');
 
     echo json_encode([
         "status" => "success",

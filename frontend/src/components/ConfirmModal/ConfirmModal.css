@@ -148,3 +148,32 @@
 .animate-scale-in {
   animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@media (max-width: 480px) {
+  .custom-confirm-card {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .custom-confirm-title {
+    font-size: 16px;
+  }
+
+  .custom-confirm-message {
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+
+  .custom-confirm-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .custom-confirm-btn {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

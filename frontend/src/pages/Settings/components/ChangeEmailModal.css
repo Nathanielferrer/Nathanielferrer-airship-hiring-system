@@ -1,0 +1,356 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   Change Email Modal - High-Security System Dialogue
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.change-email-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  animation: changeEmailFadeIn 0.2s ease-out forwards;
+}
+
+@keyframes changeEmailFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.change-email-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  box-sizing: border-box;
+  animation: changeEmailScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes changeEmailScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Clean & Minimalistic Header ── */
+.change-email-header {
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.change-email-header-text {
+  text-align: left;
+}
+
+.change-email-title {
+  margin: 0 0 4px 0;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.change-email-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.change-email-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.change-email-close-btn:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* ── Modal Body ── */
+.change-email-body {
+  padding: 22px 28px 16px;
+  box-sizing: border-box;
+}
+
+/* ── Information Banner (The Two-Step Notice) ── */
+.change-email-security-note {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  padding: 12px 15px;
+  margin-bottom: 22px;
+  font-size: 13px;
+  color: #1e293b;
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.change-email-security-note i {
+  font-size: 18px;
+  color: #334155;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.change-email-alert {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  animation: changeEmailFadeIn 0.2s ease;
+}
+
+.change-email-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-weight: 500;
+}
+
+/* ── Input Fields ── */
+.change-email-form-group {
+  margin-bottom: 20px;
+}
+
+.change-email-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 7px;
+  letter-spacing: -0.1px;
+}
+
+.change-email-current-box {
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: border-color 0.15s ease;
+}
+
+.change-email-current-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.change-email-current-box i {
+  font-size: 17px;
+  color: #334155;
+  flex-shrink: 0;
+}
+
+.change-email-current-text {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: #0f172a; /* High contrast, bold, accessible for low vision */
+  letter-spacing: 0.1px;
+  word-break: break-all;
+}
+
+.change-email-readonly-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: #e2e8f0;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.change-email-input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 9px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #0f172a;
+  background: #ffffff;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+  font-family: inherit;
+}
+
+.change-email-input:focus {
+  border-color: #e6007e;
+  box-shadow: 0 0 0 3.5px rgba(230, 0, 126, 0.12);
+}
+
+.change-email-pass-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.change-email-pass-wrapper .change-email-input {
+  padding-right: 44px;
+}
+
+.change-email-pass-toggle {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-size: 19px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.change-email-pass-toggle:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.change-email-field-hint {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+/* ── Right-Aligned Bottom Actions ── */
+.change-email-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 28px 24px;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+}
+
+.change-email-btn-cancel {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.change-email-btn-cancel:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.change-email-btn-submit {
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: none;
+  background: #e6007e;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(230, 0, 126, 0.25);
+  transition: all 0.15s ease;
+}
+
+.change-email-btn-submit:hover:not(:disabled) {
+  background: #c5006b;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(230, 0, 126, 0.35);
+}
+
+.change-email-btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.change-email-btn-submit:disabled,
+.change-email-btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.change-email-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: changeEmailSpin 0.7s linear infinite;
+}
+
+@keyframes changeEmailSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 576px) {
+  .change-email-card {
+    border-radius: 12px;
+  }
+  .change-email-header,
+  .change-email-body,
+  .change-email-actions {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .change-email-actions {
+    flex-direction: column-reverse;
+  }
+  .change-email-btn-cancel,
+  .change-email-btn-submit {
+    width: 100%;
+    justify-content: center;
+  }
+}

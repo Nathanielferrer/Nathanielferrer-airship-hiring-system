@@ -1,6 +1,12 @@
 <?php
 require_once '../db.php';
+require_once __DIR__ . '/../auth/auth_guard.php';
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Admin required ──────────────────────────────────────────
+$admin = require_admin();
+$actorId = (int)$admin['sub'];
+$actorName = trim(($admin['first_name'] ?? '') . ' ' . ($admin['last_name'] ?? '')) ?: 'Admin';
 
 $id           = intval($_POST['id'] ?? ($_POST['job_id'] ?? 0));
 $title        = trim($_POST['title']        ?? '');
@@ -8,6 +14,13 @@ $description  = trim($_POST['description']  ?? '');
 $requirements = trim($_POST['requirements'] ?? '');
 $availability = intval($_POST['availability'] ?? 1);
 $status       = trim($_POST['status'] ?? 'Active');
+$category     = trim($_POST['category'] ?? 'Operations');
+$location     = trim($_POST['location'] ?? 'Airship Express HQ');
+if (empty($location)) $location = 'Airship Express HQ';
+$salary       = trim($_POST['salary'] ?? '');
+$employment_type = trim($_POST['employment_type'] ?? 'Full Time');
+if (empty($employment_type)) $employment_type = 'Full Time';
+$is_hidden    = isset($_POST['is_hidden']) ? (intval($_POST['is_hidden']) ? 1 : 0) : null;
 
 if ($availability <= 0) {
     $status = 'Closed';
@@ -91,24 +104,50 @@ function textBlockDiff(string $label, string $oldText, string $newText): array {
 }
 
 try {
+    // Check for duplicate job posting title (excluding current job)
+    $dupCheck = $pdo->prepare("SELECT COUNT(*) FROM jobs_tbl WHERE LOWER(TRIM(title)) = LOWER(TRIM(?)) AND job_id != ? AND is_archived = 0");
+    $dupCheck->execute([$title, $id]);
+    if ($dupCheck->fetchColumn() > 0) {
+        http_response_code(400);
+        echo json_encode([
+            "status"  => "error",
+            "message" => "Duplicate Job Posting Error: A job posting with the title \"{$title}\" already exists."
+        ]);
+        exit();
+    }
+
     // Fetch ALL previous job fields for detailed diff
-    $prevStmt = $pdo->prepare("SELECT title, description, requirements, availability, status FROM jobs_tbl WHERE job_id = ?");
+    $prevStmt = $pdo->prepare("SELECT title, description, requirements, salary, employment_type, availability, status, is_hidden, category, location FROM jobs_tbl WHERE job_id = ?");
     $prevStmt->execute([$id]);
     $prevJob  = $prevStmt->fetch(PDO::FETCH_ASSOC);
 
-    $prevTitle        = $prevJob['title']        ?? $title;
-    $prevDescription  = $prevJob['description']  ?? $description;
-    $prevRequirements = $prevJob['requirements'] ?? $requirements;
-    $prevAvail        = $prevJob['availability'] ?? $availability;
-    $prevStatus       = $prevJob['status']       ?? $status;
+    $prevTitle        = $prevJob['title']           ?? $title;
+    $prevDescription  = $prevJob['description']     ?? $description;
+    $prevRequirements = $prevJob['requirements']    ?? $requirements;
+    $prevSalary       = $prevJob['salary']          ?? $salary;
+    $prevEmpType      = $prevJob['employment_type'] ?? $employment_type;
+    $prevAvail        = $prevJob['availability']    ?? $availability;
+    $prevStatus       = $prevJob['status']          ?? $status;
+    $prevCategory     = $prevJob['category']        ?? $category;
+    $prevLocation     = $prevJob['location']        ?? $location;
+
+    // Reset posting timestamp if reactivating a closed job
+    $resetDateSql = "";
+    if (strtoupper($prevStatus) === 'CLOSED' || (int)$prevAvail <= 0) {
+        if ($availability > 0 && strtoupper($status) === 'ACTIVE') {
+            $resetDateSql = ", created_at = NOW()";
+        }
+    }
+
+    $hiddenSql = ($is_hidden !== null) ? ", is_hidden = {$is_hidden}" : "";
 
     // Perform the update
     if ($image_path) {
-        $stmt = $pdo->prepare("UPDATE jobs_tbl SET title = ?, description = ?, requirements = ?, availability = ?, status = ? $update_image_sql WHERE job_id = ?");
-        $stmt->execute([$title, $description, $requirements, $availability, $status, $image_path, $id]);
+        $stmt = $pdo->prepare("UPDATE jobs_tbl SET title = ?, description = ?, requirements = ?, salary = ?, employment_type = ?, availability = ?, status = ?, category = ?, location = ? {$hiddenSql} {$resetDateSql} {$update_image_sql} WHERE job_id = ?");
+        $stmt->execute([$title, $description, $requirements, $salary, $employment_type, $availability, $status, $category, $location, $image_path, $id]);
     } else {
-        $stmt = $pdo->prepare("UPDATE jobs_tbl SET title = ?, description = ?, requirements = ?, availability = ?, status = ? WHERE job_id = ?");
-        $stmt->execute([$title, $description, $requirements, $availability, $status, $id]);
+        $stmt = $pdo->prepare("UPDATE jobs_tbl SET title = ?, description = ?, requirements = ?, salary = ?, employment_type = ?, availability = ?, status = ?, category = ?, location = ? {$hiddenSql} {$resetDateSql} WHERE job_id = ?");
+        $stmt->execute([$title, $description, $requirements, $salary, $employment_type, $availability, $status, $category, $location, $id]);
     }
 
     // Archive candidates if closing
@@ -118,7 +157,7 @@ try {
             UPDATE applications_tbl 
             SET is_archived = 1 
             WHERE job_id = :jid 
-            AND status IN ('HIRED', 'Hired', 'hired', 'PASSED', 'HIRED / PASSED', 'rejected', 'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE')
+            AND status IN ('HIRED', 'Hired', 'hired', 'PASSED', 'HIRED / PASSED', 'rejected', 'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED', 'Scheduling Expired', 'UNRESPONSIVE')
         ");
         $archiveStmt->execute(['jid' => $id]);
         $archivedCount = $archiveStmt->rowCount();
@@ -143,6 +182,14 @@ try {
         $changeLines[] = "Changed status from \"{$prevStatus}\" to \"{$status}\".";
     }
 
+    if ($prevCategory !== $category) {
+        $changeLines[] = "Changed category from \"{$prevCategory}\" to \"{$category}\".";
+    }
+
+    if ($prevLocation !== $location) {
+        $changeLines[] = "Updated location from \"{$prevLocation}\" to \"{$location}\".";
+    }
+
     $reqChanges = textBlockDiff('requirement', $prevRequirements, $requirements);
     foreach ($reqChanges as $msg) $changeLines[] = $msg;
 
@@ -151,6 +198,10 @@ try {
 
     if ($image_path) {
         $changeLines[] = "Updated job image/banner.";
+    }
+
+    if ($is_hidden !== null && isset($prevJob['is_hidden']) && (int)$prevJob['is_hidden'] !== $is_hidden) {
+        $changeLines[] = $is_hidden === 1 ? "Paused intake (hid job from public)." : "Resumed intake (unhid job).";
     }
 
     if (empty($changeLines)) {
@@ -174,7 +225,8 @@ try {
     echo json_encode(["status" => "success", "message" => "Job updated successfully." . ($archivedCount > 0 ? " Auto-archived {$archivedCount} candidate(s)." : "")]);
 
 } catch (PDOException $e) {
+    error_log("[Update Job Error] " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "An internal system error occurred while updating the job vacancy."]);
 }
 ?>

@@ -4,6 +4,7 @@ import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
 import bgImage from '../../assets/images/log_bg.png';
 import './Register.css';
 
+import { API_BASE_URL } from '../../utils/apiConfig';
 const Register = () => {
   useEffect(() => {
     document.title = 'Create Account - Hiring Management System';
@@ -11,42 +12,112 @@ const Register = () => {
 
   const [formData, setFormData] = useState({
     User_Fname: '',
+    User_MInitial: '',
     User_Lname: '',
     User_Email: '',
-    User_Mobile: '',
     User_Pass: '',
     User_Bday: '',
     User_Gender: 'Male'
   });
 
+  const [confirmPass, setConfirmPass] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Real-time password criteria validation helper
   const passChecks = {
-    length: formData.User_Pass.length >= 8,
+    length: formData.User_Pass.length >= 8 && formData.User_Pass.length <= 64,
     uppercase: /[A-Z]/.test(formData.User_Pass),
     lowercase: /[a-z]/.test(formData.User_Pass),
     numSpecial: /[0-9]/.test(formData.User_Pass) && /[^A-Za-z0-9]/.test(formData.User_Pass)
   };
 
   const isPasswordStrong = Object.values(passChecks).every(Boolean);
+  const passwordsMatch = formData.User_Pass === confirmPass;
+  const isFormValid = isPasswordStrong && passwordsMatch && confirmPass.length > 0;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    if (name === 'User_MInitial') {
+      const cleaned = value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1);
+      setFormData(prev => ({ ...prev, [name]: cleaned }));
+      return;
+    }
+    // Cap the year portion to 4 digits max to prevent absurd years like 200423
+    if (name === 'User_Bday' && value) {
+      const parts = value.split('-');
+      if (parts[0] && parts[0].length > 4) {
+        parts[0] = parts[0].slice(0, 4);
+        setFormData(prev => ({ ...prev, [name]: parts.join('-') }));
+        return;
+      }
+    }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate First Name (2 - 50 chars, letters, spaces, hyphen, apostrophe, period)
+    const trimmedFname = (formData.User_Fname || '').trim();
+    if (trimmedFname.length < 2 || trimmedFname.length > 50 || !/^[a-zA-Z\s\-'\.]+$/.test(trimmedFname)) {
+      setError('First name must be between 2 and 50 characters (letters, spaces, hyphens, apostrophes, and periods only).');
+      return;
+    }
+
+    // Validate Last Name (2 - 50 chars, same rules)
+    const trimmedLname = (formData.User_Lname || '').trim();
+    if (trimmedLname.length < 2 || trimmedLname.length > 50 || !/^[a-zA-Z\s\-'\.]+$/.test(trimmedLname)) {
+      setError('Last name must be between 2 and 50 characters (letters, spaces, hyphens, apostrophes, and periods only).');
+      return;
+    }
+
+    // Validate Middle Initial (optional, max 1 letter)
+    const mi = (formData.User_MInitial || '').trim();
+    if (mi && !/^[a-zA-Z]$/.test(mi)) {
+      setError('Middle initial must be a single letter only.');
+      return;
+    }
+
+    // Validate Date of Birth: must be a real date, year between 1900 and now, minimum age 15
+    if (formData.User_Bday) {
+      const bdayDate = new Date(formData.User_Bday);
+      const bdayYear = bdayDate.getFullYear();
+      const currentYear = new Date().getFullYear();
+      const today = new Date();
+
+      if (isNaN(bdayDate.getTime()) || bdayYear < 1900 || bdayYear > currentYear) {
+        setError('Please enter a valid date of birth (year must be between 1900 and ' + currentYear + ').');
+        return;
+      }
+
+      // Minimum age check (15 years)
+      const age = today.getFullYear() - bdayDate.getFullYear();
+      const monthDiff = today.getMonth() - bdayDate.getMonth();
+      const dayDiff = today.getDate() - bdayDate.getDate();
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+
+      if (actualAge < 15) {
+        setError('You must be at least 15 years old to create an account.');
+        return;
+      }
+    }
+
     // Enforce Password Strength requirements
     if (!isPasswordStrong) {
-      setError('Please ensure your password meets all strength requirements.');
+      setError('Please ensure your password meets all strength requirements (8-64 characters).');
+      return;
+    }
+
+    // Enforce password confirmation match
+    if (!passwordsMatch) {
+      setError('Passwords do not match. Please re-enter your password.');
       return;
     }
 
@@ -54,7 +125,7 @@ const Register = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost/Hiring%20System/backend/auth/register.php', {
+      const response = await fetch(`${API_BASE_URL}/auth/register.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +149,7 @@ const Register = () => {
   };
 
   // Common wrapper components for matching visual style
-  const renderWrapper = (children) => (
+  const renderWrapper = (children, isCentered = false) => (
     <div 
       className="register-page-wrapper" 
       style={{ 
@@ -91,8 +162,8 @@ const Register = () => {
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
-        justifyContent: 'flex-start', 
-        padding: '110px 24px 40px 24px', 
+        justifyContent: isCentered ? 'center' : 'flex-start', 
+        padding: isCentered ? '75px 24px 75px 24px' : '110px 24px 40px 24px', 
         fontFamily: "'Poppins', 'Inter', sans-serif", 
         zIndex: 9999, 
         boxSizing: 'border-box', 
@@ -147,7 +218,15 @@ const Register = () => {
       </header>
 
       {/* Content wrapper to ensure it renders on top of the fixed background */}
-      <div style={{ position: 'relative', zIndex: 3, width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 3, 
+        width: '100%', 
+        display: 'flex', 
+        justifyContent: 'center',
+        alignItems: 'center',
+        margin: isCentered ? 'auto 0' : '0'
+      }}>
         {children}
       </div>
     </div>
@@ -171,7 +250,8 @@ const Register = () => {
             Go to Login
           </Link>
         </div>
-      </div>
+      </div>,
+      true
     );
   }
 
@@ -190,7 +270,7 @@ const Register = () => {
       )}
 
       <form onSubmit={handleSubmit} className="register-form">
-        <div className="register-form-row">
+        <div className="register-form-row register-form-row-name">
           <div className="register-form-group">
             <label htmlFor="User_Fname" className="register-label">First Name</label>
             <input
@@ -200,7 +280,25 @@ const Register = () => {
               value={formData.User_Fname}
               onChange={handleChange}
               className="register-input"
+              minLength={2}
+              maxLength={50}
+              placeholder="First Name"
               required
+            />
+          </div>
+          <div className="register-form-group register-form-group-mi">
+            <label htmlFor="User_MInitial" className="register-label">
+              M.I. <span style={{ textTransform: 'none', fontWeight: 'normal', color: '#64748b', fontSize: '10px' }}>(Opt)</span>
+            </label>
+            <input
+              type="text"
+              id="User_MInitial"
+              name="User_MInitial"
+              value={formData.User_MInitial}
+              onChange={handleChange}
+              className="register-input"
+              maxLength={1}
+              placeholder="M"
             />
           </div>
           <div className="register-form-group">
@@ -212,6 +310,9 @@ const Register = () => {
               value={formData.User_Lname}
               onChange={handleChange}
               className="register-input"
+              minLength={2}
+              maxLength={50}
+              placeholder="Last Name"
               required
             />
           </div>
@@ -226,19 +327,7 @@ const Register = () => {
             value={formData.User_Email}
             onChange={handleChange}
             className="register-input"
-            required
-          />
-        </div>
-
-        <div className="register-form-group">
-          <label htmlFor="User_Mobile" className="register-label">Mobile Number</label>
-          <input
-            type="tel"
-            id="User_Mobile"
-            name="User_Mobile"
-            value={formData.User_Mobile}
-            onChange={handleChange}
-            className="register-input"
+            maxLength={254}
             required
           />
         </div>
@@ -253,6 +342,8 @@ const Register = () => {
               value={formData.User_Bday}
               onChange={handleChange}
               className="register-input"
+              min="1900-01-01"
+              max={new Date().toISOString().split('T')[0]}
               required
             />
           </div>
@@ -275,7 +366,7 @@ const Register = () => {
 
         <div className="register-form-group">
           <label htmlFor="User_Pass" className="register-label">
-            Password <span style={{ textTransform: 'none', fontWeight: 'normal', color: '#64748b', fontSize: '10.5px' }}>(Must meet strong criteria)</span>
+            Password <span style={{ textTransform: 'none', fontWeight: 'normal', color: '#64748b', fontSize: '10.5px' }}>(8-64 characters)</span>
           </label>
           {/* Input field with Eye Visibility toggle icon */}
           <div className="password-input-container">
@@ -286,6 +377,8 @@ const Register = () => {
               value={formData.User_Pass}
               onChange={handleChange}
               className="register-input"
+              minLength={8}
+              maxLength={64}
               style={{ paddingRight: '44px' }}
               required
             />
@@ -308,7 +401,7 @@ const Register = () => {
               <svg className="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                 {passChecks.length ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
               </svg>
-              <span>8+ Characters</span>
+              <span>8-64 Characters</span>
             </div>
             <div className={`requirement-item ${passChecks.uppercase ? 'met' : 'unmet'}`}>
               <svg className="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
@@ -331,10 +424,58 @@ const Register = () => {
           </div>
         </div>
 
+        {/* Confirm Password Field */}
+        <div className="register-form-group">
+          <label htmlFor="User_Pass_Confirm" className="register-label">
+            Confirm Password
+          </label>
+          <div className="password-input-container">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              id="User_Pass_Confirm"
+              name="User_Pass_Confirm"
+              value={confirmPass}
+              onChange={(e) => setConfirmPass(e.target.value)}
+              className="register-input"
+              minLength={8}
+              maxLength={64}
+              style={{ paddingRight: '44px' }}
+              required
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye-off"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              )}
+            </button>
+          </div>
+          {/* Mismatch indicator */}
+          {confirmPass.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', fontWeight: '600' }}>
+              {passwordsMatch ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                  <span style={{ color: '#16a34a' }}>Passwords match</span>
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <span style={{ color: '#dc2626' }}>Passwords do not match</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         <button
           type="submit"
           className="register-submit-button"
-          disabled={loading || !isPasswordStrong}
+          disabled={loading || !isFormValid}
         >
           {loading ? 'Registering...' : 'Register'}
         </button>

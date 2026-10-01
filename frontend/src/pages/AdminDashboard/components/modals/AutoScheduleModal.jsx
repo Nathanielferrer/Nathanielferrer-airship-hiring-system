@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
+import LoadingScreen from '../../../../components/LoadingScreen/LoadingScreen';
 
+import { API_BASE_URL } from '../../../../utils/apiConfig';
 const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
   const [slots, setSlots] = useState([]);
   const [passedCount, setPassedCount] = useState(0);
@@ -19,7 +21,7 @@ const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
     setErrorMsg('');
     try {
       // Fetch open slots
-      const slotsRes = await fetch('http://localhost/Hiring%20System/backend/interviews/get_available_slots.php');
+      const slotsRes = await fetch(`${API_BASE_URL}/interviews/get_available_slots.php`);
       const slotsData = await slotsRes.json();
       if (slotsData.status === 'success') {
         setSlots(slotsData.slots || []);
@@ -27,7 +29,9 @@ const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
 
       // Fetch count of PASSED INITIAL candidates only (fresh candidates)
       // Exclude those in the RESCHEDULING flow
-      const passedRes = await fetch('http://localhost/Hiring%20System/backend/applications/get_applications.php?status=PASSED%20INITIAL').then(r => r.json()).catch(() => ({}));
+      const passedRes = await fetch(`${API_BASE_URL}/applications/get_applications.php?status=PASSED%20INITIAL`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}` }
+      }).then(r => r.json()).catch(() => ({}));
       
       const c1 = (passedRes.status === 'success' && passedRes.applications) ? passedRes.applications.length : 0;
       setPassedCount(c1);
@@ -51,9 +55,12 @@ const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
         ? `${adminUser.first_name} ${adminUser.last_name}`
         : (adminUser?.email || 'Admin');
 
-      const response = await fetch('http://localhost/Hiring%20System/backend/interviews/auto_schedule.php', {
+      const response = await fetch(`${API_BASE_URL}/interviews/auto_schedule.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}`
+        },
         body: JSON.stringify({ actor_id: actorId, actor_name: actorName })
       });
       const data = await response.json();
@@ -102,7 +109,7 @@ const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
               Confirm Auto-Scheduling
             </h2>
             <p style={{ fontSize: '13.5px', color: '#64748b', margin: '4px 0 0 0' }}>
-              Assign candidates in 'PASSED INITIAL' to available interview slots.
+              Assign candidates in 'PASSED INITIAL' to available interview slots on a <strong>First-Come, First-Served</strong> basis.
             </p>
           </div>
           <button 
@@ -118,6 +125,18 @@ const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
             {errorMsg}
           </div>
         )}
+
+        {/* First-Come, First-Served Policy Banner */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px',
+          background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px',
+          color: '#15803d', fontSize: '12px', fontWeight: '500', marginBottom: '18px'
+        }}>
+          <i className="bx bx-check-shield" style={{ fontSize: '16px', color: '#16a34a' }}></i>
+          <span>
+            <strong>First-Come, First-Served Policy:</strong> Priority is given to candidates who applied earliest.
+          </span>
+        </div>
 
         {/* Capacity Summary Stats */}
         <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
@@ -201,6 +220,12 @@ const AutoScheduleModal = ({ isOpen, onClose, onScheduleSuccess }) => {
           </button>
         </div>
       </div>
+
+      <LoadingScreen
+        isOpen={executing}
+        title="Auto-Scheduling Interviews"
+        subtitle="Assigning time slots and emailing applicants..."
+      />
     </div>,
     document.body
   );

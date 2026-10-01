@@ -8,8 +8,12 @@ import MasterListTab from './components/tabs/MasterListTab';
 import JobsTab from './components/tabs/JobsTab';
 import ChatbotKbTab from './components/tabs/ChatbotKbTab';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
+import { PageLoadingScreen } from '../../components/Loading';
 import useSessionGuard from '../../hooks/useSessionGuard';
 import useInactivityTimeout from '../../hooks/useInactivityTimeout';
+import logoImg from '../../assets/images/Logo Airship Express.png';
+import useToast from '../../hooks/useToast';
+import ToastContainer from '../../components/Toast/ToastNotification';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -17,6 +21,10 @@ const AdminDashboard = () => {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // ── Universal Toast Notifications Hook ──────────────────────────────────────
+  const { toasts, showToast, removeToast } = useToast();
 
   // ── Real-Time Session Guard ─────────────────────────────────────────────────
   // Polls check_session.php every 10 seconds. If Super Admin deletes or resets
@@ -32,8 +40,13 @@ const AdminDashboard = () => {
       return;
     }
     const userData = JSON.parse(savedUser);
-    if (userData.is_admin === 0) {
+    const role = parseInt(userData.is_admin);
+    if (role === 0) {
       navigate('/applicant-dashboard');
+      return;
+    }
+    if (role === 3) {
+      navigate('/super-admin-dashboard');
       return;
     }
     setUser(userData);
@@ -68,22 +81,68 @@ const AdminDashboard = () => {
 
   if (!user) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-      </div>
+      <PageLoadingScreen
+        title="Admin Workspace"
+        subtitle="Verifying credentials and loading recruitment console..."
+      />
     );
   }
 
   return (
     <div className="admin-layout-wrapper animate-fade-in">
-      <AdminSidebar activeTab={activeTab} setActiveTab={setActiveTab} handleLogout={handleLogout} user={user} />
+      {/* ── Mobile Sticky Top Header Bar ── */}
+      <header className="admin-mobile-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            className="admin-hamburger-btn"
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label="Toggle navigation menu"
+          >
+            <i className={`bx ${mobileMenuOpen ? 'bx-x' : 'bx-menu'}`} style={{ fontSize: '24px' }}></i>
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src={logoImg} alt="Airship Express" style={{ height: '24px', width: 'auto' }} />
+            <span style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a', letterSpacing: '0.5px', fontFamily: "'Montserrat', sans-serif" }}>
+              AIRSHIP EXPRESS
+            </span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{
+            fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '12px',
+            background: 'rgba(230,0,126,0.1)', color: '#e6007e', textTransform: 'uppercase'
+          }}>
+            Admin
+          </span>
+        </div>
+      </header>
+
+      {/* ── Mobile Sidebar Backdrop Overlay ── */}
+      {mobileMenuOpen && (
+        <div
+          className="admin-sidebar-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* ── Admin Sidebar (Responsive Drawer on small screens) ── */}
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        handleLogout={handleLogout}
+        user={user}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      />
+
       <main className="admin-main-content">
-        {activeTab === 'overview'    && <OverviewTab setActiveTab={setActiveTab} />}
-        {activeTab === 'applicants'  && <ApplicantsTab />}
-        {activeTab === 'jobs'        && <JobsTab />}
-        {activeTab === 'interviews'  && <InterviewsTab />}
-        {activeTab === 'master_list' && <MasterListTab />}
-        {activeTab === 'chatbot_kb'  && <ChatbotKbTab />}
+        {activeTab === 'overview'    && <OverviewTab setActiveTab={setActiveTab} showToast={showToast} />}
+        {activeTab === 'applicants'  && <ApplicantsTab showToast={showToast} />}
+        {activeTab === 'jobs'        && <JobsTab showToast={showToast} />}
+        {activeTab === 'interviews'  && <InterviewsTab showToast={showToast} />}
+        {activeTab === 'master_list' && <MasterListTab showToast={showToast} />}
+        {activeTab === 'chatbot_kb'  && <ChatbotKbTab showToast={showToast} />}
       </main>
 
       {/* ── Inactivity Warning Modal ──────────────────────────────────────── */}
@@ -109,6 +168,9 @@ const AdminDashboard = () => {
         onConfirm={confirmLogoutAction}
         onCancel={() => setShowLogoutConfirm(false)}
       />
+
+      {/* ── Global Toast Notifications Container ── */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 };

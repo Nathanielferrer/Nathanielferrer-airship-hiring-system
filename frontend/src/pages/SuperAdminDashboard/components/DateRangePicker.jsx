@@ -144,6 +144,11 @@ const DateRangePicker = ({
       const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       s = toIsoDate(first);
       e = toIsoDate(last);
+    } else if (type === 'thisYear') {
+      const first = new Date(today.getFullYear(), 0, 1);
+      const last = new Date(today.getFullYear(), 11, 31);
+      s = toIsoDate(first);
+      e = toIsoDate(last);
     } else if (type === 'clear') {
       s = '';
       e = '';
@@ -508,7 +513,9 @@ const DateRangePicker = ({
                 { label: 'Today', key: 'today' },
                 { label: 'Yesterday', key: 'yesterday' },
                 { label: 'Last 7 Days', key: '7days' },
-                { label: 'Last 30 Days', key: '30days' }
+                { label: 'Last 30 Days', key: '30days' },
+                { label: 'This Month', key: 'thisMonth' },
+                { label: 'This Year', key: 'thisYear' }
               ].map((p) => (
                 <button
                   key={p.key}

@@ -2,18 +2,26 @@
 require_once __DIR__ . '/../db.php';
 header('Content-Type: application/json');
 
+// Auto-expire unconfirmed interview invitations older than 24 hours
+require_once __DIR__ . '/auto_expire_helper.php';
+check_and_expire_schedules($pdo);
+
 try {
     $sql = "SELECT 
                 a.application_id, 
                 a.application_id as id,
                 a.user_id,
                 a.candidate_name, 
+                COALESCE(a.candidate_email, u.User_Email) as candidate_email,
+                COALESCE(a.candidate_mobile, u.User_Mobile) as User_Mobile,
                 a.status as application_status,
+                a.applied_at,
                 a.reschedule_reason,
                 a.reschedule_requested_slot_id,
                 u.User_Fname, 
                 u.User_Lname,
                 u.User_Email,
+                u.User_Mobile as registered_mobile,
                 j.title as job_title,
                 COALESCE(inv.scheduled_date, slot.slot_date) as interview_date,
                 COALESCE(inv.scheduled_time, slot.start_time) as start_time,
@@ -36,7 +44,7 @@ try {
                 WHERE status = 'Booked' AND slot_id IN (SELECT MAX(slot_id) FROM interview_slots_tbl WHERE status = 'Booked' GROUP BY application_id)
             ) slot ON slot.application_id = a.application_id
             LEFT JOIN interview_slots_tbl req_slot ON a.reschedule_requested_slot_id = req_slot.slot_id
-            WHERE a.status IN ('INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'CONFIRMED', 'RESCHEDULING', 'PASSED INITIAL')
+            WHERE a.is_archived = 0 AND a.status IN ('INTERVIEW_SCHEDULED', 'PENDING SCHEDULED', 'CONFIRMED', 'RESCHEDULING', 'PASSED INITIAL', 'PASSED INITIAL SCREENING')
             GROUP BY a.application_id
             ORDER BY interview_date ASC, start_time ASC";
 

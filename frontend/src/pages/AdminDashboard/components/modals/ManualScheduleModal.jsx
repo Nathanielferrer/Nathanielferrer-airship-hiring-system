@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import LoadingScreen from '../../../../components/LoadingScreen/LoadingScreen';
 
+import { API_BASE_URL } from '../../../../utils/apiConfig';
 const ManualScheduleModal = ({ isOpen, onClose, candidate, onScheduleSuccess }) => {
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -27,7 +29,7 @@ const ManualScheduleModal = ({ isOpen, onClose, candidate, onScheduleSuccess }) 
   const fetchSlots = async () => {
     setLoadingSlots(true);
     try {
-      const res = await fetch('http://localhost/Hiring%20System/backend/interviews/get_available_slots.php');
+      const res = await fetch(`${API_BASE_URL}/interviews/get_available_slots.php`);
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         setAvailableSlots(data.slots || []);
@@ -74,9 +76,12 @@ const ManualScheduleModal = ({ isOpen, onClose, candidate, onScheduleSuccess }) 
         ? `${adminUser.first_name} ${adminUser.last_name}`
         : (adminUser?.email || 'Admin');
 
-      const response = await fetch('http://localhost/Hiring%20System/backend/interviews/manual_schedule.php', {
+      const response = await fetch(`${API_BASE_URL}/interviews/manual_schedule.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}`
+        },
         body: JSON.stringify({
           application_id: candidate.application_id,
           user_id: candidate.user_id,
@@ -92,7 +97,7 @@ const ManualScheduleModal = ({ isOpen, onClose, candidate, onScheduleSuccess }) 
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
-        onScheduleSuccess(data.message);
+        onScheduleSuccess(data.message || `Interview Scheduled. ${candidateName} moved to Final Interview.`);
         onClose();
       } else {
         setErrorMsg(data.message || 'Manual scheduling failed. Please try again.');
@@ -222,6 +227,12 @@ const ManualScheduleModal = ({ isOpen, onClose, candidate, onScheduleSuccess }) 
           </div>
         </form>
       </div>
+
+      <LoadingScreen
+        isOpen={executing}
+        title="Scheduling Interview"
+        subtitle="Assigning interview slot..."
+      />
     </div>,
     document.body
   );

@@ -2,14 +2,14 @@
 
 /* Card wrapper */
 .app-card {
-  border: none;
-  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   padding: 24px;
   background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
 }
 
@@ -63,25 +63,28 @@
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  border-radius: 12px;
-  padding: 18px 20px;
+  border-radius: 8px;
+  padding: 16px 20px;
 }
 
 .app-card__notice--pending {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #d97706;
 }
 
 .app-card__notice--passed {
-  background: #f0fdf4;
-  border: 1px solid #a7f3d0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #059669;
 }
 
 .app-card__notice--rescheduling {
   background: #f8fafc;
-  border: none;
-  padding: 14px 16px;
-  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #d97706;
+  padding: 14px 18px;
+  border-radius: 8px;
   font-size: 13px;
   color: #475569;
   font-weight: 500;
@@ -89,14 +92,14 @@
 }
 
 .app-card__notice-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .app-card__notice-icon i {
@@ -104,13 +107,13 @@
 }
 
 .app-card__notice-icon--pending {
-  background: #fef3c7;
-  color: #d97706;
+  background: #fffbeb;
+  color: #b45309;
 }
 
 .app-card__notice-icon--passed {
-  background: #dcfce7;
-  color: #15803d;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .app-card__notice-icon--rescheduling {
@@ -144,16 +147,16 @@
 }
 
 .app-card__notice-body--passed {
-  color: #1e293b;
+  color: #334155;
 }
 
 /* ── Letter / Decision Panels ── */
 .app-card__letter {
   background: #ffffff;
-  border-radius: 12px;
-  padding: 22px 24px;
-  border: 1.5px solid #fee2e2;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.04);
+  border-radius: 10px;
+  padding: 22px 26px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -385,20 +388,21 @@
 
 /* ── Hired Panel ── */
 .app-card__hired-panel {
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border-radius: 14px;
-  border: 1.5px solid #a7f3d0;
-  padding: 24px;
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #059669;
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .app-card__hired-headline {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 4px;
 }
 
@@ -406,11 +410,24 @@
   font-size: 18px;
 }
 
+.app-card__hired-badge-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
 .app-card__hired-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
-  color: #065f46;
+  color: #0f172a;
   font-family: 'Montserrat', sans-serif;
   letter-spacing: -0.2px;
 }
@@ -418,12 +435,12 @@
 .app-card__hired-welcome {
   margin: 6px 0 0 0;
   font-size: 13.5px;
-  color: #1e293b;
+  color: #334155;
   line-height: 1.6;
 }
 
 .app-card__hired-steps {
-  border-top: 1px solid #d1fae5;
+  border-top: 1px solid #f1f5f9;
   padding-top: 16px;
   display: flex;
   flex-direction: column;
@@ -434,36 +451,36 @@
   margin: 0;
   font-size: 13px;
   font-weight: 700;
-  color: #047857;
+  color: #0f172a;
   font-family: 'Montserrat', sans-serif;
 }
 
 .app-card__hired-steps-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .app-card__hired-step {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: #ffffff;
-  padding: 14px 16px;
-  border-radius: 10px;
-  border: 1px solid #bbf7d0;
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
 .app-card__hired-step-num {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: #10b981;
+  background: #059669;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   flex-shrink: 0;
   margin-top: 1px;
@@ -483,51 +500,46 @@
 
 /* ── Passed Final Interview Notice ── */
 .app-card__notice--passed-interview {
-  background: #f0fdf4;
-  border: 1.5px solid #bbf7d0;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.04);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #059669;
 }
 
 .app-card__notice-icon--passed-interview {
-  background: #dcfce7;
-  color: #15803d;
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .app-card__notice-title--passed-interview {
-  color: #166534;
+  color: #065f46;
   font-weight: 800;
   font-size: 14px;
 }
 
 .app-card__notice-body--passed-interview {
-  color: #14532d;
+  color: #334155;
   line-height: 1.55;
 }
 
 /* ── Hired Requirements Deadline Banner (Clean & Subtle) ── */
 .app-card__hired-deadline-banner {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #059669;
   border-radius: 8px;
   padding: 14px 18px;
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin: 16px 0;
-  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.04);
-}
-
-.app-card__hired-badge-icon {
-  font-size: 22px;
-  color: #059669;
+  margin: 14px 0;
 }
 
 .app-card__hired-deadline-icon {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background: #dcfce7;
-  color: #15803d;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -545,7 +557,7 @@
   margin: 0;
   font-size: 11.5px;
   font-weight: 700;
-  color: #15803d;
+  color: #047857;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-family: 'Montserrat', sans-serif;
@@ -553,36 +565,36 @@
 
 .app-card__hired-deadline-target {
   margin: 0;
-  font-size: 14.5px;
+  font-size: 14px;
   font-weight: 800;
-  color: #065f46;
+  color: #0f172a;
   font-family: 'Montserrat', sans-serif;
 }
 
 .app-card__hired-deadline-note {
   margin: 3px 0 0 0;
   font-size: 12px;
-  color: #166534;
+  color: #475569;
   line-height: 1.5;
 }
 
 /* ── Clean Numbered List of Requirements (No Box Tables) ── */
 .app-card__requirements-list-container {
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding: 18px 22px;
-  margin: 16px 0;
+  padding: 16px 20px;
+  margin: 14px 0;
 }
 
 .app-card__requirements-list-heading {
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   font-size: 13.5px;
   font-weight: 800;
   color: #0f172a;
   font-family: 'Montserrat', sans-serif;
   padding-bottom: 8px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .app-card__requirements-clean-list {
@@ -608,7 +620,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 10px 14px;
@@ -620,9 +632,9 @@
 
 /* ── Candidate Withdrew Notice ── */
 .app-card__notice--withdrawn {
-  background: #f8fafc;
-  border: 1.5px solid #cbd5e1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #64748b;
 }
 
 .app-card__notice-icon--withdrawn {
@@ -643,9 +655,9 @@
 
 /* ── Incomplete Requirements Notice ── */
 .app-card__notice--incomplete-req {
-  background: #fff1f2;
-  border: 1.5px solid #fecdd3;
-  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.03);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 3.5px solid #e11d48;
 }
 
 .app-card__notice-icon--incomplete-req {
@@ -687,3 +699,505 @@
   line-height: 1.55;
 }
 
+/* ── Appointment Details Container ── */
+.app-card__signing-container {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 14px 0;
+}
+
+.app-card__signing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.app-card__signing-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.app-card__signing-item--full {
+  grid-column: 1 / -1;
+}
+
+.app-card__signing-icon {
+  font-size: 18px;
+  color: #059669;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.app-card__signing-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  display: block;
+  letter-spacing: 0.3px;
+}
+
+.app-card__signing-val {
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.app-card__signing-notes {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.app-card__signing-notes-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #065f46;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 3px;
+  letter-spacing: 0.3px;
+}
+
+.app-card__signing-notes-text {
+  margin: 0;
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+/* ── Pre-Employment Checklist Items ── */
+.app-card__checklist-wrap {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+}
+
+.app-card__checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.app-card__checklist-row--last {
+  border-bottom: none;
+}
+
+.app-card__checklist-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.app-card__checklist-circle--verified {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.app-card__checklist-circle--waived {
+  background: #ffedd5;
+  color: #ea580c;
+}
+
+.app-card__checklist-circle--pending {
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.app-card__checklist-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-card__checklist-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  display: block;
+}
+
+.app-card__checklist-name--waived {
+  color: #64748b;
+}
+
+.app-card__checklist-desc {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 1px;
+  line-height: 1.4;
+}
+
+.app-card__checklist-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.app-card__checklist-badge--verified {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.app-card__checklist-badge--waived {
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+
+.app-card__checklist-badge--pending {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+/* ── Withdrawal Button ── */
+.app-card__withdraw-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.app-card__withdraw-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.2s ease;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.app-card__withdraw-btn:hover {
+  color: #ef4444;
+}
+
+.app-card__withdraw-btn i {
+  font-size: 14px;
+}
+
+/* ── Responsive Breakpoints for ApplicationCard ── */
+@media (max-width: 768px) {
+  .app-card {
+    padding: 20px 18px;
+    gap: 16px;
+    box-sizing: border-box;
+  }
+
+  .app-card__letter {
+    padding: 18px 18px;
+    box-sizing: border-box;
+  }
+
+  .app-card__hired-panel {
+    padding: 18px 18px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-card {
+    padding: 18px 16px;
+    border-radius: 12px;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-card__header-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .app-card__title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .app-card__title-icon {
+    font-size: 17px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .app-card__job-title {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .app-card__applied-date {
+    font-size: 11.5px;
+    color: #64748b;
+    margin-left: 25px;
+    margin-top: 1px;
+  }
+
+  .app-card__badge {
+    font-size: 10.5px;
+    padding: 4px 10px;
+    flex-shrink: 0;
+    border-radius: 14px;
+  }
+
+  .app-card__notice {
+    padding: 12px 14px;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .app-card__notice-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .app-card__notice-title {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .app-card__notice-body {
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .app-card__letter {
+    padding: 16px 14px;
+    gap: 10px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 8px;
+  }
+
+  .app-card__letter-subject {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding-bottom: 8px;
+  }
+
+  .app-card__letter-body {
+    font-size: 12.5px;
+    gap: 10px;
+    line-height: 1.55;
+  }
+
+  .app-card__action-panel {
+    padding: 14px 14px;
+    gap: 14px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 10px;
+  }
+
+  .app-card__action-btns {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .app-card__btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  .app-card__details {
+    gap: 8px;
+    padding: 0;
+  }
+
+  .app-card__detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+  }
+
+  .app-card__detail-label {
+    min-width: 80px;
+    flex-shrink: 0;
+    font-size: 12px;
+  }
+
+  .app-card__detail-value--bold {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+  }
+
+  .app-card__hired-panel {
+    padding: 16px 14px;
+    gap: 14px;
+    box-sizing: border-box;
+    width: 100%;
+    border-radius: 10px;
+  }
+
+  .app-card__signing-container {
+    padding: 12px 14px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .app-card__signing-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .app-card__requirements-list-container {
+    padding: 12px 14px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .app-card__checklist-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .app-card__checklist-circle {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .app-card__checklist-text {
+    flex: 1;
+    min-width: 0;
+    padding-right: 4px;
+  }
+
+  .app-card__checklist-name {
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+
+  .app-card__checklist-desc {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .app-card__checklist-badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .app-card__withdraw-wrap {
+    justify-content: center;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .app-card__withdraw-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-card {
+    padding: 16px 14px;
+  }
+
+  .app-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .app-card__badge {
+    align-self: flex-start;
+  }
+}
+
+/* ── Pre-Employment Checklist Heading & Mobile Toggle ── */
+.app-card__requirements-list-heading {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #065f46;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.app-card__checklist-chevron {
+  font-size: 18px;
+  color: #059669;
+  flex-shrink: 0;
+  display: none; /* hidden on desktop */
+  transition: transform 0.2s ease;
+}
+
+/* Mobile: show chevron and make heading a clickable toggle */
+@media (max-width: 640px) {
+  .app-card__requirements-list-heading {
+    cursor: pointer;
+    user-select: none;
+  }
+  .app-card__requirements-list-heading:hover {
+    color: #047857;
+  }
+  .app-card__checklist-chevron {
+    display: inline-block;
+  }
+  .app-card__checklist-wrap {
+    animation: checklist-fade 0.18s ease;
+  }
+  @keyframes checklist-fade {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}

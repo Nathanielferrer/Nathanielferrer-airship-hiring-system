@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../email_helper.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -77,17 +78,17 @@ function sendManualScheduledEmail($toEmail, $toName, $date, $startTime, $endTime
         $mail = new PHPMailer(true);
 
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
+        $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'nathanielferrer691@gmail.com';
-        $mail->Password   = 'enzc ppph jran heso';
+        $mail->Username   = getenv('SMTP_USER') ?: 'nathanielferrer691@gmail.com';
+        $mail->Password   = getenv('SMTP_PASS') ?: 'enzc ppph jran heso';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
+        $mail->Port       = (int)(getenv('SMTP_PORT') ?: 587);
 
         $mail->CharSet    = 'UTF-8';
         $mail->Encoding   = 'base64';
 
-        $mail->setFrom('nathanielferrer691@gmail.com', 'Airship Express Recruitment');
+        $mail->setFrom($mail->Username, 'Airship Express Recruitment');
         $mail->addAddress($toEmail, $toName);
 
         $friendlyDate  = date('D, F j, Y', strtotime($date));
@@ -108,7 +109,7 @@ function sendManualScheduledEmail($toEmail, $toName, $date, $startTime, $endTime
                     <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
                 </div>
                 <div style='margin: 24px 0;'>
-                    <a href='http://localhost:5173/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
+                    <a href='" . get_frontend_url() . "/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
                 </div>
                 <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
             </div>
@@ -125,10 +126,11 @@ try {
 
     // 1. Fetch application + candidate info
     $appStmt = $pdo->prepare("
-        SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email, a.status,
+        SELECT a.application_id, a.user_id, a.candidate_name, a.candidate_email, a.status, j.title AS job_title,
                u.User_Fname, u.User_Lname, u.User_Email
         FROM applications_tbl a
         INNER JOIN users_tbl u ON a.user_id = u.user_id
+        INNER JOIN jobs_tbl j ON a.job_id = j.job_id
         WHERE a.application_id = :app_id
     ");
     $appStmt->execute(['app_id' => $applicationId]);
@@ -138,14 +140,28 @@ try {
         throw new Exception("Application not found.");
     }
 
-    // 1.5. Book slot in interview_slots_tbl
+    // 1.5. Book slot in interview_slots_tbl with duplicate check
     if ($slotId > 0) {
+        $checkSlot = $pdo->prepare("SELECT status, application_id FROM interview_slots_tbl WHERE slot_id = :slot_id");
+        $checkSlot->execute(['slot_id' => $slotId]);
+        $slotData = $checkSlot->fetch(PDO::FETCH_ASSOC);
+
+        if ($slotData && $slotData['status'] === 'Booked' && intval($slotData['application_id']) !== $applicationId) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Duplicate Schedule Error: This interview time slot has already been booked by another candidate.'
+            ]);
+            exit();
+        }
+
         $bookSlotStmt = $pdo->prepare("UPDATE interview_slots_tbl SET status = 'Booked', application_id = :app_id WHERE slot_id = :slot_id");
         $bookSlotStmt->execute(['app_id' => $applicationId, 'slot_id' => $slotId]);
     }
 
-    // 2. Update application status to PENDING SCHEDULED
-    $updateStatus = $pdo->prepare("UPDATE applications_tbl SET status = 'PENDING SCHEDULED' WHERE application_id = :id");
+    // 2. Update application status to PENDING SCHEDULED and record invitation timestamp
+    $updateStatus = $pdo->prepare("UPDATE applications_tbl SET status = 'PENDING SCHEDULED', invitation_sent_at = NOW() WHERE application_id = :id");
     $updateStatus->execute(['id' => $applicationId]);
 
     // 3. Insert or update interviews_tbl
@@ -162,7 +178,7 @@ try {
             'date'     => $date,
             'time'     => $startTime,
             'location' => $location,
-            'req'      => json_encode(["Resume"])
+            'req'      => json_encode(["Printed Resume"])
         ]);
     } else {
         $updateInt = $pdo->prepare("
@@ -177,24 +193,27 @@ try {
         ]);
     }
 
-    // 4. Send in-app notification
+    // 4. Resolve candidate info first (needed for notification + email)
+    $toEmail  = $app['candidate_email'] ?: $app['User_Email'];
+    $toName   = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
+    $jobTitle = $app['job_title'] ?? 'Office Staff';
+
     $friendlyDate  = date('D, M j, Y', strtotime($date));
     $friendlyStart = date('g:i A', strtotime($startTime));
     $friendlyEnd   = !empty($endTime) ? date('g:i A', strtotime($endTime)) : '';
     $friendlyTime  = $friendlyEnd ? "{$friendlyStart} - {$friendlyEnd}" : $friendlyStart;
 
+    // Send in-app notification
     insertNotification(
         $pdo,
         $userId,
         $applicationId,
-        'Interview Scheduled – Action Required',
-        "Your face-to-face interview has been scheduled for {$friendlyDate} at {$friendlyTime}. Please log in to confirm your attendance."
+        'Interview Scheduled',
+        "Hi {$toName}, your face-to-face interview for {$jobTitle} is set for {$friendlyDate} at {$friendlyTime}. Please review and confirm your attendance."
     );
 
     // 5. Send email notification
-    $toEmail = $app['candidate_email'] ?: $app['User_Email'];
-    $toName  = $app['candidate_name'] ?: ($app['User_Fname'] . ' ' . $app['User_Lname']);
-    sendManualScheduledEmail($toEmail, $toName, $date, $startTime, $endTime, $location);
+    sendInterviewScheduleEmail($toEmail, $toName, $jobTitle, $date, $startTime, $endTime, $location);
 
     $pdo->commit();
 
@@ -213,8 +232,9 @@ try {
     );
 
     echo json_encode([
-        'status'  => 'success',
-        'message' => "Interview scheduled for {$friendlyDate} at {$friendlyTime}. Candidate notified."
+        'status'         => 'success',
+        'message'        => "Interview Scheduled. {$toName} moved to Final Interview.",
+        'candidate_name' => $toName
     ]);
 
 } catch (Exception $e) {

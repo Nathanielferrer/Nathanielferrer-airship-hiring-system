@@ -4,6 +4,7 @@ import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
 import bgImage from '../../assets/images/log_bg.png';
 import './Login.css';
 
+import { API_BASE_URL } from '../../utils/apiConfig';
 const ForgotPassword = () => {
   useEffect(() => {
     document.title = 'Forgot Password - Airship Express Applicant Portal';
@@ -20,7 +21,7 @@ const ForgotPassword = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost/Hiring%20System/backend/auth/forgot_password.php', {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot_password.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,8 +58,8 @@ const ForgotPassword = () => {
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center', 
-        justifyContent: 'flex-start', 
-        padding: '110px 24px 40px 24px', 
+        justifyContent: 'center', 
+        padding: '24px', 
         fontFamily: "'Poppins', 'Inter', sans-serif", 
         zIndex: 9999, 
         boxSizing: 'border-box', 

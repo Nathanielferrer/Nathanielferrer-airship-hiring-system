@@ -61,7 +61,7 @@ try {
         // Notify applicant that request was received
         $pdo->prepare("
             INSERT INTO notifications_tbl (user_id, application_id, title, message, type, link, is_read)
-            VALUES (:user_id, :app_id, 'Reschedule Request Received', 'Your request to reschedule your interview has been noted. Our recruitment team will reach out to you with a new schedule shortly.', 'reschedule_requested', '/applicant-dashboard', 0)
+            VALUES (:user_id, :app_id, 'Reschedule Request Received', 'Request received. Our team will review and assign a new schedule shortly.', 'reschedule_requested', '/applicant-dashboard', 0)
         ")->execute(['user_id' => $userId, 'app_id' => $applicationId]);
 
         echo json_encode([

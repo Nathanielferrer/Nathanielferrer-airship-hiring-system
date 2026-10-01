@@ -4,6 +4,7 @@ import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
 import bgImage from '../../assets/images/log_bg.png';
 import './Login.css';
 
+import { API_BASE_URL } from '../../utils/apiConfig';
 const Login = () => {
   useEffect(() => {
     document.title = 'Sign In - Airship Express Hiring Portal';
@@ -31,6 +32,8 @@ const Login = () => {
       setSessionMessage('Your password was reset by an administrator. Please log in with your new credentials.');
     } else if (reason === 'account_deleted') {
       setSessionMessage('Your account has been removed. Please contact your Super Administrator.');
+    } else if (reason === 'account_self_deleted') {
+      setSessionMessage('Your account and personal data have been successfully deleted. Thank you for your interest in Airship Express.');
     } else if (reason === 'account_deactivated') {
       setSessionMessage('Your account has been deactivated. Please contact your Super Administrator.');
     } else if (reason === 'inactivity') {
@@ -86,7 +89,7 @@ const Login = () => {
     }
 
     try {
-      const response = await fetch('http://localhost/Hiring%20System/backend/auth/login.php', {
+      const response = await fetch(`${API_BASE_URL}/auth/login.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

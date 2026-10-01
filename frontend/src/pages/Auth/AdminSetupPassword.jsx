@@ -4,6 +4,7 @@ import bgImage from '../../assets/images/log_bg.png';
 import onlyLogoImg from '../../assets/images/only_logo.png';
 import './Login.css';
 
+import { API_BASE_URL } from '../../utils/apiConfig';
 const AdminSetupPassword = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,7 +31,7 @@ const AdminSetupPassword = () => {
 
   // Real-time password strength checks
   const passChecks = {
-    length:    newPassword.length >= 8,
+    length:    newPassword.length >= 8 && newPassword.length <= 64,
     uppercase: /[A-Z]/.test(newPassword),
     lowercase: /[a-z]/.test(newPassword),
     numSpecial: /[0-9]/.test(newPassword) && /[^A-Za-z0-9]/.test(newPassword),
@@ -40,6 +41,10 @@ const AdminSetupPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (newPassword.length < 8 || newPassword.length > 64) {
+      setError('Password must be between 8 and 64 characters long.');
+      return;
+    }
     if (!isPasswordStrong) {
       setError('Your password does not meet all the strength requirements below.');
       return;
@@ -53,7 +58,7 @@ const AdminSetupPassword = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost/Hiring%20System/backend/auth/setup_password.php', {
+      const response = await fetch(`${API_BASE_URL}/auth/setup_password.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: setupToken, new_password: newPassword }),
@@ -173,6 +178,8 @@ const AdminSetupPassword = () => {
                   className="login-input"
                   style={{ paddingRight: '44px' }}
                   placeholder="Create a strong password"
+                  minLength={8}
+                  maxLength={64}
                   required
                 />
                 <button type="button" className="password-toggle-btn" onClick={() => setShowNew(!showNew)}>
@@ -187,7 +194,7 @@ const AdminSetupPassword = () => {
             {/* Strength checklist */}
             {newPassword.length > 0 && (
               <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <CheckItem passed={passChecks.length}    label="At least 8 characters" />
+                <CheckItem passed={passChecks.length}    label="8 to 64 characters" />
                 <CheckItem passed={passChecks.uppercase} label="Contains uppercase letter (A-Z)" />
                 <CheckItem passed={passChecks.lowercase} label="Contains lowercase letter (a-z)" />
                 <CheckItem passed={passChecks.numSpecial} label="Contains number and special character" />
@@ -205,6 +212,8 @@ const AdminSetupPassword = () => {
                   className="login-input"
                   style={{ paddingRight: '44px', borderColor: confirmPassword && !passwordsMatch ? '#ef4444' : '' }}
                   placeholder="Re-enter your password"
+                  minLength={8}
+                  maxLength={64}
                   required
                 />
                 <button type="button" className="password-toggle-btn" onClick={() => setShowConfirm(!showConfirm)}>

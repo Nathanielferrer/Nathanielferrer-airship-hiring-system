@@ -52,21 +52,91 @@ function saveChatHistory($pdo, $applicantId, $userMsg, $botMsg) {
     }
 }
 
-// Greeting using the keywords arrays if matched the ai will reply with a greeting message & also check if the user is logged in using the user id and save the chat history in the database
-$greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings', 'sup'];
-$msgLower  = strtolower(trim($rawMessage));
-foreach ($greetings as $g) {
-    if ($msgLower === $g || strpos($msgLower, $g . ' ') === 0) {
-        $respText = "Hello! 👋 I'm the Airship Express AI Companion. I can help you with information about job openings, the application process, interview schedules, and more. What would you like to know?";
-        if ($validUserId && !$isAdminTest) {
-            saveChatHistory($pdo, $validUserId, $rawMessage, $respText);
+
+// ── Helper to detect Tagalog / Filipino intent markers ───────────────────────
+function isTagalogQuery(string $text): bool {
+    $textLower = strtolower($text);
+    $tagalogMarkers = [
+        'kamusta', 'kumusta', 'musta', 'ano', 'anong', 'paano', 'kailan', 'saan', 'bakit', 'sino',
+        'mga', 'ng', 'sa', 'ko', 'mo', 'niya', 'namin', 'natin', 'nila', 'akin', 'iyo',
+        'kanya', 'atin', 'amin', 'kanila', 'ba', 'po', 'opo', 'ho', 'oho', 'na', 'pa',
+        'naman', 'nga', 'din', 'rin', 'daw', 'raw', 'pala', 'kaya', 'trabaho', 'kailangan',
+        'kinakailangan', 'magkano', 'sahod', 'sweldo', 'oras', 'araw', 'linggo', 'buwan', 'taon',
+        'pasado', 'pumasa', 'nakapasa', 'tanggap', 'matatanggap', 'matanggap', 'mag-apply',
+        'magapply', 'nag-apply', 'nagapply', 'nag apply', 'mag apply', 'meron', 'mayroon', 'wala',
+        'may hiring', 'pwede', 'pede', 'puwede', 'gusto', 'nais', 'tulong', 'patulong',
+        'kwalipikasyon', 'balita'
+    ];
+    foreach ($tagalogMarkers as $marker) {
+        if (preg_match('/\b' . preg_quote($marker, '/') . '\b/i', $textLower)) {
+            return true;
         }
-        echo json_encode([
-            'status'   => 'match',
-            'response' => $respText,
-        ]);
-        exit;
     }
+    return false;
+}
+
+// ── Helper to get Tagalog label & description for a given English status label ──
+function getStatusTagalog(string $englishLabel): array {
+    $map = [
+        'Under Initial Review'                                => ['Kasalukuyang Sinusuri (Initial Review)', 'Kasalukuyang sinusuri ng aming recruitment team ang iyong aplikasyon at resume.'],
+        'Under Detailed Review'                               => ['Detalyadong Pagsusuri', 'Sinusuri nang detalyado ng aming mga recruitment specialist ang iyong aplikasyon.'],
+        'Passed Initial Screening'                            => ['Pumasa sa Initial Screening', 'Pumasa ka sa initial resume screening! Aayusin ng aming HR team ang iyong face-to-face interview schedule.'],
+        'Interview Slot Available (Action Required)'          => ['May Available na Interview Slot (Kailangan ng Aksyon)', 'May available na interview appointment. Pumunta sa iyong Application Status page upang kumpirmahin o pumili ng slot.'],
+        'Face-to-Face Interview Confirmed'                    => ['Kumpirmadong Face-to-Face Interview', 'Kumpirmado na ang iyong final face-to-face interview. Mangyaring dumating nang maaga sa aming opisina.'],
+        'Face-to-Face Interview Scheduled'                    => ['Nakatakdang Face-to-Face Interview', 'Nakatakda na ang iyong final face-to-face interview.'],
+        'Interview Reschedule Requested'                      => ['Hiniling ang Reschedule ng Interview', 'Naisumite na ang iyong kahilingan na i-reschedule ang interview at kasalukuyang pinoproseso ng HR.'],
+        'Passed Final Interview (Pending Executive Approval)' => ['Pumasa sa Final Interview (Naghihintay ng Executive Approval)', 'Binabati kita! Pumasa ka sa final interview. Kasalukuyang nasa President ang iyong profile para sa executive review.'],
+        'Officially Hired (Pre-Employment Phase)'             => ['Opisyal na Natanggap (Pre-Employment Phase)', 'Binabati kita! Natanggap ka na opisyal. Mangyaring ipasa ang 6 na mandatory na pisikal na pre-employment documents sa loob ng 7 araw.'],
+        'Pre-Employment Requirements Verified'                => ['Na-verify na ang Pre-Employment Requirements', 'Na-verify na ng HR ang lahat ng mandatory na pisikal na pre-employment documents. Inaayos ng aming team ang iyong contract signing schedule.'],
+        'Contract Signing Scheduled'                          => ['Nakatakdang Paglagda ng Kontrata', 'Nakatakda na ang iyong paglagda ng employment contract sa aming pangunahing opisina.'],
+        'Officially Hired & Onboarded'                        => ['Opisyal na Empleyado at Onboarded na', 'Binabati kita! Naisakatuparan na ang iyong employment contract at kumpleto na ang onboarding. Magsisimula ang iyong new hire training sa susunod na linggo!'],
+        'Application Withdrawn'                               => ['Iniatras ang Aplikasyon', 'Boluntaryong iniatras mo ang aplikasyong ito. Maaari kang mag-browse at mag-apply para sa mga bukas na posisyon kahit kailan sa aming Vacancy page.'],
+        'Offer Expired (Incomplete Requirements)'             => ['Nag-expire ang Alok (Hindi Kumpleto ang Requirements)', 'Nag-expire na ang 7-araw na window para sa pagsumite ng mandatory na pre-employment documents.'],
+        'Pre-Employment Clearance Not Met'                    => ['Hindi Natugunan ang Pre-Employment Clearance', 'Hindi natugunan ang mandatory na medical at clearance criteria sa pre-employment stage.'],
+        'Interview Not Passed'                                => ['Hindi Pumasa sa Interview', 'Salamat sa pag-attend sa final interview. Hindi napili ang iyong aplikasyon na mag-advance.'],
+        'Not Selected (Executive Review)'                     => ['Hindi Napili (Executive Review)', 'Salamat sa iyong oras. Hindi napili ang iyong aplikasyon sa executive review stage.'],
+        'Not Shortlisted'                                     => ['Hindi Naisama sa Shortlist', 'Salamat sa iyong interes. Hindi napili ang iyong aplikasyon na magpatuloy.'],
+        'Declined - Unresponsive'                             => ['Tinanggihan - Walang Tugon', 'Isinara ang aplikasyon dahil sa kawalan ng tugon sa mga imbitasyon para sa interview scheduling.'],
+    ];
+    return $map[$englishLabel] ?? [$englishLabel, 'Kasalukuyang pinoproseso ang iyong aplikasyon.'];
+}
+
+// Greeting using keywords arrays — supports both English and Tagalog/Filipino greetings
+$greetingsEn = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 'greetings', 'sup', 'yo'];
+$greetingsTl = ['kamusta', 'kumusta', 'musta', 'magandang umaga', 'magandang hapon', 'magandang gabi', 'magandang araw', 'halo'];
+
+$msgLower  = strtolower(trim($rawMessage));
+$matchedGreetingType = null;
+
+foreach ($greetingsEn as $g) {
+    if ($msgLower === $g || strpos($msgLower, $g . ' ') === 0) {
+        $matchedGreetingType = 'en';
+        break;
+    }
+}
+if (!$matchedGreetingType) {
+    foreach ($greetingsTl as $g) {
+        if ($msgLower === $g || strpos($msgLower, $g . ' ') === 0) {
+            $matchedGreetingType = 'tl';
+            break;
+        }
+    }
+}
+
+if ($matchedGreetingType !== null) {
+    if ($matchedGreetingType === 'tl') {
+        $respText = "Kumusta! 👋 Ako ang AI Companion ng Airship Express. Matutulungan kita sa impormasyon tungkol sa mga bakanteng trabaho, proseso ng aplikasyon, iskedyul ng interview, at iba pa. Maaari kang magtanong sa akin sa Filipino/Tagalog o English. Ano ang nais mong malaman?";
+    } else {
+        $respText = "Hello! 👋 I'm the Airship Express AI Companion. I can help you with information about job openings, the application process, interview schedules, and more. You can ask me in English or Filipino/Tagalog. What would you like to know?";
+    }
+    if ($validUserId && !$isAdminTest) {
+        saveChatHistory($pdo, $validUserId, $rawMessage, $respText);
+    }
+    echo json_encode([
+        'status'   => 'match',
+        'response' => $respText,
+    ]);
+    exit;
 }
 
 // REAL-TIME INTENT: Application Status Lookup
@@ -79,6 +149,12 @@ $statusKeywords = [
     'what is my status', 'my job status', 'application result', 'my result',
     'have they reviewed', 'been reviewed', 'any update', 'update on my',
     'application progress', 'my progress', 'where am i in',
+    // Tagalog / Taglish keywords
+    'status ng application', 'status ko', 'kamusta application', 'kumusta application',
+    'kamusta ang application', 'kumusta ang application', 'anong status', 'ano status',
+    'nakapasa ba', 'pumasa ba', 'tanggap ba', 'kamusta na application', 'kumusta na application',
+    'na-review na', 'nareview na', 'tingnan ang status', 'tignan ang status', 'resulta ng application',
+    'application ko', 'ano balita sa application', 'may update ba', 'na review na ba'
 ];
 
 $isStatusQuery = false;
@@ -90,8 +166,11 @@ foreach ($statusKeywords as $kw) {
 }
 // catching the status query and checking if the user is logged in using the user id and save the chat history in the database
 if ($isStatusQuery) {
+    $isTl = isTagalogQuery($rawMessage);
     if (!$validUserId) {
-        $respText = "To check your application status, please log in first. Once logged in, I can show you the real-time status of all your applications! 🔐";
+        $respText = $isTl
+            ? "Para masuri ang status ng iyong aplikasyon, mangyaring mag-log in muna. Kapag naka-log in ka na, maipapakita ko ang real-time status ng lahat ng iyong mga aplikasyon! 🔐"
+            : "To check your application status, please log in first. Once logged in, I can show you the real-time status of all your applications! 🔐";
     } else {
         try {
             $appQ = $pdo->prepare("
@@ -120,7 +199,9 @@ if ($isStatusQuery) {
             $userApps = $appQ->fetchAll(PDO::FETCH_ASSOC);
 
             if (empty($userApps)) {
-                $respText = "It looks like you haven't submitted any applications yet. 📋 Visit our Vacancy page to browse current openings and apply!";
+                $respText = $isTl
+                    ? "Mukhang wala ka pang naipapasang aplikasyon. 📋 Bisitahin ang aming Vacancy page para tingnan ang mga kasalukuyang bakanteng posisyon at mag-apply!"
+                    : "It looks like you haven't submitted any applications yet. 📋 Visit our Vacancy page to browse current openings and apply!";
             } else {
                 $statusMap = [
                     'pending'                       => ['label' => 'Under Initial Review', 'desc' => 'Your application and resume are currently being reviewed by our recruitment team.'],
@@ -167,7 +248,7 @@ if ($isStatusQuery) {
                     'DECLINED - UNRESPONSIVE'       => ['label' => 'Declined - Unresponsive', 'desc' => 'Application closed due to no response to interview scheduling invitations.']
                 ];
 
-                $lines = ["Here is the real-time status of your application(s):\n"];
+                $lines = [$isTl ? "Narito ang real-time na estado ng iyong aplikasyon:\n" : "Here is the real-time status of your application(s):\n"];
                 foreach ($userApps as $idx => $app) {
                     $jobTitle  = $app['job_title'];
                     $rawStatus = trim($app['status'] ?? '');
@@ -178,22 +259,46 @@ if ($isStatusQuery) {
                         'desc'  => 'Your application is currently being processed.'
                     ];
 
+                    $statusLabel = $info['label'];
+                    $statusDesc  = $info['desc'];
+
+                    if ($isTl) {
+                        $tlInfo = getStatusTagalog($statusLabel);
+                        $statusLabel = $tlInfo[0];
+                        $statusDesc  = $tlInfo[1];
+                    }
+
                     $appliedOn = date('F j, Y', strtotime($app['applied_at']));
 
-                    $lines[] = "📋 Position: {$jobTitle}";
-                    $lines[] = "🔹 Status: {$info['label']}";
-                    $lines[] = "ℹ️ Note: {$info['desc']}";
-                    $lines[] = "📅 Applied On: {$appliedOn}";
+                    if ($isTl) {
+                        $lines[] = "📋 Posisyon: {$jobTitle}";
+                        $lines[] = "🔹 Katayuan: {$statusLabel}";
+                        $lines[] = "ℹ️ Paalala: {$statusDesc}";
+                        $lines[] = "📅 Petsa ng Pag-apply: {$appliedOn}";
+                    } else {
+                        $lines[] = "📋 Position: {$jobTitle}";
+                        $lines[] = "🔹 Status: {$statusLabel}";
+                        $lines[] = "ℹ️ Note: {$statusDesc}";
+                        $lines[] = "📅 Applied On: {$appliedOn}";
+                    }
 
                     // Contract Signing Scheduled info
                     if (in_array($upperStatus, ['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED']) && !empty($app['contract_signing_date'])) {
                         $signDateStr = date('l, F j, Y', strtotime($app['contract_signing_date']));
                         $signTimeStr = !empty($app['contract_signing_time']) ? $app['contract_signing_time'] : '09:00 AM';
                         $signLoc     = !empty($app['contract_signing_location']) ? $app['contract_signing_location'] : '352 T. Pinpin Escolta St., Binondo, Manila 1006';
-                        $lines[] = "✍️ Contract Signing: {$signDateStr} at {$signTimeStr}";
-                        $lines[] = "📍 Venue: {$signLoc}";
-                        if (!empty($app['contract_signing_notes'])) {
-                            $lines[] = "📝 Instructions: {$app['contract_signing_notes']}";
+                        if ($isTl) {
+                            $lines[] = "✍️ Pagpirma ng Kontrata: {$signDateStr} sa ganap na {$signTimeStr}";
+                            $lines[] = "📍 Lugar: {$signLoc}";
+                            if (!empty($app['contract_signing_notes'])) {
+                                $lines[] = "📝 Tagubilin: {$app['contract_signing_notes']}";
+                            }
+                        } else {
+                            $lines[] = "✍️ Contract Signing: {$signDateStr} at {$signTimeStr}";
+                            $lines[] = "📍 Venue: {$signLoc}";
+                            if (!empty($app['contract_signing_notes'])) {
+                                $lines[] = "📝 Instructions: {$app['contract_signing_notes']}";
+                            }
                         }
                     }
                     // Interview Scheduled info
@@ -202,12 +307,21 @@ if ($isStatusQuery) {
                         $timeRaw    = !empty($app['scheduled_time']) ? $app['scheduled_time'] : '10:00:00';
                         $intTimeStr = date('g:i A', strtotime($timeRaw));
                         $intLoc     = !empty($app['location']) ? $app['location'] : '352 T. Pinpin Escolta St., Binondo, Manila 1006';
-                        $lines[] = "🕒 Interview Date: {$intDateStr} at {$intTimeStr}";
-                        $lines[] = "📍 Location: {$intLoc}";
+                        if ($isTl) {
+                            $lines[] = "🕒 Petsa ng Interview: {$intDateStr} sa ganap na {$intTimeStr}";
+                            $lines[] = "📍 Lugar: {$intLoc}";
+                        } else {
+                            $lines[] = "🕒 Interview Date: {$intDateStr} at {$intTimeStr}";
+                            $lines[] = "📍 Location: {$intLoc}";
+                        }
                     }
                     // Officially Hired & Onboarded: Training Starts Next Week
                     elseif (in_array($upperStatus, ['CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 'OFFICIALLY HIRED & SIGNED', 'OFFICIALLY HIRED'])) {
-                        $lines[] = "🎉 Next Step: Your new hire training will begin the following next week! HR will contact you with orientation details.";
+                        if ($isTl) {
+                            $lines[] = "🎉 Susunod na Hakbang: Magsisimula ang iyong new hire training sa susunod na linggo! Makikipag-ugnayan ang HR para sa detalye ng oryentasyon.";
+                        } else {
+                            $lines[] = "🎉 Next Step: Your new hire training will begin the following next week! HR will contact you with orientation details.";
+                        }
                     }
                     // Hired awaiting requirements: 7-day deadline
                     elseif (in_array($upperStatus, ['PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED'])) {
@@ -215,18 +329,24 @@ if ($isStatusQuery) {
                         $dObj  = new DateTime($baseD);
                         $dObj->modify('+7 days');
                         $deadlineStr = $dObj->format('F j, Y');
-                        $lines[] = "⏳ Document Deadline: {$deadlineStr} (Submit 6 physical requirements to HR within 7 days).";
+                        if ($isTl) {
+                            $lines[] = "⏳ Deadline ng Dokumento: {$deadlineStr} (Ipasa ang 6 na physical requirements sa HR sa loob ng 7 araw).";
+                        } else {
+                            $lines[] = "⏳ Document Deadline: {$deadlineStr} (Submit 6 physical requirements to HR within 7 days).";
+                        }
                     }
 
                     $lines[] = "";
                 }
 
-                $lines[] = "For more details and actions, visit your Application Status page.";
-                $lines[] = "Is there anything else I can assist you with today?";
+                $lines[] = $isTl ? "Para sa karagdagang detalye at aksyon, bisitahin ang iyong Application Status page." : "For more details and actions, visit your Application Status page.";
+                $lines[] = $isTl ? "May maitutulong pa ba ako sa iyo ngayon?" : "Is there anything else I can assist you with today?";
                 $respText = implode("\n", $lines);
             }
         } catch (PDOException $e) {
-            $respText = "I'm having trouble fetching your application details right now. Please try again shortly or visit your Application Status page directly.";
+            $respText = $isTl
+                ? "May kaunting aberya sa pagkuha ng mga detalye ng iyong aplikasyon ngayon. Mangyaring subukan muli o bisitahin nang direkta ang iyong Application Status page."
+                : "I'm having trouble fetching your application details right now. Please try again shortly or visit your Application Status page directly.";
         }
     }
 
@@ -247,6 +367,12 @@ $jobListKeywords = [
     'what roles', 'open roles', 'job vacancies', 'vacancies available',
     'currently hiring', 'what can i apply', 'jobs available', 'all jobs',
     'show me jobs', 'show jobs', 'browse jobs',
+    // Tagalog / Taglish keywords
+    'anong mga trabaho', 'anong trabaho', 'ano trabaho', 'may hiring ba', 'may hiring',
+    'mga hiring', 'may trabaho ba', 'may trabaho', 'mga trabaho', 'available na trabaho',
+    'mga bakanteng trabaho', 'bakanteng trabaho', 'mga bakante', 'anong open', 'anong bakante',
+    'anong posisyon', 'pwedeng applyan', 'pwede applyan', 'mga posisyon', 'anong hiring',
+    'mga available na trabaho', 'ano pwedeng applyan'
 ];
 
 $isJobListQuery = false;
@@ -258,23 +384,36 @@ foreach ($jobListKeywords as $kw) {
 }
 
 if ($isJobListQuery) {
+    $isTl = isTagalogQuery($rawMessage);
     try {
         $jobsQ   = $pdo->query("SELECT title, description, requirements, availability FROM jobs_tbl WHERE status = 'Active' AND availability > 0 ORDER BY job_id ASC");
         $liveJobs = $jobsQ->fetchAll(PDO::FETCH_ASSOC);
 
         if (empty($liveJobs)) {
-            $respText = "There are currently no open positions at Airship Express. Please check back soon as new openings are added regularly.";
-            //message format if existed
+            $respText = $isTl
+                ? "Sa kasalukuyan ay walang bakanteng posisyon sa Airship Express. Mangyaring bumalik muli dahil regular kaming nagdaragdag ng mga bagong opening."
+                : "There are currently no open positions at Airship Express. Please check back soon as new openings are added regularly.";
         } else {
-            $lines = ["Here are the currently open positions at Airship Express:\n"];
-            foreach ($liveJobs as $job) {
-                $lines[] = "• " . $job['title'];
+            if ($isTl) {
+                $lines = ["Narito ang mga kasalukuyang bakanteng posisyon sa Airship Express:\n"];
+                foreach ($liveJobs as $job) {
+                    $lines[] = "• " . $job['title'];
+                }
+                $lines[] = "\nPara makita ang buong requirements para sa partikular na posisyon, itanong mo lang sa akin! Halimbawa: \"Ano ang requirements para sa [Job Title]?\"\nPara mag-apply, bisitahin ang Vacancy page sa ating portal.";
+                $respText = implode("\n", $lines);
+            } else {
+                $lines = ["Here are the currently open positions at Airship Express:\n"];
+                foreach ($liveJobs as $job) {
+                    $lines[] = "• " . $job['title'];
+                }
+                $lines[] = "\nTo see full requirements for a specific position, just ask me! For example: \"What are the requirements for [Job Title]?\"\nTo apply, please visit the Vacancy page on our portal.";
+                $respText = implode("\n", $lines);
             }
-            $lines[] = "\nTo see full requirements for a specific position, just ask me! For example: \"What are the requirements for [Job Title]?\"\nTo apply, please visit the Vacancy page on our portal.";
-            $respText = implode("\n", $lines);
         }
     } catch (PDOException $e) {
-        $respText = "I'm having trouble fetching the job list right now. Please visit our Vacancy page directly to see all open positions!";
+        $respText = $isTl
+            ? "May kaunting aberya sa pagkuha ng listahan ng mga trabaho ngayon. Mangyaring bisitahin nang direkta ang ating Vacancy page upang makita ang lahat ng bukas na posisyon!"
+            : "I'm having trouble fetching the job list right now. Please visit our Vacancy page directly to see all open positions!";
     }
 
     if ($validUserId && !$isAdminTest) {
@@ -290,8 +429,13 @@ $requirementKeywords = [
     'requirement', 'requirements', 'qualifications', 'qualification',
     'what do i need', 'what are the requirements', 'what is needed',
     'what is required', 'what do you require', 'criteria', 'credentials',
-    'educational requirement', 'education requirement', 'apply for',
-    'apply to', 'what to have', 'prerequisite', 'prerequisites',
+    'educational requirement', 'education requirement',
+    'what to have', 'prerequisite', 'prerequisites',
+    // Tagalog / Taglish keywords
+    'mga kailangan', 'anong kailangan', 'ano kailangan', 'ano ang kailangan',
+    'mga kinakailangan', 'kinakailangan', 'anong requirements', 'ano requirements',
+    'ano ang qualifications', 'anong qualifications',
+    'kwalipikasyon', 'mga kwalipikasyon'
 ];
 
 $isRequirementQuery = false;
@@ -303,6 +447,7 @@ foreach ($requirementKeywords as $kw) {
 }
 
 if ($isRequirementQuery) {
+    $isTl = isTagalogQuery($rawMessage);
     // Try to find all active job titles and match against the user's message
     $matchedJob = null;
     try {
@@ -368,34 +513,53 @@ if ($isRequirementQuery) {
             $reqText  = trim($matchedJob['requirements']);
             $descText = trim($matchedJob['description']);
 
-            $respLines = ["Here are the requirements for the {$jobTitle} position:\n"];
-            $respLines[] = $reqText;
-            $respLines[] = "";
-            if (!empty($descText)) {
-                $respLines[] = "About the Role:";
-                $respLines[] = $descText;
+            if ($isTl) {
+                $respLines = ["Narito ang mga kinakailangan (requirements) para sa posisyong {$jobTitle}:\n"];
+                $respLines[] = $reqText;
                 $respLines[] = "";
+                if (!empty($descText)) {
+                    $respLines[] = "Tungkol sa Trabaho:";
+                    $respLines[] = $descText;
+                    $respLines[] = "";
+                }
+                $respLines[] = "Para mag-apply sa posisyong ito, mangyaring bisitahin ang Vacancy page sa ating portal at ipasa ang iyong aplikasyon. 📋";
+                $respText = implode("\n", $respLines);
+            } else {
+                $respLines = ["Here are the requirements for the {$jobTitle} position:\n"];
+                $respLines[] = $reqText;
+                $respLines[] = "";
+                if (!empty($descText)) {
+                    $respLines[] = "About the Role:";
+                    $respLines[] = $descText;
+                    $respLines[] = "";
+                }
+                $respLines[] = "To apply for this position, please visit the Vacancy page on our portal and submit your application. 📋";
+                $respText = implode("\n", $respLines);
             }
-            $respLines[] = "To apply for this position, please visit the Vacancy page on our portal and submit your application. 📋";
-            $respText = implode("\n", $respLines);
         } else {
             // Job exists in DB but is no longer active or has no slots
             $jobTitle = $matchedJob['title'];
-            $respText = "The {$jobTitle} position is currently not available or has been filled. 😔\n\nWould you like to see other currently open positions? Just ask \"What jobs are available?\" or visit the Vacancy page on our portal to browse all active openings.";
+            $respText = $isTl
+                ? "Ang posisyong {$jobTitle} ay kasalukuyang hindi bakante o napunan na. 😔\n\nNais mo bang makita ang iba pang mga bukas na posisyon? Magtanong lamang ng \"Anong mga trabaho ang available?\" o bisitahin ang Vacancy page sa ating portal."
+                : "The {$jobTitle} position is currently not available or has been filled. 😔\n\nWould you like to see other currently open positions? Just ask \"What jobs are available?\" or visit the Vacancy page on our portal to browse all active openings.";
         }
     } else {
         // No matching job found at all
         // Try to extract the job name the user mentioned for a personalized response
         // Look for patterns like "for [job]", "to [job]", "about [job]"
         $jobNameGuess = '';
-        if (preg_match('/(?:for|to|about|position of|role of)\s+(?:the\s+)?([a-zA-Z\s]{3,40}?)(?:\s+position|\s+role|\s+job|\s+post|[?!.]|$)/i', $rawMessage, $jobMatch)) {
+        if (preg_match('/(?:for|to|about|position of|role of|para sa|sa posisyong|para sa posisyong)\s+(?:the\s+)?([a-zA-Z\s]{3,40}?)(?:\s+position|\s+role|\s+job|\s+post|[?!.]|$)/i', $rawMessage, $jobMatch)) {
             $jobNameGuess = trim($jobMatch[1]);
         }
 
         if (!empty($jobNameGuess)) {
-            $respText = "I couldn't find a job position called \"{$jobNameGuess}\" in our current openings. It may not be available right now or may have a slightly different title.\n\nHere's what you can do:\n• Ask me \"What jobs are available?\" to see all current openings.\n• Visit the Vacancy page on our portal to browse and apply for open positions.\n\nIs there anything else I can help you with? 😊";
+            $respText = $isTl
+                ? "Hindi ko mahanap ang posisyong \"{$jobNameGuess}\" sa aming kasalukuyang mga bukas na trabaho. Maaaring hindi ito available ngayon o may bahagyang ibang titulo.\n\nNarito ang maaari mong gawin:\n• Magtanong ng \"Anong mga trabaho ang available?\" para makita ang lahat ng bakante.\n• Bisitahin ang Vacancy page sa ating portal upang mag-apply.\n\nMay maitutulong pa ba ako sa iyo? 😊"
+                : "I couldn't find a job position called \"{$jobNameGuess}\" in our current openings. It may not be available right now or may have a slightly different title.\n\nHere's what you can do:\n• Ask me \"What jobs are available?\" to see all current openings.\n• Visit the Vacancy page on our portal to browse and apply for open positions.\n\nIs there anything else I can help you with? 😊";
         } else {
-            $respText = "I wasn't able to identify a specific job position in your question. Could you please specify the exact job title? For example: \"What are the requirements for Delivery Rider?\"\n\nYou can also ask \"What jobs are available?\" to see all current openings, or visit the Vacancy page on our portal.";
+            $respText = $isTl
+                ? "Hindi ko matukoy ang partikular na posisyon sa iyong tanong. Maaari mo bang tukuyin ang eksaktong titulo ng trabaho? Halimbawa: \"Ano ang requirements para sa Delivery Rider?\"\n\nMaaari ka ring magtanong ng \"Anong mga trabaho ang available?\" o bisitahin ang Vacancy page sa ating portal."
+                : "I wasn't able to identify a specific job position in your question. Could you please specify the exact job title? For example: \"What are the requirements for Delivery Rider?\"\n\nYou can also ask \"What jobs are available?\" to see all current openings, or visit the Vacancy page on our portal.";
         }
     }
 
@@ -422,6 +586,16 @@ $stopWords = [
     'check','look','ask','try','think','some','any','all','more','there','here',
     'am','ve','ll','re','dont','cant','wont','isnt','arent','much','still',
     'already','yet','really','very','quite','rather','too','well','yes','no',
+    // Tagalog stopwords
+    'ang','ng','mga','sa','ko','mo','niya','namin','natin','nila','si','sina',
+    'ni','nina','kay','kina','ito','iyon','iyan','dito','doon','diyan',
+    'ba','po','opo','ho','oho','na','pa','naman','nga','din','rin','daw','raw',
+    'pala','kaya','lang','lamang','at','o','kung','para','dahil','kasi',
+    'ano','anong','paano','kailan','saan','bakit','sino','alin',
+    // Additional Tagalog question/function words
+    'magkano','meron','mayroon','gaano','ganoon','ganon','ganito',
+    'talaga','nais','gusto','puwede','pwede','pede','maaari',
+    'mag','nag','pag','nang','maging','ipinag','um','in'
 ];
 
 $rawTokens = array_filter(
@@ -433,6 +607,35 @@ $meaningfulTokens = array_values(array_filter(
     $rawTokens,
     fn($t) => !in_array($t, $stopWords)
 ));
+
+// ── Tagalog → English synonym translation for cross-lingual KB matching ──────
+// Translates Tagalog content words to their English equivalents so they can
+// match the English-stored Knowledge Base entries in MySQL search and scoring.
+$tagalogToEnglish = [
+    'mag-apply' => 'apply', 'magapply' => 'apply', 'nag-apply' => 'apply',
+    'nagapply' => 'apply', 'applyan' => 'apply', 'aplay' => 'apply',
+    'iapply' => 'apply', 'magaplay' => 'apply',
+    'sweldo' => 'salary', 'sahod' => 'salary', 'suweldo' => 'salary',
+    'bayad' => 'pay', 'salaryo' => 'salary',
+    'trabaho' => 'job', 'posisyon' => 'position', 'bakante' => 'vacancy',
+    'empleyo' => 'employment', 'hanapbuhay' => 'job',
+    'kailangan' => 'requirements', 'kinakailangan' => 'requirements',
+    'kwalipikasyon' => 'qualifications',
+    'opisina' => 'office', 'tanggapan' => 'office', 'lugar' => 'location',
+    'panayam' => 'interview', 'interbyu' => 'interview',
+    'resume' => 'resume', 'dokumento' => 'document', 'papeles' => 'document',
+    'iskedyul' => 'schedule', 'pasok' => 'work',
+    'pasahan' => 'submit', 'ipasa' => 'submit', 'isumite' => 'submit',
+    'sangay' => 'branch', 'sanga' => 'branch',
+    'kompanya' => 'company', 'kumpanya' => 'company',
+    'kasaysayan' => 'history',
+    'proseso' => 'process', 'hakbang' => 'steps',
+    'upload' => 'upload', 'iupload' => 'upload',
+];
+$meaningfulTokens = array_values(array_unique(array_map(
+    fn($tok) => $tagalogToEnglish[$tok] ?? $tok,
+    $meaningfulTokens
+)));
 
 $candidates = [];
 if (!empty($meaningfulTokens)) {
@@ -502,13 +705,23 @@ foreach ($candidates as $row) { // Loops through each candidate entry from the d
     }
 }
 
-// ── High-confidence match in DB Knowledge Base: Return HR predefined answer ────────
+// ── High-confidence match in DB Knowledge Base ────────────────────────────────
+// If user asked in English → return English KB answer directly.
+// If user asked in Tagalog → store answer and let Gemini translate it below.
+$kbGroundedAnswer = null;
+
 if ($bestScore >= $THRESHOLD && $bestAnswer !== null) {
-    if ($validUserId && !$isAdminTest) {
-        saveChatHistory($pdo, $validUserId, $rawMessage, $bestAnswer);
+    $isTlKb = isTagalogQuery($rawMessage);
+    if (!$isTlKb) {
+        // English query → return verified English KB answer immediately
+        if ($validUserId && !$isAdminTest) {
+            saveChatHistory($pdo, $validUserId, $rawMessage, $bestAnswer);
+        }
+        echo json_encode(['status' => 'match', 'response' => $bestAnswer, 'score' => round($bestScore, 2)]);
+        exit;
     }
-    echo json_encode(['status' => 'match', 'response' => $bestAnswer, 'score' => round($bestScore, 2)]);
-    exit;
+    // Tagalog/Taglish query matched an English KB entry → pass to Gemini for translation
+    $kbGroundedAnswer = $bestAnswer;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -604,9 +817,53 @@ if ($validUserId) {
 
 $geminiApiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
 
+// Fetch all active Knowledge Base entries to ground Gemini AI with official company answers
+$knowledgeBaseContextText = "None loaded.";
+try {
+    $kbStmt = $pdo->query("SELECT primary_question, predefined_answer, keyword_tags FROM chatbot_knowledge_base_tbl ORDER BY kb_id ASC");
+    $kbRows = $kbStmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($kbRows)) {
+        $kbEntries = [];
+        foreach ($kbRows as $kr) {
+            $q = trim($kr['primary_question']);
+            $a = trim($kr['predefined_answer']);
+            $tags = trim($kr['keyword_tags']);
+            $kbEntries[] = "Q: {$q}\nTags: {$tags}\nVerified Answer: {$a}";
+        }
+        $knowledgeBaseContextText = implode("\n\n", $kbEntries);
+    }
+} catch (PDOException $e) { /* ignore */ }
+
+$groundedAnswerInstruction = "";
+if (!empty($kbGroundedAnswer)) {
+    $groundedAnswerInstruction = <<<GA
+
+HIGH-CONFIDENCE VERIFIED HR ANSWER TO CONVEY & TRANSLATE:
+"{$kbGroundedAnswer}"
+IMPORTANT: The applicant asked in Filipino/Tagalog: "{$rawMessage}". You MUST use the verified HR answer above as your primary factual basis, and translate/communicate it clearly, naturally, and politely in Filipino/Tagalog (using polite markers like "po" / "opo"). Do not invent conflicting facts.
+GA;
+}
+
 if (!empty($geminiApiKey)) {
     $systemInstruction = <<<EOT
-ROLE: You are the intelligent HR & Hiring AI Assistant for "Airship Express", a courier, logistics, and delivery company located in Binondo, Manila, Philippines. You have full knowledge of their hiring process, open positions, and applicant context.
+ROLE: You are the intelligent HR & Hiring AI Assistant for "Airship Express", a courier, logistics, and delivery company located in Binondo, Manila, Philippines. You have full knowledge of their hiring process, open positions, company policies, and applicant context.
+
+LANGUAGE SUPPORT & BILINGUAL CAPABILITY:
+- You are FULLY BILINGUAL and fluent in both English and Filipino/Tagalog (including everyday conversational Taglish).
+- You understand questions asked in English, Filipino/Tagalog, or mixed Taglish with complete accuracy.
+- LANGUAGE MATCHING RULE: Always respond in the SAME language the user used:
+  * If the user asks in Filipino/Tagalog or Taglish, respond in natural, courteous Filipino/Taglish. Use polite conversational markers (such as "po" and "opo") where appropriate.
+  * If the user asks in English, respond in clear, professional English.
+  * If the user mixes English and Tagalog (Taglish), respond in natural Taglish.
+- If the user asks in an unsupported foreign language (e.g. Spanish, French, Japanese, Mandarin, etc.), politely reply in English or Tagalog explaining: "I can only assist with Airship Express hiring inquiries in English and Filipino/Tagalog. Please feel free to ask your questions in either language."
+
+OFFICIAL COMPANY KNOWLEDGE BASE & POLICIES (GROUND TRUTH):
+These are the verified facts, FAQs, and company policies for Airship Express. If the applicant's question relates to any of these entries (whether asked in English or Filipino/Tagalog):
+- Treat these verified answers as the absolute source of truth.
+- If asked in Filipino/Tagalog or Taglish, accurately translate and explain this verified information naturally and courteously in Filipino/Tagalog.
+- Do NOT consider questions covered in this Knowledge Base as knowledge gaps.
+{$knowledgeBaseContextText}
+{$groundedAnswerInstruction}
 
 RECRUITMENT PIPELINE STAGES AT AIRSHIP EXPRESS:
 1. Applied & AI Screening: Candidate submits resume and basic profile on the Vacancy page.
@@ -622,13 +879,13 @@ CURRENT OPEN POSITIONS AT AIRSHIP EXPRESS:
 CURRENT APPLICANT CONTEXT:
 {$applicantContextText}
 
-TASK: Answer the user's latest message naturally and conversationally, taking the FULL CONVERSATION HISTORY above into account. You have memory of the previous messages — use them to understand follow-up questions, references, and implied context.
+TASK: Answer the user's latest message naturally and conversationally in the user's language (English or Filipino/Tagalog), taking the FULL CONVERSATION HISTORY above into account. You have memory of the previous messages — use them to understand follow-up questions, references, and implied context.
 
 CRITICAL FOLLOW-UP RULES:
-- If the user asks a follow-up like "so do I need to submit first?", "what should I do then?", "how do I do that?", "okay so what's next?", "where do I go?", etc. — interpret it relative to the LAST BOT RESPONSE in the conversation history.
+- If the user asks a follow-up like "so do I need to submit first?", "what should I do then?", "how do I do that?", "okay so what's next?", "paano naman un?", "ano gagawin ko?", etc. — interpret it relative to the LAST BOT RESPONSE in the conversation history.
 - If the last bot response told the user they have no applications yet, then a follow-up asking "do I need to submit first?" should be answered with: Yes, you need to apply first through the Vacancy page. Walk them through what to do next.
 - NEVER give a generic answer if the conversation history provides clear context for what the user is referring to.
-- NEVER say "navigate to our company website" — always say "visit the Vacancy page on our portal" or "go to the Application Status page."
+- NEVER say "navigate to our company website" — always say "visit the Vacancy page on our portal" or "go to the Application Status page" (or Tagalog equivalents: "pumunta sa Vacancy page", "tingnan ang iyong Application Status page").
 
 JSON SCHEMA:
 {
@@ -639,21 +896,23 @@ JSON SCHEMA:
 
 INSTRUCTIONS:
 1. "is_hiring_related":
-   - Set to TRUE if the question is genuinely related to Airship Express, job openings, application status/process, interviews, hiring policies, careers, workplace inquiries, OR is a natural follow-up to a previous hiring-related message.
+   - Set to TRUE if the question is genuinely related to Airship Express, job openings, application status/process, interviews, hiring policies, careers, workplace inquiries, OR is a natural follow-up to a previous hiring-related message, in EITHER English or Filipino/Tagalog.
    - Set to FALSE ONLY if the user question is completely off-topic with zero connection to hiring (e.g. "weather", "math homework", "recipes").
-   - Short follow-ups like "so?" "really?" "okay" "and then?" "what should I do?" should be treated as TRUE if the conversation context is hiring-related.
+   - Short follow-ups like "so?" "really?" "okay" "and then?" "paano?" "ano sunod?" "anong gagawin ko?" should be treated as TRUE if the conversation context is hiring-related.
 
 2. "response":
-   - If "is_hiring_related" is FALSE: Return exactly "I can only assist with Airship Express hiring-related questions. Please ask a hiring or application question."
-   - If "is_hiring_related" is TRUE: Provide a warm, professional, and helpful response. Be conversational and specific. Reference what was said before when relevant.
+   - If "is_hiring_related" is FALSE:
+     * If user asked in English: Return exactly "I can only assist with Airship Express hiring-related questions. Please ask a hiring or application question."
+     * If user asked in Filipino/Tagalog: Return "Matutulungan lamang kita sa mga katanungang may kinalaman sa hiring at aplikasyon sa Airship Express. Maaari kang magtanong tungkol sa trabaho o aplikasyon."
+   - If "is_hiring_related" is TRUE: Provide a warm, professional, and helpful response matching the user's language (English or Filipino/Tagalog). Be conversational and specific. Reference what was said before when relevant.
    - FORMATTING RULES:
      * Do NOT use hashtags or markdown headers (#, ##). Use clean bullet points (•) or standard numbers.
      * Do NOT say "navigate to our company website" — say "visit the Vacancy page" or "go to your Application Status page".
      * Keep responses concise but complete. Never leave a follow-up question unanswered.
 
 3. "is_knowledge_gap":
-   - Set to TRUE only if the question is hiring-related BUT requires specific internal HR policy details, exact salary amounts, or internal admin decisions.
-   - Set to FALSE for general guidance, application process questions, or anything answerable from the context above.
+   - Set to TRUE only if the question is hiring-related BUT requires specific internal HR policy details, exact salary amounts, or internal admin decisions that are NOT mentioned anywhere in the Recruitment Pipeline, Current Open Positions, or the Official Company Knowledge Base above.
+   - If the answer can be determined or inferred from the Knowledge Base, Open Positions, or Applicant Context, set to FALSE!
 
 User's latest message: "{$rawMessage}"
 
@@ -695,7 +954,11 @@ EOT;
         'parts' => [['text' => $rawMessage]]
     ];
 
-    $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=" . $geminiApiKey; //My gemini api model
+    $apiResponse = null;
+    $curlError   = '';
+
+    $candidateModels = defined('GEMINI_MODELS') ? GEMINI_MODELS : ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+    $candidateKeys   = defined('GEMINI_API_KEYS') && !empty(GEMINI_API_KEYS) ? GEMINI_API_KEYS : [$geminiApiKey];
 
     $postData = [
         "contents"        => $conversationContents,
@@ -703,18 +966,31 @@ EOT;
             "responseMimeType" => "application/json"
         ]
     ];
+    $jsonPayload = json_encode($postData);
 
-    $ch = curl_init($geminiUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    foreach ($candidateKeys as $k) {
+        if (empty($k)) continue;
+        foreach ($candidateModels as $m) {
+            $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$m}:generateContent?key=" . $k;
+            $ch = curl_init($geminiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-    $apiResponse = curl_exec($ch);
-    $curlError   = curl_error($ch);
-    curl_close($ch);
+            $res = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $err = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode === 200 && !empty($res) && empty($err)) {
+                $apiResponse = $res;
+                break 2;
+            }
+        }
+    }
 
     if ($apiResponse && empty($curlError)) {
         $resDecoded = json_decode($apiResponse, true);
@@ -779,8 +1055,19 @@ EOT;
     }
 }
 
+// If Gemini fails/unreachable but we matched an official KB answer, deliver it directly
+if (!empty($kbGroundedAnswer)) {
+    if ($validUserId && !$isAdminTest) {
+        saveChatHistory($pdo, $validUserId, $rawMessage, $kbGroundedAnswer);
+    }
+    echo json_encode(['status' => 'match', 'response' => $kbGroundedAnswer]);
+    exit;
+}
+
 // ── Fallback if Gemini is unconfigured or unavailable ────────────────────────
-$fallbackText = "I don't have the exact predefined answer to that right now. I've logged your question for our HR team to review and update the knowledge base soon!";
+$fallbackText = isTagalogQuery($rawMessage)
+    ? "Wala pa akong eksaktong sagot para diyan sa ngayon. Naitala ko na ang iyong katanungan upang masuri ng aming HR team at ma-update ang knowledge base sa lalong madaling panahon!"
+    : "I don't have the exact predefined answer to that right now. I've logged your question for our HR team to review and update the knowledge base soon!";
 
 if (!$isAdminTest) {
     try {

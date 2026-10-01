@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import logoImg from '../../assets/images/Logo Airship Express.png';
 import './ApplicantNavbar.css';
@@ -16,6 +17,7 @@ import './ApplicantNavbar.css';
  *   setShowProfileMenu    - setter (optional)
  *   handleNotificationClick - (notif) => void (optional)
  *   handleClearReadNotifications - () => void (optional)
+ *   handleMarkAllAsRead   - () => void (optional)
  *   handleLogout          - () => void (optional)
  *   notifRef              - ref for notification dropdown (optional)
  *   dropdownRef           - ref for profile dropdown wrapper (optional)
@@ -30,22 +32,63 @@ const ApplicantNavbar = ({
   setShowProfileMenu = () => {},
   handleNotificationClick = () => {},
   handleClearReadNotifications = () => {},
+  handleMarkAllAsRead = () => {},
   handleLogout = () => {},
   notifRef,
   dropdownRef,
 }) => {
   const navigate = useNavigate();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.is_read).length;
+
+  const navLinksRef = useRef({});
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  useEffect(() => {
+    const updateIndicator = () => {
+      const currentEl = navLinksRef.current[activePage];
+      if (currentEl) {
+        setIndicatorStyle({
+          left: currentEl.offsetLeft,
+          width: currentEl.offsetWidth,
+          opacity: 1,
+        });
+      } else {
+        setIndicatorStyle(prev => ({ ...prev, opacity: 0 }));
+      }
+    };
+
+    updateIndicator();
+    const handleResize = () => {
+      updateIndicator();
+      if (window.innerWidth > 768) {
+        setShowMobileMenu(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activePage]);
 
   const handleNav = (path) => {
     setShowMobileMenu(false);
     navigate(path);
   };
 
+  // Resolve active user: use prop if valid, fallback synchronously to localStorage to prevent guest flash on fast page navigation
+  const activeUser = user !== undefined && user !== null ? user : (() => {
+    try {
+      const saved = localStorage.getItem('hiring_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+
   const getHomePath = () => {
-    if (!user) return '/applicant-dashboard';
-    return user.is_admin > 0 ? '/admin-dashboard' : '/applicant-dashboard';
+    if (!activeUser) return '/';
+    return activeUser.is_admin > 0 ? '/admin-dashboard' : '/';
   };
 
   return (
@@ -59,11 +102,12 @@ const ApplicantNavbar = ({
         </div>
       </div>
 
-      {/* Center Nav links */}
-      <nav>
+      {/* Center Nav links with Animated Sliding Underline */}
+      <nav className="dashboard-navbar-nav-wrapper">
         <ul className="dashboard-navbar-nav">
           <li>
             <span
+              ref={el => { navLinksRef.current['home'] = el; }}
               className={`nav-link-item ${activePage === 'home' ? 'active' : ''}`}
               onClick={() => handleNav(getHomePath())}
             >
@@ -72,6 +116,7 @@ const ApplicantNavbar = ({
           </li>
           <li>
             <span
+              ref={el => { navLinksRef.current['vacancy'] = el; }}
               className={`nav-link-item ${activePage === 'vacancy' ? 'active' : ''}`}
               onClick={() => handleNav('/vacancy')}
             >
@@ -80,21 +125,45 @@ const ApplicantNavbar = ({
           </li>
           <li>
             <span
+              ref={el => { navLinksRef.current['about'] = el; }}
               className={`nav-link-item ${activePage === 'about' ? 'active' : ''}`}
               onClick={() => handleNav('/about')}
             >
               About
             </span>
           </li>
+          <li>
+            <span
+              ref={el => { navLinksRef.current['status'] = el; }}
+              className={`nav-link-item ${activePage === 'status' ? 'active' : ''}`}
+              onClick={() => {
+                if (activeUser) {
+                  handleNav('/application-status');
+                } else {
+                  setShowGuestModal(true);
+                }
+              }}
+            >
+              Application Status
+            </span>
+          </li>
         </ul>
+        <span
+          className="nav-sliding-indicator"
+          style={{
+            transform: `translateX(${indicatorStyle.left}px)`,
+            width: `${indicatorStyle.width}px`,
+            opacity: indicatorStyle.opacity,
+          }}
+        />
       </nav>
 
       {/* Right side: notifications + profile or sign in + mobile burger */}
       <div className="dashboard-navbar-right" ref={dropdownRef}>
-        {user ? (
+        {activeUser ? (
           <>
             {/* Notification Bell */}
-            <div style={{ position: 'relative' }} ref={notifRef}>
+            <div className="navbar-notif-wrapper" ref={notifRef}>
               <button
                 className="notification-bell-btn"
                 aria-label="Notifications"
@@ -104,11 +173,7 @@ const ApplicantNavbar = ({
                   setShowMobileMenu(false);
                 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                </svg>
+                <i className="bx bx-bell nav-notif-bell-icon" />
                 {unreadCount > 0 && (
                   <span className="notification-badge-count">
                     {unreadCount}
@@ -118,26 +183,34 @@ const ApplicantNavbar = ({
 
               {showNotifications && (
                 <div className="navbar-notifications-menu">
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: '700', color: '#1e293b', fontSize: '13.5px', fontFamily: 'Montserrat, sans-serif' }}>Notifications</span>
+                  <div className="navbar-notif-header">
+                    <span className="navbar-notif-title">Notifications</span>
+                    {notifications.some(n => !n.is_read) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (handleMarkAllAsRead) handleMarkAllAsRead();
+                        }}
+                        className="navbar-notif-action-btn read-all"
+                      >
+                        Read All
+                      </button>
+                    )}
                     {notifications.some(n => n.is_read) && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           if (handleClearReadNotifications) handleClearReadNotifications();
                         }}
-                        style={{
-                          background: 'none', border: 'none', color: '#e6007e', fontSize: '12px',
-                          fontWeight: '700', cursor: 'pointer', fontFamily: 'Inter, sans-serif'
-                        }}
+                        className="navbar-notif-action-btn clear"
                       >
                         Clear Reviewed
                       </button>
                     )}
                   </div>
-                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                  <div className="navbar-notif-list">
                     {notifications.length === 0 ? (
-                      <div style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                      <div className="navbar-notif-empty">
                         No notifications
                       </div>
                     ) : (
@@ -145,19 +218,18 @@ const ApplicantNavbar = ({
                         <div
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif)}
-                          style={{
-                            padding: '12px 16px', borderBottom: '1px solid #f1f5f9',
-                            cursor: 'pointer', background: notif.is_read ? 'white' : '#f0fdf4',
-                            transition: 'background-color 0.15s ease'
-                          }}
+                          className={`navbar-notif-item ${!notif.is_read ? 'unread' : ''}`}
+                          title="Click to view application status"
                         >
-                          <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#0f172a', marginBottom: '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span>{notif.title}</span>
-                            {!notif.is_read && (
-                              <span style={{ fontSize: '10px', background: '#d1fae5', color: '#047857', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>Active</span>
+                          <div className="navbar-notif-item-header">
+                            <span className="navbar-notif-item-title">{notif.title}</span>
+                            {!notif.is_read ? (
+                              <span className="navbar-notif-active-badge">Active</span>
+                            ) : (
+                              <span className="navbar-notif-arrow">&rarr;</span>
                             )}
                           </div>
-                          <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: '1.4' }}>
+                          <div className="navbar-notif-message">
                             {notif.message}
                           </div>
                         </div>
@@ -165,7 +237,7 @@ const ApplicantNavbar = ({
                     )}
                   </div>
                   {notifications.some(n => !n.is_read) && (
-                    <div style={{ padding: '8px 12px', borderTop: '1px solid #f1f5f9', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>
+                    <div className="navbar-notif-footer">
                       Unreviewed notifications cannot be cleared until reviewed.
                     </div>
                   )}
@@ -174,7 +246,7 @@ const ApplicantNavbar = ({
             </div>
 
             {/* Profile Avatar */}
-            <div style={{ position: 'relative' }}>
+            <div className="navbar-profile-wrapper">
               <button
                 className="avatar-profile-btn"
                 onClick={() => {
@@ -184,52 +256,36 @@ const ApplicantNavbar = ({
                 }}
                 aria-label="User Profile"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                  className="avatar-silhouette-svg">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
+                <i className="bx bx-user nav-avatar-icon" />
               </button>
 
               {/* Profile Dropdown */}
               {showProfileMenu && (
                 <div className="profile-dropdown-menu">
                   <div className="dropdown-user-info">
-                    <span className="dropdown-user-name">{user.first_name || user.User_Fname} {user.last_name || user.User_Lname}</span>
-                    <span className="dropdown-user-email">{user.email || user.User_Email}</span>
+                    <span className="dropdown-user-name">
+                      {activeUser.first_name || activeUser.User_Fname} {(activeUser.middle_initial || activeUser.User_MInitial) ? `${activeUser.middle_initial || activeUser.User_MInitial}. ` : ''}{activeUser.last_name || activeUser.User_Lname}
+                    </span>
+                    <span className="dropdown-user-email">{activeUser.email || activeUser.User_Email}</span>
                   </div>
-                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-divider" />
 
-                  {/* Application Status */}
+                  {/* Settings */}
                   <button
-                    className="dropdown-logout-btn"
-                    style={{ color: '#ffffff', fontWeight: '600' }}
+                    className="dropdown-logout-btn dropdown-settings-btn"
                     onClick={() => {
                       setShowProfileMenu(false);
-                      handleNav('/application-status');
+                      handleNav('/settings');
                     }}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    Application Status
+                    <i className="bx bx-cog dropdown-menu-icon" />
+                    Settings
                   </button>
-                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-divider" />
 
                   {/* Sign Out */}
                   <button onClick={() => { setShowProfileMenu(false); handleLogout(); }} className="dropdown-logout-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                      <polyline points="16 17 21 12 16 7"></polyline>
-                      <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
+                    <i className="bx bx-log-out dropdown-menu-icon" />
                     Sign Out
                   </button>
                 </div>
@@ -237,9 +293,14 @@ const ApplicantNavbar = ({
             </div>
           </>
         ) : (
-          <button onClick={() => handleNav('/login')} className="nav-signin-btn">
-            Sign In
-          </button>
+          <div className="nav-auth-buttons">
+            <button onClick={() => handleNav('/login')} className="nav-login-btn">
+              Log In
+            </button>
+            <button onClick={() => handleNav('/register')} className="nav-signup-btn">
+              Sign Up
+            </button>
+          </div>
         )}
 
         {/* Mobile Burger Menu Button */}
@@ -252,14 +313,7 @@ const ApplicantNavbar = ({
           }}
           aria-label="Toggle Navigation Menu"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-            fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            {showMobileMenu ? (
-              <path d="M18 6L6 18M6 6l12 12" />
-            ) : (
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
+          <i className={`mobile-burger-icon bx ${showMobileMenu ? 'bx-x' : 'bx-menu'}`} />
         </button>
       </div>
 
@@ -284,16 +338,63 @@ const ApplicantNavbar = ({
           >
             About
           </div>
-          {!user && (
-            <div
-              className="mobile-nav-item"
-              onClick={() => handleNav('/login')}
-              style={{ color: '#e6007e', fontWeight: '700' }}
-            >
-              Sign In
-            </div>
-          )}
+          <div
+            className={`mobile-nav-item ${activePage === 'status' ? 'active' : ''}`}
+            onClick={() => {
+              if (activeUser) {
+                handleNav('/application-status');
+              } else {
+                setShowMobileMenu(false);
+                setShowGuestModal(true);
+              }
+            }}
+          >
+            Application Status
+          </div>
         </div>
+      )}
+
+      {/* Guest Sign In Required Modal */}
+      {showGuestModal && ReactDOM.createPortal(
+        <div className="guest-modal-overlay" onClick={() => setShowGuestModal(false)}>
+          <div className="guest-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="guest-modal-icon-wrap">
+              <i className="bx bx-lock-alt" />
+            </div>
+            <h3 className="guest-modal-title">Sign In Required</h3>
+            <p className="guest-modal-desc">
+              Please log in or create an account to view and track your job application status, interview schedules, and updates.
+            </p>
+            <div className="guest-modal-actions">
+              <button
+                className="guest-modal-btn guest-modal-btn-primary"
+                onClick={() => {
+                  setShowGuestModal(false);
+                  navigate('/login');
+                }}
+              >
+                Log In
+              </button>
+              <button
+                className="guest-modal-btn guest-modal-btn-secondary"
+                onClick={() => {
+                  setShowGuestModal(false);
+                  navigate('/register');
+                }}
+              >
+                Create Account
+              </button>
+            </div>
+            <button
+              className="guest-modal-close-btn"
+              onClick={() => setShowGuestModal(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+          </div>
+        </div>,
+        document.body
       )}
     </header>
   );

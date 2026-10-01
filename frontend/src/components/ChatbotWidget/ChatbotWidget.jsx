@@ -2,29 +2,62 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import './ChatbotWidget.css';
 import assistantVideo from '../../assets/images/AI COMPANION.mp4';
+import ChatbotLoadingIndicator from './ChatbotLoadingIndicator';
 
-const API_QUERY = 'http://localhost/Hiring%20System/backend/chatbot/query.php';
-const API_GET_HISTORY = 'http://localhost/Hiring%20System/backend/chatbot/get_history.php';
-const API_CLEAR_HISTORY = 'http://localhost/Hiring%20System/backend/chatbot/clear_history.php';
+import { API_BASE_URL } from '../../utils/apiConfig';
+const API_QUERY = `${API_BASE_URL}/chatbot/query.php`;
+const API_GET_HISTORY = `${API_BASE_URL}/chatbot/get_history.php`;
+const API_CLEAR_HISTORY = `${API_BASE_URL}/chatbot/clear_history.php`;
 
 const DEFAULT_GREETING = {
   id: 'greeting-initial',
   sender: 'bot',
-  text: 'Hello! 👋 Welcome to Airship Express. I am your AI Companion! I can help you with job openings, requirements, the application process, interview schedules, and more. What would you like to ask?',
+  text: 'Hello! 👋 Welcome to Airship Express. I am your AI Companion! I can help you with job openings, requirements, the application process, interview schedules, and more. You can ask me in English or Filipino/Tagalog. What would you like to ask?',
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 };
 
 const ChatbotWidget = () => {
-  const [isOpen, setIsOpen]                 = useState(false);
+  const [isOpen, setIsOpen] = useState(() => {
+    return sessionStorage.getItem('airship_chatbot_open') === 'true';
+  });
   const [showPopBubble, setShowPopBubble]   = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [messages, setMessages]             = useState([DEFAULT_GREETING]);
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('airship_chatbot_messages');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // fallback to default greeting
+    }
+    return [DEFAULT_GREETING];
+  });
   const [inputValue, setInputValue]         = useState('');
   const [isTyping, setIsTyping]             = useState(false);
+  const [user, setUser]                     = useState(null);
   const [userName, setUserName]             = useState('');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
+  // ── Sync messages and isOpen state to sessionStorage for navbar cross-page persistence ────
+  useEffect(() => {
+    try {
+      if (messages && messages.length > 0) {
+        sessionStorage.setItem('airship_chatbot_messages', JSON.stringify(messages));
+      }
+    } catch (e) {
+      // ignore storage quota errors
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    sessionStorage.setItem('airship_chatbot_open', String(isOpen));
+  }, [isOpen]);
 
   // ── Helper to resolve logged-in user ID ─────────────────────────────────────
   const getUserId = () => {
@@ -38,16 +71,47 @@ const ChatbotWidget = () => {
     }
   };
 
-  // ── Parse user name for personalized floating greeting ─────────────────────
+  // ── Parse user and name for personalized floating greeting ───────────────────
   useEffect(() => {
-    const savedUser = localStorage.getItem('hiring_user');
-    if (savedUser) {
+    const checkAuthUser = () => {
+      const savedUser = localStorage.getItem('hiring_user');
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          setUser(u);
+          const name = u.User_Fname || u.first_name || u.User_Name || u.name || '';
+          if (name) setUserName(name.trim());
+        } catch { 
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+        setUserName('');
+      }
+    };
+
+    checkAuthUser();
+
+    const handleAuthLogout = () => {
+      setUser(null);
+      setUserName('');
       try {
-        const u = JSON.parse(savedUser);
-        const name = u.User_Fname || u.first_name || u.User_Name || u.name || '';
-        if (name) setUserName(name.trim());
-      } catch (e) { /* ignore */ }
-    }
+        sessionStorage.removeItem('airship_chatbot_messages');
+        sessionStorage.removeItem('airship_chatbot_open');
+      } catch (e) {}
+      setMessages([DEFAULT_GREETING]);
+      setIsOpen(false);
+      setShowPopBubble(false);
+      setInputValue('');
+    };
+
+    window.addEventListener('auth_logout', handleAuthLogout);
+    window.addEventListener('storage', checkAuthUser);
+
+    return () => {
+      window.removeEventListener('auth_logout', handleAuthLogout);
+      window.removeEventListener('storage', checkAuthUser);
+    };
   }, []);
 
   // ── Show floating speech bubble pop-up ONLY ONCE when user just logged in ────
@@ -67,6 +131,12 @@ const ChatbotWidget = () => {
     const userId = getUserId();
     if (!userId) return;
 
+    // If this browser session already has active cached messages, preserve them
+    const hasExistingSession = sessionStorage.getItem('airship_chatbot_messages');
+    if (hasExistingSession) {
+      return;
+    }
+
     const loadChatHistory = async () => {
       try {
         const res  = await fetch(`${API_GET_HISTORY}?applicant_id=${userId}`);
@@ -79,6 +149,7 @@ const ChatbotWidget = () => {
             time:   new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           }));
           setMessages(formatted);
+          sessionStorage.setItem('airship_chatbot_messages', JSON.stringify(formatted));
         } else {
           setMessages([DEFAULT_GREETING]);
         }
@@ -149,7 +220,7 @@ const ChatbotWidget = () => {
       const errorMessage = {
         id:     Date.now() + 1,
         sender: 'bot',
-        text:   "I'm having trouble connecting right now. Please try again shortly.",
+        text:   "I am currently unable to process your request. Please wait a moment and try sending your message again. Thank you for your patience.",
         time:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -180,6 +251,10 @@ const ChatbotWidget = () => {
       }
     }
 
+    try {
+      sessionStorage.removeItem('airship_chatbot_messages');
+    } catch (e) {}
+
     setMessages([DEFAULT_GREETING]);
   };
 
@@ -205,10 +280,7 @@ const ChatbotWidget = () => {
         aria-label="Toggle chat widget"
       >
         {isOpen ? (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="chatbot-icon-svg close-icon">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          <i className="bx bx-x chatbot-close-icon" />
         ) : (
           <video
             src={assistantVideo}
@@ -233,7 +305,7 @@ const ChatbotWidget = () => {
                 playsInline
                 className="chatbot-avatar-video"
               />
-              <span className="chatbot-status-indicator"></span>
+              <span className="chatbot-status-indicator" />
             </div>
             <div>
               <h4 className="chatbot-title">AI Companion</h4>
@@ -247,59 +319,56 @@ const ChatbotWidget = () => {
           {messages.map(msg => (
             <div key={msg.id} className={`chat-message-row ${msg.sender}`}>
               <div className="chat-message-bubble">
-                {msg.sender === 'bot' ? (
-                  <p className="chat-message-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
-                ) : (
-                  <p className="chat-message-text">{msg.text}</p>
-                )}
+                <p className="chat-message-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
                 <span className="chat-message-time">{msg.time}</span>
               </div>
             </div>
           ))}
-          {isTyping && (
-            <div className="chat-message-row bot typing">
-              <div className="chat-message-bubble typing-bubble">
-                <div className="typing-dots">
-                  <span></span><span></span><span></span>
-                </div>
-              </div>
-            </div>
-          )}
+          {isTyping && <ChatbotLoadingIndicator />}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Form: [Trash Icon] | [Text Input Area] | [Send Button] */}
-        <form onSubmit={handleSend} className="chatbot-input-form">
-          <button
-            type="button"
-            className="chatbot-clear-btn"
-            onClick={handleClearHistory}
-            title="Clear Conversation History"
-            aria-label="Clear Conversation History"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="clear-btn-svg">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              <line x1="10" y1="11" x2="10" y2="17"></line>
-              <line x1="14" y1="11" x2="14" y2="17"></line>
-            </svg>
-          </button>
-          <input
-            type="text"
-            className="chatbot-input"
-            placeholder="Ask about jobs, status, interviews..."
-            value={inputValue}
-            onChange={e => setInputValue(e.target.value)}
-            disabled={isTyping}
-            maxLength={300}
-          />
-          <button type="submit" className="chatbot-send-btn" disabled={!inputValue.trim() || isTyping}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="send-btn-svg">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </form>
+        {/* Input Area: Hard Gate for Guest, Active Form for Logged-In */}
+        {!user ? (
+          <div className="chatbot-gate-container">
+            <div className="chatbot-gate-content">
+              <i className="bx bx-lock-alt chatbot-gate-icon" />
+              <span className="chatbot-gate-text">Sign in to chat with our AI Companion.</span>
+            </div>
+            <div className="chatbot-gate-actions">
+              <a href="/login" className="chatbot-gate-btn chatbot-gate-login">
+                Log In
+              </a>
+              <a href="/register" className="chatbot-gate-btn chatbot-gate-signup">
+                Sign Up
+              </a>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSend} className="chatbot-input-form">
+            <button
+              type="button"
+              className="chatbot-clear-btn"
+              onClick={handleClearHistory}
+              title="Clear Conversation History"
+              aria-label="Clear Conversation History"
+            >
+              <i className="bx bx-trash chatbot-clear-icon" />
+            </button>
+            <input
+              type="text"
+              className="chatbot-input"
+              placeholder="Ask about jobs, status, interviews..."
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              disabled={isTyping}
+              maxLength={300}
+            />
+            <button type="submit" className="chatbot-send-btn" disabled={!inputValue.trim() || isTyping}>
+              <i className="bx bxs-send chatbot-send-icon" />
+            </button>
+          </form>
+        )}
       </div>
 
       {/* 3. Centered Delete Confirmation Modal */}
@@ -307,12 +376,7 @@ const ChatbotWidget = () => {
         <div className="chatbot-confirm-overlay" onClick={() => setShowConfirmModal(false)}>
           <div className="chatbot-confirm-modal" onClick={e => e.stopPropagation()}>
             <div className="confirm-modal-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                <line x1="10" y1="11" x2="10" y2="17"></line>
-                <line x1="14" y1="11" x2="14" y2="17"></line>
-              </svg>
+              <i className="bx bx-trash confirm-modal-trash-icon" />
             </div>
             <h3 className="confirm-modal-title">Clear Chat History?</h3>
             <p className="confirm-modal-desc">

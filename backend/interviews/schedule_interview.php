@@ -18,7 +18,7 @@ $applicationId = isset($data['application_id']) ? intval($data['application_id']
 $userId = isset($data['user_id']) ? intval($data['user_id']) : 0;
 $slot_id = isset($data['slot_id']) ? intval($data['slot_id']) : 0;
 $location = isset($data['location']) ? trim($data['location']) : 'Main Office';
-$requirements = isset($data['requirements']) ? $data['requirements'] : [];
+$requirements = isset($data['requirements']) && !empty($data['requirements']) ? $data['requirements'] : ["Printed Resume"];
 
 if ($applicationId <= 0 || $userId <= 0 || $slot_id <= 0) {
     http_response_code(400);
@@ -63,7 +63,7 @@ try {
     // 4. Create notification for applicant
     $title = "Interview Scheduled";
     $message = "Your interview is set for " . date("F j, Y", strtotime($date)) . " at " . date("g:i A", strtotime($time)) . ". Please review the requirements.";
-    $link = "/applicant-dashboard";
+    $link = "/application-status";
 
     $insertNotif = $pdo->prepare("INSERT INTO notifications_tbl (user_id, application_id, title, message, link) VALUES (:user_id, :app_id, :title, :msg, :link)");
     $insertNotif->execute([
@@ -88,17 +88,17 @@ try {
             $mail = new PHPMailer(true);
 
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
+            $mail->Host       = getenv('SMTP_HOST') ?: 'smtp.gmail.com';
             $mail->SMTPAuth   = true;
-            $mail->Username   = 'nathanielferrer691@gmail.com';
-            $mail->Password   = 'enzc ppph jran heso';
+            $mail->Username   = getenv('SMTP_USER') ?: 'nathanielferrer691@gmail.com';
+            $mail->Password   = getenv('SMTP_PASS') ?: 'enzc ppph jran heso';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->Port       = (int)(getenv('SMTP_PORT') ?: 587);
 
             $mail->CharSet    = 'UTF-8';
             $mail->Encoding   = 'base64';
 
-            $mail->setFrom('nathanielferrer691@gmail.com', 'Airship Express Recruitment');
+            $mail->setFrom($mail->Username, 'Airship Express Recruitment');
             $mail->addAddress($toEmail, $emailData['User_Fname']);
 
             $mail->isHTML(true);
@@ -132,9 +132,12 @@ try {
         }
     }
 
+    $candName = trim(($emailData['User_Fname'] ?? '') . ' ' . ($emailData['User_Lname'] ?? ''));
+    $candName = $candName ?: 'Candidate';
     echo json_encode([
-        "status" => "success",
-        "message" => "Interview scheduled successfully and applicant notified."
+        "status"         => "success",
+        "message"        => "Interview Scheduled. {$candName} moved to Final Interview.",
+        "candidate_name" => $candName
     ]);
 
 } catch (Exception $e) {

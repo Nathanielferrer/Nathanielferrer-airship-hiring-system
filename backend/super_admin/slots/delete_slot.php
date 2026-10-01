@@ -1,6 +1,10 @@
 <?php
 require_once '../../db.php';
+require_once '../../auth/auth_guard.php';
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Admin / Super Admin required ─────────────────────────────
+require_admin();
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -22,7 +26,8 @@ try {
 
     echo json_encode(["status" => "success", "message" => "Slot deleted successfully."]);
 } catch (PDOException $e) {
+    error_log("[Delete Slot Error] " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    echo json_encode(["status" => "error", "message" => "An internal system error occurred while deleting the interview schedule slot."]);
 }
 ?>

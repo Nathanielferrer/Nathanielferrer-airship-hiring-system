@@ -1,0 +1,11 @@
+.env
+.env.*
+!backend/.env.example
+*.log
+*email_log.txt
+uploads/*
+!uploads/templates/
+uploads/templates/*
+!uploads/templates/template_info.json
+private/*
+composer.phar

@@ -15,6 +15,8 @@ try {
     $count = (int)$stmt->fetchColumn();
     echo json_encode(["status" => "success", "count" => $count, "remaining" => 99]);
 } catch (PDOException $e) {
-    echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+    error_log("[Get Slot Count Error] " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "An internal system error occurred while retrieving slot counts."]);
 }
 ?>

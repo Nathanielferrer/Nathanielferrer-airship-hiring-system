@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import ConfirmModal from '../../../../components/ConfirmModal/ConfirmModal';
+import { TableSkeleton, DatabaseErrorState } from '../../../../components/Loading';
 
-const API = 'http://localhost/Hiring%20System/backend/chatbot';
+const API = `${API_BASE_URL}/chatbot`;
 
 // ── Inline modal backdrop (Click outside disabled to prevent accidental data loss) ──
 const ModalBackdrop = ({ children }) => ReactDOM.createPortal(
@@ -21,6 +22,9 @@ const ModalBackdrop = ({ children }) => ReactDOM.createPortal(
 );
 
 // ── Shared label style ─────────────────────────────────────────────────────────
+import { useToast } from '../../../../components/Toast/Toast';
+
+import { API_BASE_URL } from '../../../../utils/apiConfig';
 const labelStyle = { display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' };
 const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', color: '#0f172a', background: '#ffffff', outline: 'none', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' };
 const textareaStyle = { ...inputStyle, resize: 'vertical', minHeight: '110px', lineHeight: '1.5' };
@@ -28,8 +32,17 @@ const primaryBtn = { background: '#e6007e', color: '#fff', border: 'none', borde
 const ghostBtn   = { background: '#ffffff', color: '#64748b', border: '1.5px solid #cbd5e1', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', fontSize: '13.5px', cursor: 'pointer' };
 
 // ─────────────────────────────────────────────────────────────────────────────
-const ChatbotKbTab = () => {
+const ChatbotKbTab = ({ showToast: propShowToast }) => {
+  const { showToast: localShowToast, ToastPortal } = useToast();
+  const triggerToast = propShowToast || localShowToast;
+
   const [activeSubTab, setActiveSubTab] = useState('kb_entries');
+
+  // Pagination state for both tabs
+  const KB_PAGE_SIZE = 8;
+  const QUEUE_PAGE_SIZE = 8;
+  const [kbPage, setKbPage] = useState(1);
+  const [queuePage, setQueuePage] = useState(1);
 
   // Get admin identity for audit logging
   const adminUser = (() => {
@@ -43,11 +56,13 @@ const ChatbotKbTab = () => {
   // KB Entries
   const [kbEntries,   setKbEntries]   = useState([]);
   const [loadingKb,   setLoadingKb]   = useState(true);
+  const [kbError,     setKbError]     = useState(null);
   const [kbSearch,    setKbSearch]    = useState('');
 
   // Review Queue
   const [queueEntries, setQueueEntries] = useState([]);
   const [loadingQueue, setLoadingQueue] = useState(true);
+  const [queueError,   setQueueError]   = useState(null);
 
   // KB Entry Modal (add / edit)
   const [showKbModal,   setShowKbModal]   = useState(false);
@@ -56,7 +71,12 @@ const ChatbotKbTab = () => {
   const [formErrors,    setFormErrors]    = useState({});
   const [savingKb,      setSavingKb]      = useState(false);
   const [deletingId,    setDeletingId]    = useState(null);
-  const [toast,         setToast]         = useState(null);
+
+  const setToast = (t) => {
+    if (!t) return;
+    const type = t.type === 'error' ? 'danger' : (t.type || 'success');
+    triggerToast(t.message, type);
+  };
 
   // Confirmation Modals (Replacing browser popups)
   const [kbToDelete,    setKbToDelete]    = useState(null);
@@ -79,22 +99,42 @@ const ChatbotKbTab = () => {
 
   const fetchKbEntries = async () => {
     setLoadingKb(true);
+    setKbError(null);
     try {
       const res  = await fetch(`${API}/get_knowledge_base.php`);
+      if (!res.ok) throw new Error(`Server status ${res.status}`);
       const data = await res.json();
-      if (data.status === 'success') setKbEntries(data.entries);
-    } catch { /* ignore */ }
-    finally { setLoadingKb(false); }
+      if (data.status === 'success') {
+        setKbEntries(data.entries || []);
+      } else {
+        throw new Error(data.message || 'Failed to load knowledge base entries.');
+      }
+    } catch (e) {
+      console.error(e);
+      setKbError(e.message || 'Database connection error while retrieving knowledge base.');
+    } finally {
+      setLoadingKb(false);
+    }
   };
 
   const fetchQueueEntries = async () => {
     setLoadingQueue(true);
+    setQueueError(null);
     try {
       const res  = await fetch(`${API}/get_unanswered.php`);
+      if (!res.ok) throw new Error(`Server status ${res.status}`);
       const data = await res.json();
-      if (data.status === 'success') setQueueEntries(data.entries);
-    } catch { /* ignore */ }
-    finally { setLoadingQueue(false); }
+      if (data.status === 'success') {
+        setQueueEntries(data.entries || []);
+      } else {
+        throw new Error(data.message || 'Failed to load unanswered queries.');
+      }
+    } catch (e) {
+      console.error(e);
+      setQueueError(e.message || 'Database connection error while retrieving unanswered queries.');
+    } finally {
+      setLoadingQueue(false);
+    }
   };
 
   // ── Form Validation ──────────────────────────────────────────────────────────
@@ -197,8 +237,30 @@ const ChatbotKbTab = () => {
 
   const handleResolveQuery = async () => {
     if (!mapTarget) return;
-    if (mapMode === 'existing' && !selectedKbId) return;
-    if (mapMode === 'new' && (!newForm.primary_question.trim() || !newForm.predefined_answer.trim())) return;
+    if (mapMode === 'existing') {
+      if (!selectedKbId) {
+        setToast({ type: 'error', message: 'Please select a saved response to map this query.' });
+        setTimeout(() => setToast(null), 3500);
+        return;
+      }
+    }
+    if (mapMode === 'new') {
+      if (!newForm.primary_question.trim()) {
+        setToast({ type: 'error', message: 'Primary question is required.' });
+        setTimeout(() => setToast(null), 3500);
+        return;
+      }
+      if (!newForm.predefined_answer.trim()) {
+        setToast({ type: 'error', message: 'Predefined answer is required.' });
+        setTimeout(() => setToast(null), 3500);
+        return;
+      }
+      if (!newForm.keyword_tags.trim()) {
+        setToast({ type: 'error', message: 'Keyword tags are required for the chatbot to match this question.' });
+        setTimeout(() => setToast(null), 3500);
+        return;
+      }
+    }
     setSavingMap(true);
     try {
       const payload = mapMode === 'existing'
@@ -216,8 +278,14 @@ const ChatbotKbTab = () => {
         setTimeout(() => setToast(null), 4000);
         fetchQueueEntries();
         fetchKbEntries();
+      } else {
+        setToast({ type: 'error', message: data.message || 'Failed to resolve query.' });
+        setTimeout(() => setToast(null), 4000);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setToast({ type: 'error', message: 'Network error while resolving query.' });
+      setTimeout(() => setToast(null), 4000);
+    }
     finally { setSavingMap(false); }
   };
 
@@ -247,30 +315,27 @@ const ChatbotKbTab = () => {
     }
   };
 
-  // ── Filtered KB entries ──────────────────────────────────────────────────────
+  // ── Filtered & paginated KB entries ────────────────────────────────────────
   const filteredKb = kbEntries.filter(e =>
     !kbSearch ||
     e.primary_question.toLowerCase().includes(kbSearch.toLowerCase()) ||
     e.keyword_tags.toLowerCase().includes(kbSearch.toLowerCase())
   );
+  const kbTotalPages = Math.max(1, Math.ceil(filteredKb.length / KB_PAGE_SIZE));
+  const kbSafePage = Math.min(kbPage, kbTotalPages);
+  const paginatedKb = filteredKb.slice((kbSafePage - 1) * KB_PAGE_SIZE, kbSafePage * KB_PAGE_SIZE);
+
+  // Reset page when search changes
+  React.useEffect(() => { setKbPage(1); }, [kbSearch]);
+
+  // ── Paginated queue entries ──────────────────────────────────────────────────
+  const queueTotalPages = Math.max(1, Math.ceil(queueEntries.length / QUEUE_PAGE_SIZE));
+  const queueSafePage = Math.min(queuePage, queueTotalPages);
+  const paginatedQueue = queueEntries.slice((queueSafePage - 1) * QUEUE_PAGE_SIZE, queueSafePage * QUEUE_PAGE_SIZE);
 
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div style={{ height: 'calc(100vh - 64px)', boxSizing: 'border-box', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden' }}>
-
-      {/* Toast Notification Banner */}
-      {toast && (
-        <div style={{
-          padding: '12px 20px', background: toast.type === 'success' ? '#f0fdf4' : '#fef2f2',
-          border: `1px solid ${toast.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
-          color: toast.type === 'success' ? '#047857' : '#991b1b',
-          borderRadius: '8px', fontSize: '13.5px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-        }}>
-          <i className={`bx ${toast.type === 'success' ? 'bx-check-circle' : 'bx-error-circle'}`} style={{ fontSize: '20px' }}></i>
-          {toast.message}
-        </div>
-      )}
 
       {/* ── Page header ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
@@ -329,7 +394,17 @@ const ChatbotKbTab = () => {
             {/* Scrollable Table Area */}
             <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               {loadingKb ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading responses…</div>
+                <TableSkeleton
+                  columns={['Question', 'Predefined Answer', 'Keyword Tags', 'Actions']}
+                  columnTypes={['text', 'text', 'status', 'actions']}
+                  rows={4}
+                />
+              ) : kbError ? (
+                <DatabaseErrorState
+                  title="Unable to Load Knowledge Base"
+                  message={kbError}
+                  onRetry={fetchKbEntries}
+                />
               ) : filteredKb.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                   {kbSearch ? 'No responses match your search.' : 'No saved responses yet. Add your first response!'}
@@ -344,7 +419,7 @@ const ChatbotKbTab = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredKb.map((entry) => (
+                    {paginatedKb.map((entry) => (
                       <tr key={entry.id} style={{ borderBottom: '1px solid #e2e8f0', background: '#ffffff' }}>
                         <td style={{ padding: '14px 18px', color: '#1e293b', fontWeight: '600', maxWidth: '280px', wordBreak: 'break-word' }}>{entry.primary_question}</td>
                         <td style={{ padding: '14px 18px', color: '#475569', maxWidth: '380px', wordBreak: 'break-word', lineHeight: '1.5' }}>{entry.predefined_answer}</td>
@@ -368,6 +443,83 @@ const ChatbotKbTab = () => {
                   </tbody>
                 </table>
               )}
+              {/* KB Pagination */}
+              {filteredKb.length > 0 && (
+                <div style={{
+                  padding: '14px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  flexShrink: 0
+                }}>
+                  <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>
+                    Showing <strong>{(kbSafePage - 1) * KB_PAGE_SIZE + 1}</strong> to <strong>{Math.min(kbSafePage * KB_PAGE_SIZE, filteredKb.length)}</strong> of <strong>{filteredKb.length}</strong> saved response{filteredKb.length !== 1 ? 's' : ''}
+                  </span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      type="button"
+                      disabled={kbSafePage <= 1}
+                      onClick={() => setKbPage(p => Math.max(1, p - 1))}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        background: kbSafePage <= 1 ? '#f8fafc' : '#ffffff',
+                        color: kbSafePage <= 1 ? '#94a3b8' : '#334155',
+                        cursor: kbSafePage <= 1 ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      &larr; Previous
+                    </button>
+
+                    {Array.from({ length: kbTotalPages }, (_, idx) => idx + 1).map(p => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setKbPage(p)}
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          border: kbSafePage === p ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+                          background: kbSafePage === p ? '#0f172a' : '#ffffff',
+                          color: kbSafePage === p ? '#ffffff' : '#334155',
+                          fontWeight: kbSafePage === p ? '700' : '500',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      disabled={kbSafePage >= kbTotalPages}
+                      onClick={() => setKbPage(p => Math.min(kbTotalPages, p + 1))}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        background: kbSafePage >= kbTotalPages ? '#f8fafc' : '#ffffff',
+                        color: kbSafePage >= kbTotalPages ? '#94a3b8' : '#334155',
+                        cursor: kbSafePage >= kbTotalPages ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Next &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -383,7 +535,17 @@ const ChatbotKbTab = () => {
             </div>
             <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               {loadingQueue ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading queue…</div>
+                <TableSkeleton
+                  columns={['Date', 'Applicant', 'Question Asked', 'Status', 'Action']}
+                  columnTypes={['date', 'text-with-subtitle', 'text', 'status', 'actions']}
+                  rows={4}
+                />
+              ) : queueError ? (
+                <DatabaseErrorState
+                  title="Unable to Load Unanswered Queue"
+                  message={queueError}
+                  onRetry={fetchQueueEntries}
+                />
               ) : queueEntries.length === 0 ? (
                 <div style={{ padding: '60px', textAlign: 'center' }}>
                   <i className='bx bx-check-double' style={{ fontSize: '48px', color: '#10b981', marginBottom: '12px' }}></i>
@@ -394,13 +556,13 @@ const ChatbotKbTab = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr style={{ background: '#f8fafc' }}>
-                      {['Date', 'Applicant / User', 'Question Asked', 'Status', 'Action'].map(h => (
+                      {['Date', 'Applicant', 'Question Asked', 'Status', 'Action'].map(h => (
                         <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {queueEntries.map((entry) => (
+                    {paginatedQueue.map((entry) => (
                       <tr key={entry.id} style={{ borderBottom: '1px solid #e2e8f0', background: '#ffffff' }}>
                         <td style={{ padding: '14px 18px', color: '#64748b', whiteSpace: 'nowrap' }}>{new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                         <td style={{ padding: '14px 18px', color: '#475569' }}>
@@ -448,6 +610,83 @@ const ChatbotKbTab = () => {
                     ))}
                   </tbody>
                 </table>
+              )}
+              {/* Queue Pagination */}
+              {queueEntries.length > 0 && (
+                <div style={{
+                  padding: '14px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderTop: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  flexShrink: 0
+                }}>
+                  <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500' }}>
+                    Showing <strong>{(queueSafePage - 1) * QUEUE_PAGE_SIZE + 1}</strong> to <strong>{Math.min(queueSafePage * QUEUE_PAGE_SIZE, queueEntries.length)}</strong> of <strong>{queueEntries.length}</strong> unanswered query{queueEntries.length !== 1 ? 'ies' : 'y'}
+                  </span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      type="button"
+                      disabled={queueSafePage <= 1}
+                      onClick={() => setQueuePage(p => Math.max(1, p - 1))}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        background: queueSafePage <= 1 ? '#f8fafc' : '#ffffff',
+                        color: queueSafePage <= 1 ? '#94a3b8' : '#334155',
+                        cursor: queueSafePage <= 1 ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      &larr; Previous
+                    </button>
+
+                    {Array.from({ length: queueTotalPages }, (_, idx) => idx + 1).map(p => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setQueuePage(p)}
+                        style={{
+                          width: '30px',
+                          height: '30px',
+                          borderRadius: '6px',
+                          border: queueSafePage === p ? '1.5px solid #0f172a' : '1px solid #e2e8f0',
+                          background: queueSafePage === p ? '#0f172a' : '#ffffff',
+                          color: queueSafePage === p ? '#ffffff' : '#334155',
+                          fontWeight: queueSafePage === p ? '700' : '500',
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {p}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      disabled={queueSafePage >= queueTotalPages}
+                      onClick={() => setQueuePage(p => Math.min(queueTotalPages, p + 1))}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        background: queueSafePage >= queueTotalPages ? '#f8fafc' : '#ffffff',
+                        color: queueSafePage >= queueTotalPages ? '#94a3b8' : '#334155',
+                        cursor: queueSafePage >= queueTotalPages ? 'not-allowed' : 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '600'
+                      }}
+                    >
+                      Next &rarr;
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -579,16 +818,36 @@ const ChatbotKbTab = () => {
             {mapMode === 'new' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
-                  <label style={labelStyle}>Primary Question</label>
-                  <input value={newForm.primary_question} onChange={e => setNewForm(f => ({ ...f, primary_question: e.target.value }))} placeholder="How to phrase this question" style={inputStyle} />
+                  <label style={labelStyle}>Primary Question *</label>
+                  <input
+                    value={newForm.primary_question}
+                    onChange={e => setNewForm(f => ({ ...f, primary_question: e.target.value }))}
+                    placeholder="How to phrase this question"
+                    style={inputStyle}
+                    required
+                  />
                 </div>
                 <div>
-                  <label style={labelStyle}>Predefined Answer</label>
-                  <textarea value={newForm.predefined_answer} onChange={e => setNewForm(f => ({ ...f, predefined_answer: e.target.value }))} placeholder="Write the answer applicants will receive…" style={textareaStyle} />
+                  <label style={labelStyle}>Predefined Answer *</label>
+                  <textarea
+                    value={newForm.predefined_answer}
+                    onChange={e => setNewForm(f => ({ ...f, predefined_answer: e.target.value }))}
+                    placeholder="Write the answer applicants will receive…"
+                    style={textareaStyle}
+                    required
+                  />
                 </div>
                 <div>
-                  <label style={labelStyle}>Keyword Tags</label>
-                  <input value={newForm.keyword_tags} onChange={e => setNewForm(f => ({ ...f, keyword_tags: e.target.value }))} placeholder="e.g. overtime, extra hours, additional shifts" style={inputStyle} />
+                  <label style={labelStyle}>
+                    Keyword Tags * <span style={{ color: '#e6007e', textTransform: 'none', fontWeight: '500', fontSize: '11px' }}>(required, comma-separated)</span>
+                  </label>
+                  <input
+                    value={newForm.keyword_tags}
+                    onChange={e => setNewForm(f => ({ ...f, keyword_tags: e.target.value }))}
+                    placeholder="e.g. overtime, extra hours, additional shifts"
+                    style={inputStyle}
+                    required
+                  />
                 </div>
               </div>
             )}
@@ -627,6 +886,9 @@ const ChatbotKbTab = () => {
         onConfirm={confirmDeleteQueueEntry}
         onCancel={() => setQueueToDelete(null)}
       />
+
+      {/* Standalone Toast Portal */}
+      {!propShowToast && <ToastPortal />}
 
     </div>
   );

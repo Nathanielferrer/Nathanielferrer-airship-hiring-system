@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { TableSkeleton, DatabaseErrorState } from '../../../../components/Loading';
 
-const API_BASE = 'http://localhost/Hiring%20System/backend';
+import { API_BASE_URL } from '../../../../utils/apiConfig';
 
 const OverviewTab = ({ setActiveTab }) => {
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [recentApps, setRecentApps] = useState([]);
   const [stats, setStats] = useState({
     hiredCount: 0,
@@ -20,10 +22,13 @@ const OverviewTab = ({ setActiveTab }) => {
 
   const fetchDashboardOverviewData = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const [jobsRes, appsRes, agendaRes, kbRes] = await Promise.all([
         fetch(`${API_BASE}/jobs/get_jobs.php`).then(r => r.json()).catch(() => ({})),
-        fetch(`${API_BASE}/applications/get_all_applications.php`).then(r => r.json()).catch(() => ({})),
+        fetch(`${API_BASE}/applications/get_all_applications.php`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}` }
+        }).then(r => r.json()).catch(() => ({})),
         fetch(`${API_BASE}/interviews/get_agenda.php`).then(r => r.json()).catch(() => ({})),
         fetch(`${API_BASE}/chatbot/get_unanswered.php`).then(r => r.json()).catch(() => ({}))
       ]);
@@ -32,6 +37,10 @@ const OverviewTab = ({ setActiveTab }) => {
       const appsList = appsRes.status === 'success' ? (appsRes.applications || []) : [];
       const agendaList = agendaRes.status === 'success' ? (agendaRes.agenda || []) : [];
       const kbList = kbRes.status === 'success' ? (kbRes.entries || []) : [];
+
+      if (!jobsRes.status && !appsRes.status && !agendaRes.status) {
+        throw new Error('Database services unavailable.');
+      }
 
       // Calculate Metrics
       const hiredCount = appsList.filter(a => a.status === 'HIRED' || a.status === 'Hired' || a.status === 'PASSED INTERVIEW').length;
@@ -107,6 +116,7 @@ const OverviewTab = ({ setActiveTab }) => {
       setRecentApps(activeOnly);
     } catch (err) {
       console.error('Failed to load overview data:', err);
+      setFetchError(err.message || 'Database connection error while retrieving overview metrics.');
     } finally {
       setLoading(false);
     }
@@ -126,13 +136,43 @@ const OverviewTab = ({ setActiveTab }) => {
     let statusText = status ? status.toUpperCase() : 'PENDING';
     let label = statusText;
 
-    if (['HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'PASSED INTERVIEW', 'PASSED', 'HIRED / PASSED'].includes(statusText)) {
+    if (['HIRED', 'PASSED INTERVIEW', 'PASSED', 'HIRED / PASSED', 'OFFICIALLY HIRED'].includes(statusText)) {
+      badgeColor = '#065f46';
+      badgeBg = '#d1fae5';
+      badgeBorder = '#a7f3d0';
+      label = 'OFFICIALLY HIRED';
+    } else if (['APPROVED FOR JOB OFFER', 'APPROVED_FOR_JOB_OFFER', 'PRESIDENT APPROVED', 'PRESIDENT_APPROVED', 'READY FOR OFFER', 'READY_FOR_OFFER'].includes(statusText)) {
       badgeColor = '#047857';
       badgeBg = '#d1fae5';
       badgeBorder = '#a7f3d0';
-      label = 'PASSED FINAL APPROVAL (HIRED)';
+      label = 'READY FOR OFFER';
+    } else if (['JOB OFFER PENDING', 'OFFER EXTENDED', 'JOB_OFFER_PENDING', 'OFFER_EXTENDED'].includes(statusText)) {
+      badgeColor = '#c2410c';
+      badgeBg = '#ffedd5';
+      badgeBorder = '#fed7aa';
+      label = 'JOB OFFER PENDING';
+    } else if (['JOB OFFER ACCEPTED', 'OFFER ACCEPTED', 'JOB_OFFER_ACCEPTED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL'].includes(statusText)) {
+      badgeColor = '#047857';
+      badgeBg = '#d1fae5';
+      badgeBorder = '#a7f3d0';
+      label = 'JOB OFFER ACCEPTED';
+    } else if (['JOB OFFER DECLINED', 'OFFER DECLINED', 'JOB_OFFER_DECLINED'].includes(statusText)) {
+      badgeColor = '#991b1b';
+      badgeBg = '#fee2e2';
+      badgeBorder = '#fecaca';
+      label = 'JOB OFFER DECLINED';
+    } else if (['CONTRACT SIGNING SCHEDULED', 'CONTRACT_SIGNING_SCHEDULED'].includes(statusText)) {
+      badgeColor = '#0369a1';
+      badgeBg = '#e0f2fe';
+      badgeBorder = '#bae6fd';
+      label = 'CONTRACT SIGNING SCHEDULED';
+    } else if (['REQUIREMENT PENDING', 'REQUIREMENTS PENDING', 'REQUIREMENT_PENDING', 'REQUIREMENTS_PENDING', 'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED'].includes(statusText)) {
+      badgeColor = '#b45309';
+      badgeBg = '#fffbeb';
+      badgeBorder = '#fde68a';
+      label = 'REQUIREMENT PENDING';
     } else if (['PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW'].includes(statusText)) {
-      badgeColor = '#7c3aed';
+      badgeColor = '#6b21a8';
       badgeBg = '#f3e8ff';
       badgeBorder = '#d8b4fe';
       label = 'PASSED FINAL INTERVIEW';
@@ -142,59 +182,40 @@ const OverviewTab = ({ setActiveTab }) => {
       badgeBorder = '#cbd5e1';
       label = 'FAILED FINAL APPROVAL';
     } else if (['FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED INTERVIEW', 'INTERVIEW_FAILED'].includes(statusText)) {
-      badgeColor = '#b91c1c';
+      badgeColor = '#991b1b';
       badgeBg = '#fee2e2';
       badgeBorder = '#fecaca';
-      label = 'FAILED FINAL INTERVIEW';
-    } else if (statusText === 'PASSED INITIAL' || statusText === 'SHORTLISTED') {
-      badgeColor = '#047857';
-      badgeBg = '#d1fae5';
-      badgeBorder = '#a7f3d0';
-      label = 'PASSED INITIAL';
-    } else if (statusText === 'PENDING SCHEDULED') {
+      label = 'FAILED INTERVIEW';
+    } else if (['PASSED INITIAL', 'PASSED_INITIAL', 'PASSED INITIAL SCREENING'].includes(statusText)) {
+      badgeColor = '#0369a1';
+      badgeBg = '#e0f2fe';
+      badgeBorder = '#bae6fd';
+      label = 'PASSED INITIAL SCREENING';
+    } else if (['PENDING SCHEDULED', 'PENDING SCHEDULE', 'PENDING_SCHEDULED'].includes(statusText)) {
       badgeColor = '#c2410c';
       badgeBg = '#ffedd5';
       badgeBorder = '#fed7aa';
       label = 'PENDING SCHEDULE';
-    } else if (['CONFIRMED', 'INTERVIEW_SCHEDULED'].includes(statusText)) {
+    } else if (['CONFIRMED', 'INTERVIEW_SCHEDULED', 'CONFIRMED SCHEDULE'].includes(statusText)) {
       badgeColor = '#15803d';
       badgeBg = '#dcfce7';
       badgeBorder = '#bbf7d0';
       label = 'CONFIRMED SCHEDULE';
-    } else if (statusText === 'RESCHEDULING') {
+    } else if (['RESCHEDULING', 'RESCHEDULING REQUESTED', 'RESCHEDULE_REQUESTED'].includes(statusText)) {
       badgeColor = '#b45309';
       badgeBg = '#fff7ed';
       badgeBorder = '#fed7aa';
-      label = 'RESCHEDULING';
+      label = 'RESCHEDULING REQUESTED';
     } else if (['SCREENING_REJECTED', 'REJECTED'].includes(statusText)) {
-      badgeColor = '#b91c1c';
+      badgeColor = '#991b1b';
       badgeBg = '#fee2e2';
       badgeBorder = '#fecaca';
       label = 'REJECTED';
-    } else if (statusText === 'DECLINED - UNRESPONSIVE') {
-      badgeColor = '#475569';
-      badgeBg = '#f1f5f9';
-      badgeBorder = '#cbd5e1';
-    } else if (['CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW'].includes(statusText)) {
-      badgeColor = '#475569';
-      badgeBg = '#f1f5f9';
-      badgeBorder = '#cbd5e1';
-      label = 'CANDIDATE WITHDREW';
     } else if (['INCOMPLETE REQUIREMENTS', 'INCOMPLETE_REQUIREMENTS'].includes(statusText)) {
-      badgeColor = '#be123c';
-      badgeBg = '#fff1f2';
+      badgeColor = '#9f1239';
+      badgeBg = '#ffe4e6';
       badgeBorder = '#fecdd3';
       label = 'INCOMPLETE REQUIREMENTS';
-    } else if (['FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'].includes(statusText)) {
-      badgeColor = '#b91c1c';
-      badgeBg = '#fef2f2';
-      badgeBorder = '#fecaca';
-      label = 'FAILED PRE-EMPLOYMENT';
-    } else if (statusText === 'ARCHIVED') {
-      badgeColor = '#64748b';
-      badgeBg = '#f1f5f9';
-      badgeBorder = '#cbd5e1';
-      label = 'ARCHIVED';
     } else {
       badgeColor = '#b45309';
       badgeBg = '#fef3c7';
@@ -204,328 +225,388 @@ const OverviewTab = ({ setActiveTab }) => {
 
     return (
       <span style={{
-        display: 'inline-block',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
         fontSize: '11px',
         fontWeight: '700',
         textTransform: 'uppercase',
-        padding: '4px 12px',
+        padding: '5px 12px',
         borderRadius: '20px',
         background: badgeBg,
         color: badgeColor,
         border: `1px solid ${badgeBorder}`,
-        letterSpacing: '0.04em'
+        letterSpacing: '0.04em',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
       }}>
         {label}
       </span>
     );
   };
 
+  // Candidate Avatar Initial Helper
+  const getInitials = (name) => {
+    if (!name) return 'AP';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const getAvatarBg = (idx) => {
+    const bgs = [
+      'linear-gradient(135deg, #e6007e, #be123c)',
+      'linear-gradient(135deg, #0284c7, #0369a1)',
+      'linear-gradient(135deg, #7c3aed, #6d28d9)',
+      'linear-gradient(135deg, #059669, #047857)',
+      'linear-gradient(135deg, #d97706, #b45309)',
+    ];
+    return bgs[idx % bgs.length];
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.25s ease-out' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '26px', animation: 'fadeIn 0.25s ease-out' }}>
       
       {/* ── Page Header ── */}
       <div className="admin-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 className="admin-header-title">Overview</h1>
           <p style={{ color: '#64748b', fontSize: '13.5px', margin: '4px 0 0 0' }}>
-            High-level recruitment metrics and urgent task action launchpad.
+            Real-time candidate metrics, evaluation queues, and recruitment module shortcuts.
           </p>
         </div>
-        <div style={{ color: '#64748b', fontSize: '13.5px', fontWeight: '600', background: '#ffffff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-          <i className='bx bx-calendar' style={{ marginRight: '6px', color: '#e6007e' }}></i>{formattedDate}
-        </div>
-      </div>
-
-      {/* ── TIER 1: Overall Hiring Metrics ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
         
-        {/* Metric Card 1: Total Hired Candidates */}
-        <div className="admin-stat-card" style={{ background: '#ffffff', borderRadius: '14px', padding: '24px', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span className="admin-stat-label" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Hired Candidates</span>
-              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className='bx bx-user-check' style={{ fontSize: '22px', color: '#059669' }}></i>
+        <div style={{
+          color: '#334155',
+          fontSize: '13px',
+          fontWeight: '700',
+          background: '#ffffff',
+          padding: '9px 18px',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <i className='bx bx-calendar-check' style={{ fontSize: '16px', color: '#e6007e' }}></i>
+          {formattedDate}
+        </div>
+      </div>
+
+      {/* ── TIER 1: High-Energy Hero Gradient Cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '22px' }}>
+        
+        {/* Hero Card 1: Total Hired Candidates */}
+        <div className="admin-hero-card admin-hero-card-pink">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 2 }}>
+            <div>
+              <span className="admin-hero-label">Total Placed Candidates</span>
+              <div className="admin-hero-value">
+                {loading ? <span className="skeleton-shimmer" style={{ width: '45px', height: '32px', borderRadius: '6px' }} /> : stats.hiredCount}
               </div>
             </div>
-            <span className="admin-stat-value" style={{ fontSize: '32px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>
-              {loading ? '…' : stats.hiredCount}
-            </span>
+            <div className="admin-hero-icon-circle">
+              <i className='bx bx-trophy' style={{ fontSize: '24px' }}></i>
+            </div>
           </div>
-          <span style={{ fontSize: '12px', color: '#059669', fontWeight: '600', marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <i className='bx bx-trending-up'></i> Placed candidates across all positions
-          </span>
+
+          <div className="admin-hero-footer" style={{ position: 'relative', zIndex: 2, marginTop: '16px' }}>
+            <i className='bx bx-check-double' style={{ fontSize: '16px' }}></i>
+            <span>Successfully placed candidates across all job openings</span>
+          </div>
         </div>
 
-        {/* Metric Card 2: Active Applicants in Progress */}
-        <div className="admin-stat-card" style={{ background: '#ffffff', borderRadius: '14px', padding: '24px', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span className="admin-stat-label" style={{ fontSize: '11.5px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Active Applicants in Progress</span>
-              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#fdf2f8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className='bx bx-user-voice' style={{ fontSize: '22px', color: '#e6007e' }}></i>
+        {/* Hero Card 2: Active Evaluation Pipeline */}
+        <div className="admin-hero-card admin-hero-card-navy">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 2 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="admin-hero-label">Active Candidate Pipeline</span>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: '#e6007e',
+                  boxShadow: '0 0 8px #e6007e',
+                  display: 'inline-block'
+                }}></span>
+              </div>
+              <div className="admin-hero-value" style={{ color: '#f8fafc' }}>
+                {loading ? <span className="skeleton-shimmer" style={{ width: '45px', height: '32px', borderRadius: '6px', background: 'rgba(255,255,255,0.15)' }} /> : stats.activePipelineCount}
               </div>
             </div>
-            <span className="admin-stat-value" style={{ fontSize: '32px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>
-              {loading ? '…' : stats.activePipelineCount}
-            </span>
+            <div className="admin-hero-icon-circle">
+              <i className='bx bx-user-voice' style={{ fontSize: '24px' }}></i>
+            </div>
           </div>
-          <span style={{ fontSize: '12px', color: '#e6007e', fontWeight: '600', marginTop: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <i className='bx bx-layer'></i> Candidates currently undergoing evaluation
-          </span>
+
+          <div className="admin-hero-footer" style={{ color: '#94a3b8', position: 'relative', zIndex: 2, marginTop: '16px' }}>
+            <i className='bx bx-pulse' style={{ color: '#f472b6', fontSize: '16px' }}></i>
+            <span>Applicants currently moving through screening &amp; interview rounds</span>
+          </div>
         </div>
 
       </div>
 
-      {/* ── TIER 2: Middle Row — Pending Tasks & Quick Actions ── */}
+      {/* ── TIER 2: Modern Action Launchpad Tiles ── */}
       <div>
-        <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', margin: '8px 0 14px 0', fontFamily: 'Montserrat, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Pending Tasks &amp; Quick Actions
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a', margin: 0, fontFamily: 'Montserrat, sans-serif', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Recruitment Modules &amp; Pending Queues
+          </h3>
+          <span style={{ fontSize: '12px', color: '#64748b' }}>Direct shortcuts to screening, interview scheduling, chatbot KB, and vacancies</span>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
           
-          {/* Card 1: Resume Screening */}
+          {/* Card 1: Resume Screening (Cyan Accent) */}
           <div 
+            className="admin-action-tile tile-cyan"
             onClick={() => setActiveTab('applicants')}
-            style={{
-              background: '#ffffff', borderRadius: '14px', padding: '20px',
-              border: '1.5px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '12px'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = '#0284c7';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(2,132,199,0.12)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
-            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Resume Screening</span>
-              <span style={{ background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd', padding: '4px 10px', borderRadius: '12px', fontSize: '11.5px', fontWeight: '800' }}>
-                {stats.pendingResumesCount}
-              </span>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className='bx bx-file-find' style={{ fontSize: '20px', color: '#0284c7' }}></i>
+                </div>
+                <span style={{ background: '#e0f2fe', color: '#0284c7', border: '1px solid #bae6fd', padding: '4px 10px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '800' }}>
+                  {stats.pendingResumesCount} Pending
+                </span>
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>
+                Resume Screening
+              </div>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                Review incoming resumes and evaluate applicant qualification scores.
+              </p>
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
-              Awaiting Resume Screening
+            
+            <div style={{ fontSize: '12px', color: '#0284c7', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+              Launch Screening &rarr;
             </div>
-            <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Go to Resume Screening &rarr;
-            </span>
           </div>
 
-          {/* Card 2: Interview Management */}
+          {/* Card 2: Interview Management (Emerald Accent) */}
           <div 
+            className="admin-action-tile tile-emerald"
             onClick={() => setActiveTab('interviews')}
-            style={{
-              background: '#ffffff', borderRadius: '14px', padding: '20px',
-              border: '1.5px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '12px'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = '#059669';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(5,150,105,0.12)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
-            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Interview Management</span>
-              <span style={{ background: '#d1fae5', color: '#059669', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '12px', fontSize: '11.5px', fontWeight: '800' }}>
-                {stats.pendingInterviewsCount}
-              </span>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className='bx bx-calendar-check' style={{ fontSize: '20px', color: '#059669' }}></i>
+                </div>
+                <span style={{ background: '#d1fae5', color: '#059669', border: '1px solid #a7f3d0', padding: '4px 10px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '800' }}>
+                  {stats.pendingInterviewsCount} Ready
+                </span>
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>
+                Interview Management
+              </div>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                Assign schedule slots and track applicant interview outcomes.
+              </p>
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
-              Candidates Ready for Scheduling
+
+            <div style={{ fontSize: '12px', color: '#059669', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+              Manage Schedules &rarr;
             </div>
-            <span style={{ fontSize: '12px', color: '#059669', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Go to Interview Management &rarr;
-            </span>
           </div>
 
-          {/* Card 3: Chatbot Intelligence */}
+          {/* Card 3: Chatbot Intelligence (Amber Accent) */}
           <div 
+            className="admin-action-tile tile-amber"
             onClick={() => setActiveTab('chatbot_kb')}
-            style={{
-              background: '#ffffff', borderRadius: '14px', padding: '20px',
-              border: '1.5px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '12px'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = '#c2410c';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(194,65,12,0.12)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
-            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Chatbot Intelligence</span>
-              <span style={{ background: '#ffedd5', color: '#c2410c', border: '1px solid #fed7aa', padding: '4px 10px', borderRadius: '12px', fontSize: '11.5px', fontWeight: '800' }}>
-                {stats.unansweredChatbotCount}
-              </span>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#ffedd5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className='bx bx-bot' style={{ fontSize: '20px', color: '#c2410c' }}></i>
+                </div>
+                <span style={{ background: '#ffedd5', color: '#c2410c', border: '1px solid #fed7aa', padding: '4px 10px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '800' }}>
+                  {stats.unansweredChatbotCount} Inquiries
+                </span>
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>
+                Chatbot Intelligence
+              </div>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                Train AI knowledge base and respond to unmatched candidate queries.
+              </p>
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
-              Unmatched Candidate Queries
+
+            <div style={{ fontSize: '12px', color: '#c2410c', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+              Train Knowledge Base &rarr;
             </div>
-            <span style={{ fontSize: '12px', color: '#c2410c', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Go to Chatbot Intelligence &rarr;
-            </span>
           </div>
 
-          {/* Card 4: Job Posting */}
+          {/* Card 4: Job Posting (Purple Accent) */}
           <div 
+            className="admin-action-tile tile-purple"
             onClick={() => setActiveTab('jobs')}
-            style={{
-              background: '#ffffff', borderRadius: '14px', padding: '20px',
-              border: '1.5px solid #e2e8f0', cursor: 'pointer', transition: 'all 0.2s ease',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)', display: 'flex', flexDirection: 'column', gap: '12px'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = '#7c3aed';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 8px 20px rgba(124,58,237,0.12)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.02)';
-            }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Job Posting</span>
-              <span style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', padding: '4px 10px', borderRadius: '12px', fontSize: '11.5px', fontWeight: '800' }}>
-                {stats.activeRolesCount}
-              </span>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className='bx bx-briefcase-alt-2' style={{ fontSize: '20px', color: '#7c3aed' }}></i>
+                </div>
+                <span style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', padding: '4px 10px', borderRadius: '20px', fontSize: '11.5px', fontWeight: '800' }}>
+                  {stats.activeRolesCount} Published
+                </span>
+              </div>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>
+                Job Posting
+              </div>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0 0', lineHeight: 1.4 }}>
+                Publish new career vacancies, salary ranges, and job criteria.
+              </p>
             </div>
-            <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
-              Published Job Openings
+
+            <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+              Manage Vacancies &rarr;
             </div>
-            <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Go to Job Posting &rarr;
-            </span>
           </div>
 
         </div>
       </div>
 
-      {/* ── TIER 3: Bottom Row — Active Candidate Pipeline Table ── */}
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '12px',
-        border: '1px solid rgba(226, 232, 240, 0.8)',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.04)',
-        overflow: 'hidden'
-      }}>
+      {/* ── TIER 4: Bottom Row — Active Candidate Pipeline Table ── */}
+      <div className="admin-table-card">
         {/* Table Header Section */}
         <div style={{
           padding: '18px 24px',
-          borderBottom: '1.5px solid #cbd5e1',
+          borderBottom: '1px solid #e2e8f0',
           background: '#ffffff',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
           <div>
-            <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a', margin: 0, fontFamily: 'Montserrat, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Active Candidate Pipeline
-            </h3>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>
-              Real-time candidate progress across screening and interview phases
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h3 style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a', margin: 0, fontFamily: 'Montserrat, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Active Candidate Pipeline
+              </h3>
+              <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '11px', fontWeight: '800', padding: '2px 8px', borderRadius: '12px' }}>
+                {recentApps.length} In-Progress
+              </span>
+            </div>
+            <span style={{ fontSize: '12px', color: '#64748b', marginTop: '2px', display: 'block' }}>
+              Live candidates actively undergoing resume screening and interview evaluations
             </span>
           </div>
+          
           <button 
             onClick={() => setActiveTab('master_list')}
             style={{
-              background: 'transparent',
-              border: 'none',
+              background: 'rgba(230, 0, 126, 0.08)',
+              border: '1px solid rgba(230, 0, 126, 0.25)',
               color: '#e6007e',
-              fontSize: '13px',
+              fontSize: '12.5px',
               fontWeight: '700',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
-              fontFamily: "'Montserrat', sans-serif"
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '8px',
+              fontFamily: "'Montserrat', sans-serif",
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = '#e6007e';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(230, 0, 126, 0.08)';
+              e.currentTarget.style.color = '#e6007e';
             }}
           >
-            View All Records &rarr;
+            View All Audit Records &rarr;
           </button>
         </div>
 
         {/* Table Body */}
         {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
-            Loading active pipeline data…
-          </div>
+          <TableSkeleton
+            columns={['Candidate', 'Applied Position', 'Current Stage', 'Schedule', 'Status']}
+            columnTypes={['avatar', 'text', 'text', 'date', 'status']}
+            rows={4}
+          />
+        ) : fetchError ? (
+          <DatabaseErrorState
+            title="Unable to Load Pipeline Data"
+            message={fetchError}
+            onRetry={fetchDashboardOverviewData}
+          />
         ) : recentApps.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', background: '#ffffff' }}>
-            <i className='bx bx-check-circle' style={{ fontSize: '36px', color: '#10b981', marginBottom: '8px' }}></i>
-            <div style={{ fontSize: '13.5px', fontWeight: '700', color: '#475569' }}>No Active Candidates in Pipeline</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>All candidates have been evaluated or recorded in audit records.</div>
+          <div style={{ padding: '48px 20px', textAlign: 'center', background: '#ffffff' }}>
+            <i className='bx bx-check-circle' style={{ fontSize: '40px', color: '#10b981', marginBottom: '8px' }}></i>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>All Clear! No Active Pending Candidates</div>
+            <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '4px' }}>All candidates have been evaluated and recorded in audit records.</div>
           </div>
         ) : (
           <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>
-                <th style={{ padding: '14px 24px', background: '#f8fafc', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left' }}>Candidate Name</th>
-                <th style={{ padding: '14px 24px', background: '#f8fafc', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left' }}>Applied Position</th>
-                <th style={{ padding: '14px 24px', background: '#f8fafc', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left' }}>Current Stage</th>
-                <th style={{ padding: '14px 24px', background: '#f8fafc', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left' }}>Schedule / Date</th>
-                <th style={{ padding: '14px 24px', background: '#f8fafc', color: '#475569', fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1.5px solid #cbd5e1', textAlign: 'left' }}>Status</th>
+              <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Candidate</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Applied Position</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current Stage</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Schedule</th>
+                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
               </tr>
             </thead>
             <tbody>
-              {recentApps.map((app) => {
+              {recentApps.map((app, idx) => {
                 const candidateName = app.candidate_name || `${app.User_Fname || ''} ${app.User_Lname || ''}`.trim() || 'Applicant';
                 const candidateEmail = app.candidate_email || app.User_Email || '—';
+                const initials = getInitials(candidateName);
+                const avatarBg = getAvatarBg(idx);
 
                 return (
-                  <tr key={app.id} style={{ borderBottom: '1px solid #e2e8f0', transition: 'background-color 0.15s ease' }}>
+                  <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}>
                     
-                    {/* Candidate Name & Email */}
-                    <td style={{ padding: '14px 24px', verticalAlign: 'middle' }}>
-                      <div className="admin-candidate-cell">
-                        <span className="admin-candidate-name" style={{ fontSize: '13.5px', fontWeight: '600', color: '#0f172a' }}>
-                          {candidateName}
-                        </span>
-                        <span className="admin-candidate-email" style={{ fontSize: '11.5px', color: '#64748b' }}>
-                          {candidateEmail}
-                        </span>
+                    {/* Candidate Name, Avatar & Email */}
+                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="admin-avatar-initials" style={{ background: avatarBg }}>
+                          {initials}
+                        </div>
+                        <div className="admin-candidate-cell">
+                          <span className="admin-candidate-name" style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
+                            {candidateName}
+                          </span>
+                          <span className="admin-candidate-email" style={{ fontSize: '11.5px', color: '#64748b' }}>
+                            {candidateEmail}
+                          </span>
+                        </div>
                       </div>
                     </td>
 
                     {/* Applied Position */}
-                    <td style={{ padding: '14px 24px', verticalAlign: 'middle' }}>
-                      <strong style={{ fontSize: '13px', color: '#1e293b' }}>
-                        {app.job_title || 'General Position'}
-                      </strong>
+                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'inline-block', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px' }}>
+                        <strong style={{ fontSize: '12.5px', color: '#1e293b' }}>
+                          {app.job_title || 'General Position'}
+                        </strong>
+                      </div>
                     </td>
 
                     {/* Current Stage */}
-                    <td style={{ padding: '14px 24px', verticalAlign: 'middle' }}>
+                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
                       {app.isScreening ? (
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '4px 10px',
+                          padding: '5px 12px',
                           borderRadius: '8px',
                           fontSize: '11.5px',
                           fontWeight: '700',
-                          background: '#f8fafc',
-                          color: '#475569',
-                          border: '1px solid #e2e8f0'
+                          background: '#f0f9ff',
+                          color: '#0369a1',
+                          border: '1px solid #bae6fd'
                         }}>
                           <i className='bx bx-file-blank' style={{ color: '#0284c7', fontSize: '14px' }}></i>
                           Resume Screening
@@ -535,12 +616,12 @@ const OverviewTab = ({ setActiveTab }) => {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '4px 10px',
+                          padding: '5px 12px',
                           borderRadius: '8px',
                           fontSize: '11.5px',
                           fontWeight: '700',
                           background: '#fdf2f8',
-                          color: '#be185d',
+                          color: '#be123c',
                           border: '1px solid #fbcfe8'
                         }}>
                           <i className='bx bx-calendar-event' style={{ color: '#e6007e', fontSize: '14px' }}></i>
@@ -550,12 +631,15 @@ const OverviewTab = ({ setActiveTab }) => {
                     </td>
 
                     {/* Schedule / Date */}
-                    <td style={{ padding: '14px 24px', verticalAlign: 'middle', fontSize: '12.5px', color: '#475569', fontWeight: app.isScreening ? '500' : '600' }}>
-                      {app.schedule}
+                    <td style={{ padding: '16px 24px', verticalAlign: 'middle', fontSize: '12.5px', color: '#475569', fontWeight: app.isScreening ? '500' : '600' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className={app.isScreening ? 'bx bx-time-five' : 'bx bx-alarm'} style={{ color: '#94a3b8' }}></i>
+                        {app.schedule}
+                      </div>
                     </td>
 
                     {/* Status Badge */}
-                    <td style={{ padding: '14px 24px', verticalAlign: 'middle' }}>
+                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
                       {getStatusBadge(app.status)}
                     </td>
 
@@ -572,3 +656,4 @@ const OverviewTab = ({ setActiveTab }) => {
 };
 
 export default OverviewTab;
+

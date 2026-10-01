@@ -70,31 +70,61 @@
     padding: 24px 16px 60px 16px;
   }
 
+  .status-section-header {
+    margin-bottom: 20px;
+  }
+
   .status-page-title {
     font-size: 22px;
   }
 
   .status-page-subtitle {
     font-size: 13.5px;
+    line-height: 1.45;
   }
 
   .status-card {
-    padding: 18px;
+    padding: 20px 16px;
     border-radius: 12px;
   }
 
   .status-card-title {
     font-size: 16px;
+    margin-bottom: 16px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .status-main-container {
-    padding: 16px 12px 40px 12px;
+    padding: 16px 14px 48px 14px;
+  }
+
+  .status-section-header {
+    margin-bottom: 16px;
   }
 
   .status-page-title {
     font-size: 20px;
+    margin-bottom: 4px;
+  }
+
+  .status-page-subtitle {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .status-card {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .status-card-title {
+    font-size: 15px;
+    margin-bottom: 12px;
+    color: #334155;
   }
 }
 

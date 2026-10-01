@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../auth/auth_guard.php';
 header('Content-Type: application/json');
+
+// ── AUTHENTICATION: Admin / Super Admin required ─────────────────────────────
+require_admin();
 
 try {
     // Fetch applicants who have passed initial screening
@@ -17,6 +21,7 @@ try {
             a.applied_at,
             a.candidate_name,
             a.candidate_email,
+            COALESCE(a.candidate_mobile, u.User_Mobile) AS candidate_mobile,
             u.User_Fname,
             u.User_Lname,
             u.User_Email,
@@ -43,10 +48,11 @@ try {
         'applicants' => $applicants
     ]);
 } catch (PDOException $e) {
+    error_log("[Get Screened Applicants Error] " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Database error: ' . $e->getMessage()
+        'message' => 'An internal system error occurred while retrieving candidate applications.'
     ]);
 }
 ?>

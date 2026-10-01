@@ -1,20 +1,28 @@
 <?php
-// Enable error reporting for development (disable/log in production)
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// ── Error Handling: Log internally, never display to client ───────────────────
+// Raw error messages can leak server paths (C:\xampp\...) and SQL schemas.
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 // Set default timezone to Philippines (Asia/Manila)
 date_default_timezone_set('Asia/Manila');
 
-// CORS Headers
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-$allowed_origins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
+// Load environment variables (.env file and helpers)
+require_once __DIR__ . '/env_loader.php';
 
-if (in_array($origin, $allowed_origins)) {
+// CORS Headers — read allowed origins from env, fallback to localhost for dev
+$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+$envAllowed = getenv('ALLOWED_ORIGINS');
+$allowed_origins = $envAllowed
+    ? array_map('trim', explode(',', $envAllowed))
+    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'];
+
+if (in_array($origin, $allowed_origins, true)) {
     header("Access-Control-Allow-Origin: $origin");
-} else {
-    header("Access-Control-Allow-Origin: http://localhost:5173");
+} elseif (!empty($allowed_origins[0])) {
+    header("Access-Control-Allow-Origin: " . $allowed_origins[0]);
 }
 
 header("Access-Control-Allow-Credentials: true");
@@ -26,19 +34,20 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit(0);
 }
 
-// Database Credentials
-define('DB_HOST', '127.0.0.1');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'hiring_db');
+// Database Credentials — loaded from .env or Railway MySQL provision
+define('DB_HOST', getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: '127.0.0.1'));
+define('DB_PORT', getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306'));
+define('DB_USER', getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root'));
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('MYSQLPASSWORD') ?: ''));
+define('DB_NAME', getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'hiring_db'));
 
 try {
-    $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
-        PDO::ATTR_TIMEOUT            => 2, // Set connection timeout to 2 seconds to prevent hanging on offline db
+        PDO::ATTR_TIMEOUT            => 10, // Safe connection timeout for cloud hosting
     ];
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 
@@ -46,9 +55,10 @@ try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS users_tbl (
         user_id INT AUTO_INCREMENT PRIMARY KEY,
         User_Fname VARCHAR(50) NOT NULL,
+        User_MInitial VARCHAR(10) DEFAULT NULL,
         User_Lname VARCHAR(50) NOT NULL,
         User_Email VARCHAR(50) NOT NULL UNIQUE,
-        User_Mobile VARCHAR(20),
+        User_Mobile VARCHAR(20) DEFAULT NULL,
         User_Pass VARCHAR(255) NOT NULL,
         User_Bday DATE,
         User_Gender VARCHAR(50),
@@ -64,7 +74,11 @@ try {
         requires_password_reset TINYINT(1) NOT NULL DEFAULT 0,
         setup_token VARCHAR(64) DEFAULT NULL,
         setup_token_expires DATETIME DEFAULT NULL,
-        status VARCHAR(20) NOT NULL DEFAULT 'Active'
+        status VARCHAR(20) NOT NULL DEFAULT 'Active',
+        pending_email VARCHAR(100) DEFAULT NULL,
+        pending_email_token VARCHAR(255) DEFAULT NULL,
+        pending_email_expires DATETIME DEFAULT NULL,
+        INDEX idx_pending_email_token (pending_email_token)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
     // ── 2. login_attempts_tbl ────────────────────────────────────────────────
@@ -90,7 +104,10 @@ try {
         requirements TEXT NOT NULL,
         availability INT DEFAULT 1,
         status VARCHAR(50) DEFAULT 'Active',
+        category VARCHAR(100) DEFAULT 'Operations',
+        location VARCHAR(255) DEFAULT 'Airship Express HQ',
         image_path VARCHAR(255) DEFAULT NULL,
+        is_archived TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
@@ -115,7 +132,8 @@ try {
         contract_signing_time VARCHAR(50) NULL,
         contract_signing_location VARCHAR(255) NULL,
         contract_signing_notes TEXT NULL,
-        CONSTRAINT unique_user_job_application UNIQUE (user_id, job_id),
+        pre_employment_checklist TEXT DEFAULT NULL,
+        withdrawn_at TIMESTAMP NULL DEFAULT NULL,
         FOREIGN KEY (user_id) REFERENCES users_tbl(user_id) ON DELETE CASCADE,
         FOREIGN KEY (job_id) REFERENCES jobs_tbl(job_id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
@@ -206,6 +224,147 @@ try {
         FOREIGN KEY (user_id) REFERENCES users_tbl(user_id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+    // ── 12. rate_limits_tbl ──────────────────────────────────────────────────
+    // Tracks API request counts per user (logged-in) or IP (guest) per endpoint.
+    // Used to enforce rate limiting across chatbot, apply, register, and forgot_password.
+    $pdo->exec("CREATE TABLE IF NOT EXISTS rate_limits_tbl (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        identifier VARCHAR(128) NOT NULL,
+        endpoint VARCHAR(64) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_identifier_endpoint (identifier, endpoint),
+        INDEX idx_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Auto-purge rate_limits_tbl entries older than 2 hours to keep the table lean
+    $pdo->exec("DELETE FROM rate_limits_tbl WHERE created_at < DATE_SUB(NOW(), INTERVAL 2 HOUR);");
+
+    // ── Schema Migrations (non-destructive, only adds if missing) ────────────
+    // Add 'category' column to jobs_tbl
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM jobs_tbl LIKE 'category'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE jobs_tbl ADD COLUMN category VARCHAR(100) DEFAULT 'Operations' AFTER status");
+        }
+    } catch (Exception $e) {}
+
+    // Add 'location' column to jobs_tbl
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM jobs_tbl LIKE 'location'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE jobs_tbl ADD COLUMN location VARCHAR(255) DEFAULT 'Airship Express HQ' AFTER category");
+        }
+    } catch (Exception $e) {}
+
+    // Add 'remarks' column to applications_tbl (evaluator feedback/notes)
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'remarks'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN remarks TEXT DEFAULT NULL AFTER pre_employment_checklist");
+        }
+    } catch (Exception $e) {}
+
+    // Add 'invitation_sent_at' column to applications_tbl (for 24h auto-expiration tracking)
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'invitation_sent_at'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN invitation_sent_at TIMESTAMP NULL DEFAULT NULL AFTER remarks");
+        }
+    } catch (Exception $e) {}
+
+    // Add 'candidate_mobile' column to applications_tbl
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'candidate_mobile'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN candidate_mobile VARCHAR(20) DEFAULT NULL AFTER candidate_email");
+        }
+    } catch (Exception $e) {}
+
+    // Add work start schedule columns to applications_tbl
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'work_start_date'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN work_start_date DATE DEFAULT NULL AFTER pre_employment_checklist");
+        }
+    } catch (Exception $e) {}
+
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'work_start_time'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN work_start_time VARCHAR(50) DEFAULT NULL AFTER work_start_date");
+        }
+    } catch (Exception $e) {}
+
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'work_start_location'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN work_start_location VARCHAR(255) DEFAULT NULL AFTER work_start_time");
+        }
+    } catch (Exception $e) {}
+
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'work_start_reporting_to'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN work_start_reporting_to VARCHAR(255) DEFAULT NULL AFTER work_start_location");
+        }
+    } catch (Exception $e) {}
+
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM applications_tbl LIKE 'work_start_notes'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE applications_tbl ADD COLUMN work_start_notes TEXT DEFAULT NULL AFTER work_start_reporting_to");
+        }
+    } catch (Exception $e) {}
+
+    // Add pending_email columns to users_tbl for Change Email workflow
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM users_tbl LIKE 'pending_email'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN pending_email VARCHAR(100) DEFAULT NULL AFTER status");
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN pending_email_token VARCHAR(255) DEFAULT NULL AFTER pending_email");
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN pending_email_expires DATETIME DEFAULT NULL AFTER pending_email_token");
+            $pdo->exec("ALTER TABLE users_tbl ADD INDEX idx_pending_email_token (pending_email_token)");
+        }
+    } catch (Exception $e) {}
+
+    // Add TOTP 2FA columns to users_tbl for Super Admin authentication
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM users_tbl LIKE 'totp_secret'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN totp_secret VARCHAR(64) DEFAULT NULL AFTER requires_password_reset");
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN totp_enabled TINYINT(1) NOT NULL DEFAULT 0 AFTER totp_secret");
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN backup_codes TEXT DEFAULT NULL AFTER totp_enabled");
+        }
+    } catch (Exception $e) {}
+
+    // Add User_MInitial column to users_tbl for Middle Initial
+    try {
+        $col = $pdo->query("SHOW COLUMNS FROM users_tbl LIKE 'User_MInitial'");
+        if (!$col->fetch()) {
+            $pdo->exec("ALTER TABLE users_tbl ADD COLUMN User_MInitial VARCHAR(10) DEFAULT NULL AFTER User_Fname");
+        }
+    } catch (Exception $e) {}
+
+    // Ensure User_Mobile allows NULL (since applicants register with email and add mobile when applying)
+    try {
+        $pdo->exec("ALTER TABLE users_tbl MODIFY COLUMN User_Mobile VARCHAR(20) NULL DEFAULT NULL");
+    } catch (Exception $e) {}
+
+    // Clean up deprecated posters_tbl
+    try {
+        $pdo->exec("DROP TABLE IF EXISTS posters_tbl");
+    } catch (Exception $e) {}
+
+    // Purge non-admin records (Super Admin, Applicants, System) from system_audit_logs_tbl
+    // The audit trail strictly tracks regular Admin actions (is_admin = 1) for non-repudiation
+    try {
+        $pdo->exec("DELETE FROM system_audit_logs_tbl 
+                    WHERE admin_name LIKE '%Super Admin%' 
+                       OR admin_name = 'System' 
+                       OR admin_id = 0
+                       OR admin_id IN (SELECT user_id FROM users_tbl WHERE is_admin != 1)");
+    } catch (Exception $e) {}
+
     // ── Seed Root Super Admin Account if missing ─────────────────────────────
     $superAdminEmail = 'airship.express07@gmail.com';
     $chkSuperAdmin = $pdo->prepare("SELECT user_id FROM users_tbl WHERE User_Email = :email LIMIT 1");
@@ -223,10 +382,12 @@ try {
     }
 
 } catch (PDOException $e) {
+    // Log detailed error internally for debugging; never expose to clients
+    error_log('[DB Connection Error] ' . $e->getMessage());
     header('Content-Type: application/json', true, 500);
     echo json_encode([
         "status" => "error",
-        "message" => "Database connection failed: " . $e->getMessage()
+        "message" => "An internal server error occurred while connecting to the database. Please try again later."
     ]);
     exit();
 }

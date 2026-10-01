@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { API_BASE_URL } from '../utils/apiConfig';
 /**
  * useSessionGuard — Real-Time Session Termination Hook
  *
@@ -35,7 +36,7 @@ const useSessionGuard = () => {
 
       try {
         const response = await fetch(
-          'http://localhost/Hiring%20System/backend/auth/check_session.php',
+          `${API_BASE_URL}/auth/check_session.php`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

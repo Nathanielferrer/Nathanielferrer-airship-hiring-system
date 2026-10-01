@@ -95,7 +95,7 @@ try {
     }
 
     // Server-side validation via users_tbl
-    $stmt = $pdo->prepare("SELECT user_id, User_Pass, is_verified, is_admin, User_Fname, User_Lname, requires_password_reset, COALESCE(status, 'Active') as status FROM users_tbl WHERE User_Email = :email");
+    $stmt = $pdo->prepare("SELECT user_id, User_Pass, is_verified, is_admin, User_Fname, User_MInitial, User_Lname, requires_password_reset, COALESCE(status, 'Active') as status FROM users_tbl WHERE User_Email = :email");
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
 
@@ -112,12 +112,21 @@ try {
         exit();
     }
 
-    // Account Deactivation Check
-    if (strtolower($user['status'] ?? 'active') === 'inactive') {
+    // Account Deactivation / Deletion Check
+    $accStatus = strtolower($user['status'] ?? 'active');
+    if ($accStatus === 'inactive') {
         http_response_code(403);
         echo json_encode([
             "status"  => "error",
             "message" => "This account has been deactivated. Please contact your Super Administrator."
+        ]);
+        exit();
+    }
+    if ($accStatus === 'deleted') {
+        http_response_code(403);
+        echo json_encode([
+            "status"  => "error",
+            "message" => "This account has been permanently deleted."
         ]);
         exit();
     }
@@ -160,12 +169,14 @@ try {
             "message"     => "You must set a new password before continuing.",
             "setup_token" => $setupToken,
             "user"        => [
-                "id"         => $user['user_id'],
-                "user_id"    => $user['user_id'],
-                "first_name" => $user['User_Fname'],
-                "last_name"  => $user['User_Lname'],
-                "email"      => $email,
-                "is_admin"   => (int)$user['is_admin'],
+                "id"             => $user['user_id'],
+                "user_id"        => $user['user_id'],
+                "first_name"     => $user['User_Fname'],
+                "middle_initial" => $user['User_MInitial'] ?? '',
+                "User_MInitial"  => $user['User_MInitial'] ?? '',
+                "last_name"      => $user['User_Lname'],
+                "email"          => $email,
+                "is_admin"       => (int)$user['is_admin'],
             ]
         ]);
         exit();
@@ -176,11 +187,12 @@ try {
     $logStmt->execute(['ip' => $ip_address, 'email' => $email]);
 
     $jwtToken = generateJWT([
-        'sub'        => $user['user_id'],
-        'email'      => $email,
-        'first_name' => $user['User_Fname'],
-        'last_name'  => $user['User_Lname'],
-        'is_admin'   => (int)$user['is_admin'],
+        'sub'            => $user['user_id'],
+        'email'          => $email,
+        'first_name'     => $user['User_Fname'],
+        'middle_initial' => $user['User_MInitial'] ?? '',
+        'last_name'      => $user['User_Lname'],
+        'is_admin'       => (int)$user['is_admin'],
     ]);
 
     // System audit log for Admin (Super Admin is skipped by helper)
@@ -202,21 +214,24 @@ try {
         "message" => "Login successful.",
         "token"   => $jwtToken,
         "user"    => [
-            "id"         => $user['user_id'],
-            "user_id"    => $user['user_id'],
-            "User_ID"    => $user['user_id'],
-            "first_name" => $user['User_Fname'],
-            "last_name"  => $user['User_Lname'],
-            "email"      => $email,
-            "is_admin"   => (int)$user['is_admin']
+            "id"             => $user['user_id'],
+            "user_id"        => $user['user_id'],
+            "User_ID"        => $user['user_id'],
+            "first_name"     => $user['User_Fname'],
+            "middle_initial" => $user['User_MInitial'] ?? '',
+            "User_MInitial"  => $user['User_MInitial'] ?? '',
+            "last_name"      => $user['User_Lname'],
+            "email"          => $email,
+            "is_admin"       => (int)$user['is_admin']
         ]
     ]);
 
 } catch (PDOException $e) {
+    error_log("[Login Database Error] " . $e->getMessage());
     http_response_code(500);
     echo json_encode([
         "status" => "error",
-        "message" => "Database error: " . $e->getMessage()
+        "message" => "An internal system error occurred while processing authentication. Please try again later."
     ]);
 }
 ?>

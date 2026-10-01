@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import DateRangePicker from './DateRangePicker';
+import { TableSkeleton, DatabaseErrorState } from '../../../components/Loading';
 
+import { API_BASE_URL } from '../../../utils/apiConfig';
 const SuperAdminAuditTab = () => {
   const [logs, setLogs] = useState([]);
+  const [fetchError, setFetchError] = useState(null);
   const [meta, setMeta] = useState({
     total_records: 0,
     total_pages: 1,
@@ -41,6 +44,7 @@ const SuperAdminAuditTab = () => {
 
   const fetchAuditLogs = async (page = 1, showSpinner = true) => {
     if (showSpinner) setLoading(true);
+    if (showSpinner) setFetchError(null);
     try {
       const params = new URLSearchParams({
         page: page,
@@ -51,10 +55,13 @@ const SuperAdminAuditTab = () => {
         action_category: categoryFilter
       });
 
-      const res = await fetch(`http://localhost/Hiring%20System/backend/super_admin/get_audit_logs.php?${params.toString()}`);
+      const res = await fetch(`${API_BASE_URL}/super_admin/get_audit_logs.php?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('hiring_token') || ''}` }
+      });
+      if (!res.ok) throw new Error(`Server returned status ${res.status}`);
       const data = await res.json();
 
-      if (res.ok && data.status === 'success') {
+      if (data.status === 'success') {
         const receivedLogs = data.logs || (data.data && data.data.logs) || [];
         const receivedMeta = data.meta || (data.data ? {
           total_records: data.data.total_records || 0,
@@ -69,9 +76,13 @@ const SuperAdminAuditTab = () => {
         setLogs(receivedLogs);
         setMeta(receivedMeta);
         setFilterOptions(receivedFilters);
+        setFetchError(null);
+      } else {
+        throw new Error(data.message || 'Unable to retrieve system audit logs.');
       }
     } catch (err) {
       console.error("Failed to fetch system audit logs:", err);
+      if (showSpinner) setFetchError(err.message || 'Could not connect to database for audit records.');
     } finally {
       if (showSpinner) setLoading(false);
     }
@@ -95,7 +106,9 @@ const SuperAdminAuditTab = () => {
       action_category: categoryFilter || '',
       search: search || ''
     });
-    window.open(`http://localhost/Hiring%20System/backend/super_admin/generate_audit_report.php?${params.toString()}`, '_blank');
+    const token = localStorage.getItem('hiring_token') || '';
+    if (token) params.set('token', token);
+    window.open(`${API_BASE_URL}/super_admin/generate_audit_report.php?${params.toString()}`, '_blank');
   };
 
   // Parse and separate Event Description (Action Summary) and Modification Details (Change Details)
@@ -149,7 +162,7 @@ const SuperAdminAuditTab = () => {
       };
     }
 
-    // 4b. Candidate Evaluation & Executive Approval actions:
+    // 4b. Candidate Evaluation & President's Approval actions:
     const contractScheduleMatch = text.match(/^Scheduled contract signing for candidate "([^"]+)" \(applying for "([^"]+)"\) on ([^a]+) at ([^a]+) at "([^"]+)".*$/i);
     if (contractScheduleMatch) {
       return {
@@ -158,21 +171,22 @@ const SuperAdminAuditTab = () => {
       };
     }
 
-    const reqVerifyMatch = text.match(/^Verified all 7 pre-employment physical documents for candidate "([^"]+)" \(applying for "([^"]+)"\):\s*(.*)$/i);
+    const reqVerifyMatch = text.match(/^Verified all pre-employment documents for candidate "([^"]+)" \(applying for "([^"]+)"\):\s*(.*)$/i);
     if (reqVerifyMatch) {
       return {
-        eventDescription: `Verified all 7 pre-employment physical documents for candidate "${reqVerifyMatch[1]}" (${reqVerifyMatch[2]}).`,
+        eventDescription: `Verified pre-employment documents for candidate "${reqVerifyMatch[1]}" (${reqVerifyMatch[2]}).`,
         modificationDetails: `Status updated: Requirements Verified (Ready for Contract Signing).`
       };
     }
 
-    const evalMatch = text.match(/^Candidate "([^"]+)" \(applying for "([^"]+)"\)\s+(passed final interview|received President's Executive Approval|failed final interview|was not approved at President's Final Approval|withdrew from consideration|missed the 1-week pre-employment submission deadline|did not pass pre-employment clearance \(medical\/drug screening\)|completed contract signing and onboarding|withdrew):\s*(.*)$/i);
+    const evalMatch = text.match(/^Candidate "([^"]+)" \(applying for "([^"]+)"\)\s+(passed final interview|received President's Executive Approval|received President's Approval|failed final interview|was not approved at President's Final Approval|was marked as no show for final interview|was marked no show|withdrew from consideration|missed the 1-week pre-employment submission deadline|did not pass pre-employment clearance \(medical\/drug screening\)|completed contract signing and onboarding|withdrew):\s*(.*)$/i);
     if (evalMatch) {
       const actionType = (evalMatch[3] || '').toLowerCase();
       let eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) evaluated.`;
       if (actionType.includes('passed final interview')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) passed final interview.`;
-      else if (actionType.includes('received president')) eventTitle = `President approved & hired candidate "${evalMatch[1]}" (${evalMatch[2]}).`;
+      else if (actionType.includes('received president')) eventTitle = `President approved candidate "${evalMatch[1]}" (${evalMatch[2]}).`;
       else if (actionType.includes('failed final interview')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) failed final interview.`;
+      else if (actionType.includes('no show')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) marked No Show for final interview.`;
       else if (actionType.includes('was not approved')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) rejected at President final review.`;
       else if (actionType.includes('completed contract signing')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) signed contract & onboarded.`;
       else if (actionType.includes('withdrew')) eventTitle = `Candidate "${evalMatch[1]}" (${evalMatch[2]}) withdrew from consideration.`;
@@ -191,6 +205,33 @@ const SuperAdminAuditTab = () => {
       return {
         eventDescription: `Reverted evaluation decision for candidate "${revertMatch[1]}" (${revertMatch[2]}).`,
         modificationDetails: `Status restored: ${revertMatch[3].trim()}`
+      };
+    }
+
+    // 4d. Manually Scheduled Interview:
+    const manualSchedMatch = text.match(/^Manually scheduled interview for candidate "([^"]+)"(?:\s*\([^)]*\))?\s*(?:on|at)\s*(.*)$/i);
+    if (manualSchedMatch) {
+      return {
+        eventDescription: `Manually scheduled interview for candidate "${manualSchedMatch[1]}".`,
+        modificationDetails: `Scheduled on ${manualSchedMatch[2].trim()}`
+      };
+    }
+
+    // 4e. Confirmed Reschedule Request:
+    const rescheduleMatch = text.match(/^Confirmed reschedule request for candidate "([^"]+)"(?:\s*\([^)]*\))?\s*(?:to|on)\s*(.*)$/i);
+    if (rescheduleMatch) {
+      return {
+        eventDescription: `Confirmed reschedule request for candidate "${rescheduleMatch[1]}".`,
+        modificationDetails: `Rescheduled to ${rescheduleMatch[2].trim()}`
+      };
+    }
+
+    // 4f. Slot Creation:
+    const slotCreateMatch = text.match(/^Created (\d+) interview slot\(s\) for (.*)$/i);
+    if (slotCreateMatch) {
+      return {
+        eventDescription: `Created ${slotCreateMatch[1]} interview slot(s).`,
+        modificationDetails: `Time window: ${slotCreateMatch[2].trim()}`
       };
     }
 
@@ -240,16 +281,16 @@ const SuperAdminAuditTab = () => {
       };
     }
 
-    // 10. Clean technical IDs and split on first sentence if available
+    // 10. Clean technical IDs and split on sentence boundary safely (ignoring dots inside quotes & middle initials)
     text = text.replace(/\s*\((?:App\s*ID\s*|App\s*|Application\s*ID\s*|Application\s*|User\s*ID:?\s*|Slot\s*ID:?\s*)#?\d+\)/gi, '');
     text = text.replace(/#\d+\s*/g, '');
     text = text.replace(/\s*\(\s*\)/g, '');
 
-    const firstDot = text.indexOf('.');
-    if (firstDot > 0 && firstDot < text.length - 1) {
+    const quoteDotMatch = text.match(/^([^"]*"[^"]*"[^.]*)\.\s+(.+)$/);
+    if (quoteDotMatch) {
       return {
-        eventDescription: text.substring(0, firstDot + 1).trim(),
-        modificationDetails: text.substring(firstDot + 1).trim()
+        eventDescription: quoteDotMatch[1].trim() + '.',
+        modificationDetails: quoteDotMatch[2].trim()
       };
     }
 
@@ -257,6 +298,49 @@ const SuperAdminAuditTab = () => {
       eventDescription: text,
       modificationDetails: ''
     };
+  };
+
+  // ── Helper: Highlight only important values (candidate names, job titles, status values, dates) ──
+  const renderHighlightedText = (text) => {
+    if (!text) return null;
+    const str = String(text);
+
+    // Split on quoted text e.g. "NATHANIEL D. FERRER" or "PASSED INITIAL" without nested capturing groups
+    const parts = str.split(/("[^"]+")/g);
+
+    return parts.map((part, i) => {
+      if (!part) return null;
+      if (part.startsWith('"') && part.endsWith('"')) {
+        return (
+          <strong key={i} style={{ color: '#0f172a', fontWeight: '700' }}>
+            {part}
+          </strong>
+        );
+      }
+      return <span key={i} style={{ color: '#475569', fontWeight: '400' }}>{part}</span>;
+    });
+  };
+
+  const renderHighlightedDetails = (text) => {
+    if (!text) return null;
+    let str = String(text);
+
+    // Match prefixes like "Scheduled on ", "Rescheduled to ", "Status updated: ", "Appointment: ", "Status restored: "
+    const prefixMatch = str.match(/^(Scheduled on|Rescheduled to|Status updated:|Appointment:|Status restored:|Decision:)\s*(.*)$/i);
+    if (prefixMatch) {
+      return (
+        <span style={{ color: '#475569', fontWeight: '400', fontSize: '13px', lineHeight: '1.5' }}>
+          {prefixMatch[1]}{' '}
+          {renderHighlightedText(prefixMatch[2])}
+        </span>
+      );
+    }
+
+    return (
+      <span style={{ color: '#475569', fontWeight: '400', fontSize: '13px', lineHeight: '1.5' }}>
+        {renderHighlightedText(str)}
+      </span>
+    );
   };
 
   const getCategoryColor = (cat) => {
@@ -451,13 +535,21 @@ const SuperAdminAuditTab = () => {
         borderRadius: '14px',
         border: '1px solid #e2e8f0',
         boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-        overflow: 'hidden'
+        overflowX: 'auto'
       }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
-            <div className="spinner" style={{ width: '40px', height: '40px', margin: '0 auto 14px' }}></div>
-            <div style={{ fontSize: '13.5px', fontWeight: '600' }}>Fetching real-time audit records...</div>
-          </div>
+          <TableSkeleton
+            columns={['Date & Time', 'Administrator', 'Action Category', 'Event Description', 'Modification Details']}
+            rows={6}
+            hasAvatar={true}
+            hasActions={false}
+          />
+        ) : fetchError ? (
+          <DatabaseErrorState
+            title="Unable to Load System Audit Trail"
+            message={fetchError}
+            onRetry={() => fetchAuditLogs(currentPage, true)}
+          />
         ) : logs.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '64px 24px', color: '#64748b' }}>
             <div style={{
@@ -487,20 +579,20 @@ const SuperAdminAuditTab = () => {
             <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
-                  <th style={{ width: '90px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Log ID
-                  </th>
-                  <th style={{ width: '160px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <th style={{ width: '150px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Date & Time
                   </th>
-                  <th style={{ width: '190px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  <th style={{ width: '170px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     Administrator
                   </th>
-                  <th style={{ width: '140px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    IP Address
+                  <th style={{ width: '170px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Action Category
                   </th>
-                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Action Details
+                  <th style={{ width: '260px', padding: '14px 18px', textAlign: 'left', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Event Description
+                  </th>
+                  <th style={{ padding: '14px 18px', textAlign: 'left', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Modification Details
                   </th>
                 </tr>
               </thead>
@@ -519,24 +611,7 @@ const SuperAdminAuditTab = () => {
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fafafa'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      {/* 1. Log ID */}
-                      <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
-                        <span style={{
-                          fontFamily: 'Consolas, Monaco, monospace',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          color: '#475569',
-                          background: '#f1f5f9',
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid #e2e8f0',
-                          display: 'inline-block'
-                        }}>
-                          #{log.id}
-                        </span>
-                      </td>
-
-                      {/* 2. Date & Time */}
+                      {/* 1. Date & Time */}
                       <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <div style={{ color: '#0f172a', fontWeight: '600', fontSize: '13px' }}>
                           {new Date(log.created_at).toLocaleDateString('en-US', {
@@ -553,7 +628,7 @@ const SuperAdminAuditTab = () => {
                         </div>
                       </td>
 
-                      {/* 3. Administrator */}
+                      {/* 2. Administrator */}
                       <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                           <div style={{
@@ -578,70 +653,42 @@ const SuperAdminAuditTab = () => {
                         </div>
                       </td>
 
-                      {/* 4. IP Address */}
-                      <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {/* 3. Action Category */}
+                      <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'center' }}>
                         <span style={{
-                          fontFamily: 'Consolas, Monaco, monospace',
-                          fontSize: '11.5px',
-                          fontWeight: '600',
-                          color: '#475569',
-                          background: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          padding: '3px 8px',
-                          borderRadius: '5px',
-                          display: 'inline-block'
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: catStyle.text,
+                          background: catStyle.bg,
+                          border: `1px solid ${catStyle.border}`,
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
                         }}>
-                          {log.ip_address || '—'}
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: catStyle.dot }}></span>
+                          {log.action_category}
                         </span>
                       </td>
 
-                      {/* 5. Action Details: Event Description + Modification Details */}
-                      <td style={{ padding: '14px 20px', verticalAlign: 'middle', textAlign: 'left' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {/* Event Header: Category Badge + Event Description */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              color: catStyle.text,
-                              background: catStyle.bg,
-                              border: `1px solid ${catStyle.border}`,
-                              padding: '3px 8px',
-                              borderRadius: '5px',
-                              whiteSpace: 'nowrap',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              flexShrink: 0
-                            }}>
-                              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: catStyle.dot }}></span>
-                              {log.action_category}
-                            </span>
-                            <span style={{ fontSize: '13.5px', lineHeight: 1.4 }}>
-                              <strong style={{ color: '#0f172a', fontWeight: '700', marginRight: '6px' }}>Event Description:</strong>
-                              <span style={{ color: '#334155', fontWeight: '400' }}>{eventDescription}</span>
-                            </span>
-                          </div>
-
-                          {/* Modification Details Box */}
-                          {modificationDetails && (
-                            <div style={{
-                              fontSize: '12.5px',
-                              color: '#334155',
-                              background: '#f8fafc',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              padding: '6px 10px',
-                              lineHeight: 1.5,
-                              marginTop: '2px'
-                            }}>
-                              <strong style={{ color: '#0f172a', fontWeight: '700', marginRight: '6px' }}>
-                                Modification Details:
-                              </strong>
-                              <span style={{ color: '#475569', fontWeight: '400' }}>{modificationDetails}</span>
-                            </div>
-                          )}
+                      {/* 4. Event Description */}
+                      <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
+                        <div style={{ fontSize: '13px', lineHeight: '1.45' }}>
+                          {renderHighlightedText(eventDescription)}
                         </div>
+                      </td>
+
+                      {/* 5. Modification Details */}
+                      <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
+                        {modificationDetails ? (
+                          <div style={{ fontSize: '13px', lineHeight: '1.5' }}>
+                            {renderHighlightedDetails(modificationDetails)}
+                          </div>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '13px' }}>—</span>
+                        )}
                       </td>
                     </tr>
                   );

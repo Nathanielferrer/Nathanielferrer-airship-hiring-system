@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import ChatbotWidget    from '../../components/ChatbotWidget/ChatbotWidget';
 import ApplicantNavbar  from '../../components/ApplicantNavbar/ApplicantNavbar';
 import ApplicationsList from './components/ApplicationsList';
 import useApplicantData from '../../hooks/useApplicantData';
 import ConfirmModal     from '../../components/ConfirmModal/ConfirmModal';
+import LoadingScreen    from '../../components/LoadingScreen/LoadingScreen';
 import useToast         from '../../components/Toast/Toast';
+import { PageLoadingScreen } from '../../components/Loading';
 import './ApplicationStatus.css';
 
 const ApplicationStatus = () => {
@@ -22,14 +23,18 @@ const ApplicationStatus = () => {
     setShowProfileMenu,
     handleNotificationClick,
     handleClearReadNotifications,
+    handleMarkAllAsRead,
     handleScheduleResponse,
     handleWithdrawApplication,
+    handleRespondJobOffer,
     handleLogout,
     confirmModalState,
     closeConfirmModal,
     dropdownRef,
     notifRef,
-  } = useApplicantData({ navigateOnNotification: false });
+    isHiredUser,
+    isLoggingOut,
+  } = useApplicantData({ navigateOnNotification: false, requireAuth: true });
 
   const { showToast, ToastPortal } = useToast();
 
@@ -48,11 +53,32 @@ const ApplicationStatus = () => {
     }
   };
 
+  const handleRespondJobOfferWithToast = async (appId, action, reason = '') => {
+    const res = await handleRespondJobOffer(appId, action, reason);
+    if (res.status === 'success') {
+      showToast(res.message, 'success');
+    } else {
+      showToast(res.message || 'Action failed', 'error');
+    }
+    return res;
+  };
+
+  const handleWithdrawApplicationWithToast = (appId, jobTitle) => {
+    handleWithdrawApplication(appId, jobTitle, (success, msg) => {
+      if (success) {
+        showToast(msg || 'Application successfully withdrawn.', 'info');
+      } else {
+        showToast(msg || 'Failed to withdraw application.', 'danger');
+      }
+    });
+  };
+
   if (!user) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-      </div>
+      <PageLoadingScreen
+        title="Airship Express"
+        subtitle="Retrieving your candidate portal..."
+      />
     );
   }
 
@@ -69,6 +95,7 @@ const ApplicationStatus = () => {
         setShowProfileMenu={setShowProfileMenu}
         handleNotificationClick={handleNotificationClick}
         handleClearReadNotifications={handleClearReadNotifications}
+        handleMarkAllAsRead={handleMarkAllAsRead}
         handleLogout={handleLogout}
         notifRef={notifRef}
         dropdownRef={dropdownRef}
@@ -96,7 +123,9 @@ const ApplicationStatus = () => {
               scheduleActionLoading={scheduleActionLoading}
               scheduleActionFeedback={scheduleActionFeedback}
               onScheduleResponse={handleScheduleResponseWithToast}
-              onWithdrawApplication={handleWithdrawApplication}
+              onWithdrawApplication={handleWithdrawApplicationWithToast}
+              onRespondJobOffer={handleRespondJobOfferWithToast}
+              isHiredUser={isHiredUser}
             />
           </div>
         </div>
@@ -105,8 +134,7 @@ const ApplicationStatus = () => {
       {/* Toast notifications */}
       <ToastPortal />
 
-      {/* Chatbot & Modals */}
-      <ChatbotWidget />
+      {/* Modals */}
 
       <ConfirmModal
         isOpen={confirmModalState.isOpen}
@@ -117,6 +145,12 @@ const ApplicationStatus = () => {
         type={confirmModalState.type}
         onConfirm={confirmModalState.onConfirm}
         onCancel={closeConfirmModal}
+      />
+
+      <LoadingScreen
+        isOpen={isLoggingOut}
+        title="Signing Out"
+        subtitle="Clearing your candidate session..."
       />
     </div>
   );
