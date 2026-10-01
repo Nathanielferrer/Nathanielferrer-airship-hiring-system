@@ -320,6 +320,11 @@ const JobsTab = ({ showToast: propShowToast }) => {
       formData.append('image', selectedImage);
     }
 
+    const token = localStorage.getItem('hiring_token') || '';
+    if (token) {
+      formData.append('token', token);
+    }
+
     const url = editMode 
       ? `${API_BASE_URL}/jobs/update_job.php`
       : `${API_BASE_URL}/jobs/add_job.php`;
@@ -1012,7 +1017,7 @@ const JobsTab = ({ showToast: propShowToast }) => {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {j.image_path ? (
-                          <img src={j.image_path.startsWith('data:') || j.image_path.startsWith('http') ? j.image_path : `${API_BASE_URL}/${j.image_path}`} alt="" style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80"; }} />
+                          <img src={j.image_path.startsWith('data:') || j.image_path.startsWith('http') ? j.image_path : `${API_BASE_URL}/${j.image_path}`} alt="" style={{ width: '42px', height: '42px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e2e8f0' }} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
                         ) : (
                           <div style={{ width: '42px', height: '42px', background: '#f1f5f9', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>

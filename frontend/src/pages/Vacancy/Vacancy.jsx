@@ -943,15 +943,18 @@ const Vacancy = () => {
 
               <div className="vacancy-expanded-inner">
                 <div className="vacancy-expanded-image">
-                  <img
-                    src={selectedJob.image_path ? (selectedJob.image_path.startsWith('data:') || selectedJob.image_path.startsWith('http') ? selectedJob.image_path : `${API_BASE_URL}/${selectedJob.image_path}`) : "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80"}
-                    alt={selectedJob.title || "Job Role"}
-                    style={{objectFit: 'cover'}}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80";
-                    }}
-                  />
+                  {selectedJob.image_path ? (
+                    <img
+                      src={selectedJob.image_path.startsWith('data:') || selectedJob.image_path.startsWith('http') ? selectedJob.image_path : `${API_BASE_URL}/${selectedJob.image_path}`}
+                      alt={selectedJob.title || "Job Role"}
+                      style={{objectFit: 'cover'}}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    </div>
+                  )}
                 </div>
 
                 <div className="vacancy-expanded-header-info">
@@ -1380,11 +1383,8 @@ const Vacancy = () => {
                 >
                   <div className="vacancy-card-img-wrapper">
                     <img
-                      src={job.image_path ? (job.image_path.startsWith('data:') || job.image_path.startsWith('http') ? job.image_path : `${API_BASE_URL}/${job.image_path}`) : "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80"}
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&q=80";
-                      }}
+                      src={job.image_path ? (job.image_path.startsWith('data:') || job.image_path.startsWith('http') ? job.image_path : `${API_BASE_URL}/${job.image_path}`) : ''}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       alt={job.title}
                       className="vacancy-card-img"
                     />

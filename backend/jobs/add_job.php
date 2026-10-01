@@ -47,32 +47,32 @@ if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
     
     $allowedfileExtensions = array('jpg', 'jpeg', 'png', 'webp');
     if (in_array($fileExtension, $allowedfileExtensions)) {
-        $uploadFileDir = '../uploads/jobs/';
-        if (!is_dir($uploadFileDir)) {
-            mkdir($uploadFileDir, 0755, true);
+        $rawContent = file_get_contents($fileTmpPath);
+        if ($rawContent !== false && strlen($rawContent) > 0) {
+            $mimeType = mime_content_type($fileTmpPath) ?: ('image/' . ($fileExtension === 'jpg' ? 'jpeg' : $fileExtension));
+            $image_path = 'data:' . $mimeType . ';base64,' . base64_encode($rawContent);
         }
-        $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
-        $dest_path = $uploadFileDir . $newFileName;
         
-        if (move_uploaded_file($fileTmpPath, $dest_path)) {
-            // Encode as persistent Base64 Data URL so images survive cloud container restarts
-            $mimeType = mime_content_type($dest_path) ?: ('image/' . ($fileExtension === 'jpg' ? 'jpeg' : $fileExtension));
-            $rawContent = file_get_contents($dest_path);
-            if ($rawContent !== false && strlen($rawContent) > 0) {
-                $image_path = 'data:' . $mimeType . ';base64,' . base64_encode($rawContent);
-            } else {
-                $image_path = 'uploads/jobs/' . $newFileName;
-            }
-        } else {
-            http_response_code(500);
-            echo json_encode(["status" => "error", "message" => "There was an error moving the uploaded file."]);
-            exit();
-        }
+        try {
+            $uploadFileDir = __DIR__ . '/../uploads/jobs/';
+            if (!is_dir($uploadFileDir)) @mkdir($uploadFileDir, 0755, true);
+            $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+            @move_uploaded_file($fileTmpPath, $uploadFileDir . $newFileName);
+        } catch (Throwable $e) {}
     } else {
         http_response_code(400);
         echo json_encode(["status" => "error", "message" => "Upload failed. Allowed file types: " . implode(',', $allowedfileExtensions)]);
         exit();
     }
+} elseif (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+    $uploadErrCode = $_FILES['image']['error'];
+    $msg = "Image upload failed (Error code: {$uploadErrCode}).";
+    if ($uploadErrCode === UPLOAD_ERR_INI_SIZE || $uploadErrCode === UPLOAD_ERR_FORM_SIZE) {
+        $msg = "Image file is too large. Please upload an image under 5MB.";
+    }
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => $msg]);
+    exit();
 }
 try {
     $stmt = $pdo->prepare("INSERT INTO jobs_tbl (title, description, requirements, salary, employment_type, availability, status, image_path, category, location) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");

@@ -19,6 +19,9 @@ Options -Indexes
 # 4. Protect private directory (Candidate resumes & credentials)
 # Resumes must be downloaded via backend/applications/download_resume.php
 RewriteEngine On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [e=HTTP_AUTHORIZATION:%1]
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 RewriteRule ^private/.*$ - [F,L]
 RewriteRule ^vendor/.*$ - [F,L]
 RewriteRule ^migrations/.*$ - [F,L]
