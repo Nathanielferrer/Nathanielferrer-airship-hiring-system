@@ -2,8 +2,11 @@
 /**
  * email_helper.php - Centralized Email Notification Helper
  *
- * Sends branded HTML emails to candidates using PHPMailer SMTP
- * for all recruitment stages:
+ * Sends branded HTML emails to candidates via:
+ *   1. Resend HTTPS API (when RESEND_API_KEY is set — for Railway/cloud)
+ *   2. PHPMailer SMTP (fallback — for local XAMPP development)
+ *
+ * Recruitment stages supported:
  *   INITIAL_PASSED, INITIAL_REJECTED, FINAL_PASSED, FINAL_FAILED,
  *   PRESIDENT_APPROVED, PRESIDENT_REJECTED, SCHEDULING_EXPIRED
  */
@@ -15,6 +18,194 @@ require_once __DIR__ . '/libs/PHPMailer/src/Exception.php';
 require_once __DIR__ . '/libs/PHPMailer/src/PHPMailer.php';
 require_once __DIR__ . '/libs/PHPMailer/src/SMTP.php';
 require_once __DIR__ . '/env_loader.php';
+
+/**
+ * Send an email via Resend HTTPS API (bypasses Railway's SMTP port blocking).
+ *
+ * @param string $toEmail   Recipient email.
+ * @param string $toName    Recipient name.
+ * @param string $subject   Email subject.
+ * @param string $htmlBody  Full HTML body.
+ * @param string $textBody  Optional plain text body.
+ * @param string $fromName  Sender display name.
+ * @return bool             True on success.
+ */
+function send_email_via_resend(
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody = '',
+    string $fromName = 'Airship Express Recruitment'
+): bool {
+    $apiKey = getenv('RESEND_API_KEY');
+    if (!$apiKey) {
+        error_log('[EmailHelper/Resend] RESEND_API_KEY not set');
+        return false;
+    }
+
+    // Determine the "from" address: use verified Resend domain, or default onboarding address
+    $fromEmail = getenv('RESEND_FROM_EMAIL') ?: 'Airship Express <onboarding@resend.dev>';
+
+    // If RESEND_FROM_EMAIL is just an email, wrap it with the name
+    if (!str_contains($fromEmail, '<')) {
+        $fromEmail = "{$fromName} <{$fromEmail}>";
+    }
+
+    $payload = json_encode([
+        'from'    => $fromEmail,
+        'to'      => [$toEmail],
+        'subject' => $subject,
+        'html'    => $htmlBody,
+    ]);
+
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . $apiKey,
+            'Content-Type: application/json',
+        ],
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        error_log("[EmailHelper/Resend] cURL error sending to {$toEmail}: {$curlError}");
+        return false;
+    }
+
+    if ($httpCode >= 200 && $httpCode < 300) {
+        error_log("[EmailHelper/Resend] ✅ Email sent to {$toEmail} (HTTP {$httpCode})");
+        return true;
+    }
+
+    error_log("[EmailHelper/Resend] ❌ Failed to send to {$toEmail} (HTTP {$httpCode}): {$response}");
+    return false;
+}
+
+/**
+ * Send an email via Brevo (Sendinblue) HTTPS API (bypasses Railway's SMTP port blocking).
+ * Brevo allows 300 free emails/day to any recipient without domain verification.
+ *
+ * @param string $toEmail   Recipient email.
+ * @param string $toName    Recipient name.
+ * @param string $subject   Email subject.
+ * @param string $htmlBody  Full HTML body.
+ * @param string $textBody  Optional plain text body.
+ * @param string $fromName  Sender display name.
+ * @return bool             True on success.
+ */
+function send_email_via_brevo(
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody = '',
+    string $fromName = 'Airship Express Recruitment'
+): bool {
+    $apiKey = getenv('BREVO_API_KEY');
+    if (!$apiKey) {
+        error_log('[EmailHelper/Brevo] BREVO_API_KEY not set');
+        return false;
+    }
+
+    $fromEmail = getenv('BREVO_FROM_EMAIL') ?: (getenv('SMTP_USER') ?: 'airship.express07@gmail.com');
+
+    $payload = json_encode([
+        'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+        'to'          => [['email' => $toEmail, 'name' => $toName]],
+        'subject'     => $subject,
+        'htmlContent' => $htmlBody,
+        'textContent' => $textBody ?: strip_tags($htmlBody)
+    ]);
+
+    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_HTTPHEADER     => [
+            'api-key: ' . $apiKey,
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ],
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        error_log("[EmailHelper/Brevo] cURL error sending to {$toEmail}: {$curlError}");
+        return false;
+    }
+
+    if ($httpCode >= 200 && $httpCode < 300) {
+        error_log("[EmailHelper/Brevo] ✅ Email sent to {$toEmail} (HTTP {$httpCode})");
+        return true;
+    }
+
+    error_log("[EmailHelper/Brevo] ❌ Failed to send to {$toEmail} (HTTP {$httpCode}): {$response}");
+    return false;
+}
+
+/**
+ * Unified email dispatcher: uses Resend or Brevo API if available, otherwise PHPMailer SMTP.
+ *
+ * @param string $toEmail   Recipient email.
+ * @param string $toName    Recipient name.
+ * @param string $subject   Email subject.
+ * @param string $htmlBody  Full HTML body.
+ * @param string $textBody  Optional plain text body.
+ * @param string $fromName  Sender display name.
+ * @return bool             True on success.
+ */
+function send_email(
+    string $toEmail,
+    string $toName,
+    string $subject,
+    string $htmlBody,
+    string $textBody = '',
+    string $fromName = 'Airship Express Recruitment'
+): bool {
+    // Route 1: Resend HTTPS API (Railway / cloud deployments)
+    if (getenv('RESEND_API_KEY')) {
+        return send_email_via_resend($toEmail, $toName, $subject, $htmlBody, $textBody, $fromName);
+    }
+
+    // Route 2: Brevo HTTPS API (Railway / cloud deployments)
+    if (getenv('BREVO_API_KEY')) {
+        return send_email_via_brevo($toEmail, $toName, $subject, $htmlBody, $textBody, $fromName);
+    }
+
+    // Route 2: PHPMailer SMTP (local XAMPP development)
+    try {
+        $mail = new PHPMailer(true);
+        configure_smtp($mail, $fromName);
+        $mail->addAddress($toEmail, $toName);
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $htmlBody;
+        if ($textBody) {
+            $mail->AltBody = $textBody;
+        }
+        $mail->send();
+        error_log("[EmailHelper/SMTP] ✅ Email sent to {$toEmail}");
+        return true;
+    } catch (\Throwable $e) {
+        error_log("[EmailHelper/SMTP] ❌ Failed to send to {$toEmail}: " . $e->getMessage());
+        return false;
+    }
+}
 
 /**
  * Configure a PHPMailer instance with SMTP credentials from .env.
@@ -410,6 +601,13 @@ function sendApplicationStatusEmail(
         </div>
         ";
 
+        // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
+        if (getenv('RESEND_API_KEY')) {
+            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body);
+        }
+        if (getenv('BREVO_API_KEY')) {
+            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body);
+        }
         $mail->send();
         return true;
 
@@ -504,6 +702,13 @@ function sendInterviewScheduleEmail(
         </div>
         ";
 
+        // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
+        if (getenv('RESEND_API_KEY')) {
+            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body);
+        }
+        if (getenv('BREVO_API_KEY')) {
+            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body);
+        }
         $mail->send();
         return true;
     } catch (Exception $e) {
@@ -617,6 +822,13 @@ function sendEmailChangeSecurityAlert(string $oldEmail, string $toName, string $
         </div>
         ";
 
+        // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
+        if (getenv('RESEND_API_KEY')) {
+            return send_email_via_resend($oldEmail, $toName, $mail->Subject, $mail->Body, '', 'Airship Express Security');
+        }
+        if (getenv('BREVO_API_KEY')) {
+            return send_email_via_brevo($oldEmail, $toName, $mail->Subject, $mail->Body, '', 'Airship Express Security');
+        }
         $mail->send();
         return true;
     } catch (Exception $e) {
@@ -700,6 +912,13 @@ function sendEmailChangeVerificationLink(string $newEmail, string $toName, strin
         </div>
         ";
 
+        // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
+        if (getenv('RESEND_API_KEY')) {
+            return send_email_via_resend($newEmail, $toName, $mail->Subject, $mail->Body);
+        }
+        if (getenv('BREVO_API_KEY')) {
+            return send_email_via_brevo($newEmail, $toName, $mail->Subject, $mail->Body);
+        }
         $mail->send();
         return true;
     } catch (Exception $e) {
@@ -755,6 +974,13 @@ function sendRegistrationVerificationEmail(string $toEmail, string $toName, stri
         ";
         $mail->AltBody = "Hello {$safeName},\n\nTo complete your registration, please verify your email address by visiting this link:\n{$verificationLink}";
 
+        // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
+        if (getenv('RESEND_API_KEY')) {
+            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody, 'Airship Express Hiring Portal');
+        }
+        if (getenv('BREVO_API_KEY')) {
+            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody, 'Airship Express Hiring Portal');
+        }
         $mail->send();
         return true;
     } catch (\Throwable $e) {
@@ -888,6 +1114,13 @@ function sendPasswordResetEmail(string $toEmail, string $toName, string $resetTo
             $mail->AltBody = "Hello {$safeName},\n\nTo reset your password, please visit this link (expires in 15 minutes):\n{$resetLink}";
         }
 
+        // Use HTTPS API on Railway (SMTP ports blocked), fallback to PHPMailer locally
+        if (getenv('RESEND_API_KEY')) {
+            return send_email_via_resend($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody ?? '', 'Airship Express Security Portal');
+        }
+        if (getenv('BREVO_API_KEY')) {
+            return send_email_via_brevo($toEmail, $toName, $mail->Subject, $mail->Body, $mail->AltBody ?? '', 'Airship Express Security Portal');
+        }
         $mail->send();
         return true;
     } catch (\Throwable $e) {
