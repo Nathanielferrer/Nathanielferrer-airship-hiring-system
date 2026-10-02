@@ -53,62 +53,26 @@ function saveChatHistory($pdo, $applicantId, $userMsg, $botMsg) {
 }
 
 
-// ── Helper to detect Tagalog / Filipino intent markers with smart language balancing ──
-function detectQueryLanguage(string $text): string {
-    $textLower = strtolower(trim($text));
-
-    // Strong Tagalog content words and unique grammatical question markers
-    $strongTagalog = [
-        'kamusta', 'kumusta', 'musta', 'ano', 'anong', 'paano', 'kailan', 'saan', 'bakit', 'sino',
-        'namin', 'natin', 'nila', 'kanila', 'opo', 'oho', 'naman', 'pala', 'trabaho',
-        'kailangan', 'kinakailangan', 'magkano', 'sahod', 'sweldo', 'pasado', 'pumasa', 'nakapasa',
-        'tanggap', 'matatanggap', 'matanggap', 'mag-apply', 'magapply', 'nag-apply', 'nagapply',
-        'meron', 'mayroon', 'wala', 'may hiring', 'pwede', 'puwede', 'gusto', 'patulong',
-        'kwalipikasyon', 'balita', 'po', 'salamat', 'lugar', 'oras', 'panayam', 'interbyu',
-        'papeles', 'sangay', 'kompanya', 'kumpanya'
-    ];
-
-    // Weak / short Tagalog markers (2-letter words that can collide with English acronyms/typos)
-    $shortTagalog = ['ba', 'pa', 'na', 'sa', 'ng', 'ko', 'mo', 'din', 'rin', 'daw', 'raw', 'mga'];
-
-    // Common English words to balance and detect intentional English questions
-    $englishWords = [
-        'what', 'where', 'when', 'how', 'why', 'who', 'which', 'is', 'are', 'was', 'were',
-        'the', 'can', 'could', 'would', 'should', 'have', 'has', 'had', 'do', 'does', 'did',
-        'will', 'please', 'tell', 'about', 'requirements', 'requirement', 'position', 'positions',
-        'interview', 'application', 'status', 'apply', 'hiring', 'job', 'jobs', 'salary', 'office',
-        'location', 'schedule', 'documents', 'submit', 'process', 'hello', 'hey', 'thanks', 'thank',
-        'for', 'with', 'from', 'you', 'your', 'my', 'me', 'i', 'im', 'in', 'on', 'at', 'to', 'of',
-        'next', 'done', 'experience', 'training', 'full', 'time', 'part', 'branch', 'branches'
-    ];
-
-    $tagalogScore = 0;
-    foreach ($strongTagalog as $m) {
-        if (preg_match('/\b' . preg_quote($m, '/') . '\b/i', $textLower)) {
-            $tagalogScore += 2;
-        }
-    }
-    foreach ($shortTagalog as $m) {
-        if (preg_match('/\b' . preg_quote($m, '/') . '\b/i', $textLower)) {
-            $tagalogScore += 1;
-        }
-    }
-
-    $englishScore = 0;
-    foreach ($englishWords as $w) {
-        if (preg_match('/\b' . preg_quote($w, '/') . '\b/i', $textLower)) {
-            $englishScore += 1;
-        }
-    }
-
-    if ($tagalogScore > 0 && $englishScore === 0) return 'tl';
-    if ($englishScore > 0 && $tagalogScore === 0) return 'en';
-    if ($tagalogScore > $englishScore) return 'tl';
-    return 'en';
-}
-
+// ── Helper to detect Tagalog / Filipino intent markers ───────────────────────
 function isTagalogQuery(string $text): bool {
-    return detectQueryLanguage($text) === 'tl';
+    $textLower = strtolower($text);
+    $tagalogMarkers = [
+        'kamusta', 'kumusta', 'musta', 'ano', 'anong', 'paano', 'kailan', 'saan', 'bakit', 'sino',
+        'mga', 'ng', 'sa', 'ko', 'mo', 'niya', 'namin', 'natin', 'nila', 'akin', 'iyo',
+        'kanya', 'atin', 'amin', 'kanila', 'ba', 'po', 'opo', 'ho', 'oho', 'na', 'pa',
+        'naman', 'nga', 'din', 'rin', 'daw', 'raw', 'pala', 'kaya', 'trabaho', 'kailangan',
+        'kinakailangan', 'magkano', 'sahod', 'sweldo', 'oras', 'araw', 'linggo', 'buwan', 'taon',
+        'pasado', 'pumasa', 'nakapasa', 'tanggap', 'matatanggap', 'matanggap', 'mag-apply',
+        'magapply', 'nag-apply', 'nagapply', 'nag apply', 'mag apply', 'meron', 'mayroon', 'wala',
+        'may hiring', 'pwede', 'pede', 'puwede', 'gusto', 'nais', 'tulong', 'patulong',
+        'kwalipikasyon', 'balita'
+    ];
+    foreach ($tagalogMarkers as $marker) {
+        if (preg_match('/\b' . preg_quote($marker, '/') . '\b/i', $textLower)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // ── Helper to get Tagalog label & description for a given English status label ──
@@ -884,15 +848,13 @@ if (!empty($geminiApiKey)) {
     $systemInstruction = <<<EOT
 ROLE: You are the intelligent HR & Hiring AI Assistant for "Airship Express", a courier, logistics, and delivery company located in Binondo, Manila, Philippines. You have full knowledge of their hiring process, open positions, company policies, and applicant context.
 
-LANGUAGE SUPPORT & STRICT DYNAMIC SWITCHING OVERRIDE:
+LANGUAGE SUPPORT & BILINGUAL CAPABILITY:
 - You are FULLY BILINGUAL and fluent in both English and Filipino/Tagalog (including everyday conversational Taglish).
 - You understand questions asked in English, Filipino/Tagalog, or mixed Taglish with complete accuracy.
-- STRICT DYNAMIC LANGUAGE SWITCHING RULE (NON-NEGOTIABLE):
-  * The language of the user's LATEST message is the ABSOLUTE authority for the language of your response.
-  * If the user's latest query is in English, you MUST immediately and completely reply in clear, professional English. Never reply in Tagalog if the user's latest message is in English, even if all previous conversation turns were in Filipino/Tagalog!
-  * If the user's latest query is in Filipino/Tagalog, you MUST immediately reply in natural, courteous Filipino/Tagalog (using polite conversational markers like "po" and "opo"), even if all previous conversation turns were in English!
+- LANGUAGE MATCHING RULE: Always respond in the SAME language the user used:
+  * If the user asks in Filipino/Tagalog or Taglish, respond in natural, courteous Filipino/Taglish. Use polite conversational markers (such as "po" and "opo") where appropriate.
+  * If the user asks in English, respond in clear, professional English.
   * If the user mixes English and Tagalog (Taglish), respond in natural Taglish.
-  * Conversational language inertia is strictly forbidden. Never continue in a language just because earlier turns used it.
 - If the user asks in an unsupported foreign language (e.g. Spanish, French, Japanese, Mandarin, etc.), politely reply in English or Tagalog explaining: "I can only assist with Airship Express hiring inquiries in English and Filipino/Tagalog. Please feel free to ask your questions in either language."
 
 OFFICIAL COMPANY KNOWLEDGE BASE & POLICIES (GROUND TRUTH):
@@ -952,17 +914,23 @@ INSTRUCTIONS:
    - Set to TRUE only if the question is hiring-related BUT requires specific internal HR policy details, exact salary amounts, or internal admin decisions that are NOT mentioned anywhere in the Recruitment Pipeline, Current Open Positions, or the Official Company Knowledge Base above.
    - If the answer can be determined or inferred from the Knowledge Base, Open Positions, or Applicant Context, set to FALSE!
 
+User's latest message: "{$rawMessage}"
+
 Return ONLY valid JSON (no markdown block, no conversational prefix).
 EOT;
 
-    // Detect language of the latest message for current-turn directive
-    $detectedLang = detectQueryLanguage($rawMessage);
-    $turnDirective = ($detectedLang === 'tl')
-        ? "[Language Directive: The user is asking in Filipino/Tagalog. You MUST respond strictly in courteous, natural Filipino/Tagalog with polite markers like po/opo.]\n"
-        : "[Language Directive: The user is asking in English. You MUST respond strictly in clear, professional English. Do NOT speak in Tagalog.]\n";
-
-    // Build multi-turn conversation contents strictly from recentHistory + latest message
-    $conversationContents = [];
+    // Build multi-turn conversation contents
+    // Start with the system instruction as the first user turn (Gemini pattern)
+    $conversationContents = [
+        [
+            'role'  => 'user',
+            'parts' => [['text' => $systemInstruction]]
+        ],
+        [
+            'role'  => 'model',
+            'parts' => [['text' => '{"is_hiring_related": true, "response": "Understood. I am ready to assist applicants of Airship Express.", "is_knowledge_gap": false}']]
+        ]
+    ];
 
     // Inject recent conversation history as alternating user/model turns
     foreach ($recentHistory as $turn) {
@@ -980,10 +948,10 @@ EOT;
         ];
     }
 
-    // Add the current user message as the final turn with the turn directive
+    // Add the current user message as the final turn
     $conversationContents[] = [
         'role'  => 'user',
-        'parts' => [['text' => $turnDirective . $rawMessage]]
+        'parts' => [['text' => $rawMessage]]
     ];
 
     $apiResponse = null;
@@ -993,10 +961,7 @@ EOT;
     $candidateKeys   = defined('GEMINI_API_KEYS') && !empty(GEMINI_API_KEYS) ? GEMINI_API_KEYS : [$geminiApiKey];
 
     $postData = [
-        "systemInstruction" => [
-            "parts" => [["text" => $systemInstruction]]
-        ],
-        "contents"         => $conversationContents,
+        "contents"        => $conversationContents,
         "generationConfig" => [
             "responseMimeType" => "application/json"
         ]
