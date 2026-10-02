@@ -16,7 +16,11 @@ if ($applicationId <= 0 || $userId <= 0 || !in_array($action, ['confirm', 'resch
 }
 
 try {
-    // Security: verify ownership
+    // 24-Hour Expiration Check: auto-expire if past the 24-hour confirmation window
+    require_once __DIR__ . '/auto_expire_helper.php';
+    check_and_expire_schedules($pdo);
+
+    // Security: verify ownership & current status
     $appStmt = $pdo->prepare("SELECT application_id, status FROM applications_tbl WHERE application_id = :app_id AND user_id = :user_id");
     $appStmt->execute(['app_id' => $applicationId, 'user_id' => $userId]);
     $app = $appStmt->fetch();
@@ -28,7 +32,7 @@ try {
     }
 
     if ($app['status'] !== 'PENDING SCHEDULED') {
-        echo json_encode(["status" => "error", "message" => "This interview is already confirmed or processed."]);
+        echo json_encode(["status" => "error", "message" => "This interview scheduling window has expired (24-hour limit exceeded) or is already confirmed/processed."]);
         exit();
     }
 

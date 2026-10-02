@@ -609,7 +609,7 @@ const ApplicationCard = ({
           <div className="app-card__action-heading">
             <p className="app-card__action-title">Final Interview Scheduled — Action Required</p>
             <p className="app-card__action-subtitle">
-              Please accept your schedule or request a reschedule below.
+              Please accept your schedule or request a reschedule within 24 hours (1 day). Unconfirmed schedules expire automatically.
             </p>
           </div>
 

@@ -90,7 +90,7 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
         {/* ── Body ── */}
         <div className="reschedule-modal__body">
 
-          {/* 2-Day Rescheduling Policy Notice */}
+          {/* 1-Day (24-Hour) Rescheduling Policy Notice */}
           <div style={{
             background: '#fffbeb',
             border: '1.5px solid #fef3c7',
@@ -105,7 +105,7 @@ const RescheduleModal = ({ isOpen, onClose, onConfirm, isSubmitting }) => {
             <i className="bx bx-error-circle" style={{ color: '#d97706', fontSize: '20px', marginTop: '1px', flexShrink: 0 }} />
             <div style={{ fontSize: '13px', color: '#92400e', lineHeight: '1.5', fontFamily: "'Inter', sans-serif" }}>
               <strong style={{ display: 'block', marginBottom: '2px', color: '#78350f', fontWeight: '700' }}>Important Rescheduling Notice</strong>
-              Rescheduling requests are <strong>only valid within 2 days</strong> of receiving your schedule assignment. If exceeded, your reschedule request will be void and invalid.
+              Rescheduling requests are <strong>only valid within 24 hours (1 day)</strong> of receiving your schedule assignment. If exceeded without confirmation, your interview invitation will expire and your slot will be automatically released.
             </div>
           </div>
 

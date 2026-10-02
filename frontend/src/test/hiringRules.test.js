@@ -114,13 +114,13 @@ const filterApplicantsByStatus = (applicants, statusFilter) => {
   return applicants.filter(app => (app.status || '').toLowerCase() === statusFilter.toLowerCase());
 };
 
-// ── 9. Reschedule Window Policy (Application Status - 2-Day Limit) ─────────
+// ── 9. Reschedule Window Policy (Application Status - 1-Day Limit) ─────────
 const isWithinRescheduleWindow = (scheduleAssignedAt, currentTime) => {
   if (!scheduleAssignedAt) return false;
   const assigned = new Date(scheduleAssignedAt).getTime();
   const current = new Date(currentTime).getTime();
   const diffHours = (current - assigned) / (1000 * 60 * 60);
-  return diffHours >= 0 && diffHours <= 48; // Must be within 48 hours (2 days)
+  return diffHours >= 0 && diffHours <= 24; // Must be within 24 hours (1 day)
 };
 
 // ── 10. Job Requisition Form Validator (Job Posting) ───────────────────────
@@ -414,17 +414,17 @@ describe('Hiring System Modules - Verification & Business Rules Suite', () => {
   // ──────────────────────────────────────────────────────────────────────────
   // 6. Application Status & Reschedule Policy
   // ──────────────────────────────────────────────────────────────────────────
-  describe('Module: Application Status (2-Day Reschedule Window)', () => {
-    it('allows reschedule within 48 hours of assignment', () => {
+  describe('Module: Application Status (1-Day Reschedule Window)', () => {
+    it('allows reschedule within 24 hours of assignment', () => {
       const assigned = '2026-09-28T09:00:00';
-      const within24h = '2026-09-29T09:00:00';
-      expect(isWithinRescheduleWindow(assigned, within24h)).toBe(true);
+      const within12h = '2026-09-28T21:00:00';
+      expect(isWithinRescheduleWindow(assigned, within12h)).toBe(true);
     });
 
-    it('blocks reschedule requests after 48 hours have elapsed', () => {
+    it('blocks reschedule requests after 24 hours have elapsed', () => {
       const assigned = '2026-09-25T09:00:00';
-      const after3Days = '2026-09-28T10:00:00';
-      expect(isWithinRescheduleWindow(assigned, after3Days)).toBe(false);
+      const after2Days = '2026-09-27T10:00:00';
+      expect(isWithinRescheduleWindow(assigned, after2Days)).toBe(false);
     });
   });
 
@@ -495,7 +495,7 @@ describe('Hiring System Modules - Verification & Business Rules Suite', () => {
   describe('Module: Chatbot Knowledge Base Intelligence', () => {
     const kb = [
       { id: 1, question: 'What are the required documents for application?', answer: 'You need an updated resume in PDF format and a valid ID.' },
-      { id: 2, question: 'How do I reschedule my interview?', answer: 'Go to Application Status and click Reschedule within 2 days.' }
+      { id: 2, question: 'How do I reschedule my interview?', answer: 'Go to Application Status and click Reschedule within 1 day (24 hours).' }
     ];
 
     it('matches exact applicant FAQ questions accurately', () => {
