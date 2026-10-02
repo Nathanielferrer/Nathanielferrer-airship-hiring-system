@@ -61,6 +61,11 @@ try {
                                 a.work_start_reporting_to,
                                 a.work_start_notes,
                                 a.remarks,
+                                a.reschedule_reason,
+                                a.reschedule_requested_slot_id,
+                                req_slot.slot_date AS requested_interview_date,
+                                req_slot.start_time AS requested_interview_start_time,
+                                req_slot.end_time AS requested_interview_end_time,
                                 j.title AS job_title,
                                 inv.scheduled_date AS interview_date,
                                 inv.scheduled_time AS interview_time,
@@ -72,6 +77,7 @@ try {
                                 FROM interviews_tbl
                                 WHERE interview_id IN (SELECT MAX(interview_id) FROM interviews_tbl GROUP BY application_id)
                             ) inv ON inv.application_id = a.application_id
+                            LEFT JOIN interview_slots_tbl req_slot ON a.reschedule_requested_slot_id = req_slot.slot_id
                             WHERE a.user_id = :user_id 
                             ORDER BY a.applied_at DESC");
     $stmt->execute(['user_id' => $userId]);

@@ -75,8 +75,9 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
                     <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
                 </div>
                 <div style='margin: 24px 0;'>
-                    <a href='" . get_frontend_url() . "/application-status' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
+                    <a href='" . get_frontend_url() . "/application-status' target='_blank' rel='noopener noreferrer' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
                 </div>
+                <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><a href='" . get_frontend_url() . "/application-status' target='_blank' rel='noopener noreferrer' style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>" . get_frontend_url() . "/application-status</a></p>
                 <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
             </div>
         ";

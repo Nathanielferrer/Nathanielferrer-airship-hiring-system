@@ -40,12 +40,61 @@ load_env();
 // ── URL Helper Functions ─────────────────────────────────────────────────────
 // Returns the frontend app URL (e.g., https://hiring.yourdomain.com or http://localhost:5173)
 function get_frontend_url(): string {
-    $url = getenv('FRONTEND_URL');
-    return ($url && is_string($url)) ? rtrim($url, '/') : 'http://localhost:5173';
+    // 1. Explicit FRONTEND_URL in environment (check getenv, $_ENV, and $_SERVER)
+    $url = getenv('FRONTEND_URL') ?: ($_ENV['FRONTEND_URL'] ?? ($_SERVER['FRONTEND_URL'] ?? ''));
+    if ($url && is_string($url) && !str_contains($url, 'localhost') && !str_contains($url, '127.0.0.1')) {
+        return rtrim($url, '/');
+    }
+
+    // 2. Live HTTP Origin header (e.g. when an admin or candidate triggers actions via the subdomain in browser)
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? trim($_SERVER['HTTP_ORIGIN']) : '';
+    if (!empty($origin) && !str_contains($origin, 'localhost') && !str_contains($origin, '127.0.0.1')) {
+        return rtrim($origin, '/');
+    }
+
+    // 3. Live HTTP Referer header
+    if (!empty($_SERVER['HTTP_REFERER'])) {
+        $parsed = parse_url($_SERVER['HTTP_REFERER']);
+        if (!empty($parsed['scheme']) && !empty($parsed['host']) && !str_contains($parsed['host'], 'localhost') && !str_contains($parsed['host'], '127.0.0.1')) {
+            $refPort = (!empty($parsed['port']) && !in_array($parsed['port'], [80, 443])) ? ':' . $parsed['port'] : '';
+            return rtrim($parsed['scheme'] . '://' . $parsed['host'] . $refPort, '/');
+        }
+    }
+
+    // 4. ALLOWED_ORIGINS list (if FRONTEND_URL was not set, take first live allowed subdomain)
+    $envAllowed = getenv('ALLOWED_ORIGINS') ?: ($_ENV['ALLOWED_ORIGINS'] ?? ($_SERVER['ALLOWED_ORIGINS'] ?? ''));
+    if ($envAllowed && is_string($envAllowed)) {
+        $origins = array_filter(array_map('trim', explode(',', $envAllowed)));
+        foreach ($origins as $candidate) {
+            if (!empty($candidate) && !str_contains($candidate, 'localhost') && !str_contains($candidate, '127.0.0.1')) {
+                if (!preg_match('~^https?://~i', $candidate)) {
+                    $candidate = 'https://' . $candidate;
+                }
+                return rtrim($candidate, '/');
+            }
+        }
+    }
+
+    // 5. Fallback to explicit FRONTEND_URL if set (even for localhost dev)
+    if ($url && is_string($url)) {
+        return rtrim($url, '/');
+    }
+
+    return 'http://localhost:5173';
 }
 
 // Returns the backend API URL (e.g., https://api-hiring.yourdomain.com or http://localhost/Hiring%20System/backend)
 function get_backend_url(): string {
-    $url = getenv('BACKEND_URL');
-    return ($url && is_string($url)) ? rtrim($url, '/') : 'http://localhost/Hiring%20System/backend';
+    $url = getenv('BACKEND_URL') ?: ($_ENV['BACKEND_URL'] ?? ($_SERVER['BACKEND_URL'] ?? ''));
+    if ($url && is_string($url)) {
+        return rtrim($url, '/');
+    }
+
+    // If running in production with live host header
+    if (!empty($_SERVER['HTTP_HOST']) && !str_contains($_SERVER['HTTP_HOST'], 'localhost') && !str_contains($_SERVER['HTTP_HOST'], '127.0.0.1')) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        return rtrim($scheme . '://' . $_SERVER['HTTP_HOST'], '/');
+    }
+
+    return 'http://localhost/Hiring%20System/backend';
 }

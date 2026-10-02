@@ -244,6 +244,30 @@ const ApplicationCard = ({
     return formatTime12h(rawInterviewTime);
   }, [rawInterviewTime]);
 
+  // Resolve requested reschedule slot date & time and reason
+  const rawRequestedDate = app.requested_interview_date || details?.requested_date;
+  const rawRequestedStart = app.requested_interview_start_time || details?.requested_start_time;
+  const rawRequestedEnd = app.requested_interview_end_time || details?.requested_end_time;
+  const rescheduleReason = app.reschedule_reason || details?.reschedule_reason;
+
+  const formattedRequestedDate = useMemo(() => {
+    if (!rawRequestedDate) return null;
+    try {
+      const d = new Date(rawRequestedDate + (rawRequestedDate.includes('T') ? '' : 'T00:00:00'));
+      if (isNaN(d.getTime())) return rawRequestedDate;
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    } catch {
+      return rawRequestedDate;
+    }
+  }, [rawRequestedDate]);
+
+  const formattedRequestedTime = useMemo(() => {
+    if (!rawRequestedStart) return null;
+    const start = formatTime12h(rawRequestedStart);
+    const end = rawRequestedEnd ? formatTime12h(rawRequestedEnd) : '';
+    return end ? `${start} - ${end}` : start;
+  }, [rawRequestedStart, rawRequestedEnd]);
+
   // Reschedule modal state
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [rescheduleSubmitting, setRescheduleSubmitting] = useState(false);
@@ -638,14 +662,80 @@ const ApplicationCard = ({
         </div>
       )}
 
-      {/* ── RESCHEDULING: Pending Request Notice ── */}
+      {/* ── RESCHEDULING: Pending Request Notice & Requested Schedule Details ── */}
       {isRescheduling && !feedback && (
-        <div className="app-card__notice app-card__notice--rescheduling">
-          <i className="bx bx-time-five app-card__notice-icon--rescheduling" />
-          <span>
-            Your reschedule request has been submitted. Our recruitment team will contact you
-            with a new schedule.
-          </span>
+        <div className="app-card__action-panel" style={{ background: '#fffbeb', borderColor: '#fde68a', padding: '18px 20px', borderRadius: '12px', border: '1.5px solid #fde68a' }}>
+          <div className="app-card__action-heading" style={{ borderBottom: '1px solid #fef3c7', paddingBottom: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a',
+                padding: '3px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase'
+              }}>
+                <i className="bx bx-time-five" style={{ marginRight: '4px', verticalAlign: 'middle' }} />
+                Pending HR Review
+              </span>
+            </div>
+            <p className="app-card__action-title" style={{ marginTop: '8px', color: '#92400e', fontSize: '16px', fontWeight: '700' }}>
+              Reschedule Request Submitted
+            </p>
+            <p className="app-card__action-subtitle" style={{ color: '#b45309', fontSize: '13px', margin: '4px 0 0 0' }}>
+              Our recruitment team is reviewing your requested interview schedule. You will receive an update once confirmed.
+            </p>
+          </div>
+
+          {/* Requested Schedule Highlight */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '10px',
+            border: '1px solid #fde68a',
+            padding: '16px 18px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '14px',
+            boxShadow: '0 2px 6px rgba(245, 158, 11, 0.05)'
+          }}>
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
+                Requested New Date
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: '700', fontSize: '14.5px' }}>
+                <i className="bx bx-calendar-event" style={{ color: '#e6007e', fontSize: '18px' }} />
+                <span>{formattedRequestedDate || 'Preferred date requested'}</span>
+              </div>
+            </div>
+
+            <div>
+              <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
+                Requested Time Slot
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: '700', fontSize: '14.5px' }}>
+                <i className="bx bx-time" style={{ color: '#e6007e', fontSize: '18px' }} />
+                <span>{formattedRequestedTime || 'Pending assignment'}</span>
+              </div>
+            </div>
+
+            {formattedInterviewDate && (
+              <div>
+                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
+                  Original Schedule
+                </span>
+                <div style={{ color: '#64748b', fontSize: '13px', fontWeight: '600' }}>
+                  <del>{formattedInterviewDate} {formattedInterviewTime ? `(${formattedInterviewTime})` : ''}</del>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {rescheduleReason && (
+            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(254, 243, 199, 0.5)', borderRadius: '8px', border: '1px dashed #fcd34d' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#92400e', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+                Reason for Rescheduling:
+              </span>
+              <p style={{ margin: 0, fontSize: '13px', color: '#78350f', fontStyle: 'italic', lineHeight: 1.4 }}>
+                "{rescheduleReason}"
+              </p>
+            </div>
+          )}
         </div>
       )}
 

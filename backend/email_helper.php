@@ -118,13 +118,17 @@ function send_email_via_brevo(
 
     $fromEmail = getenv('BREVO_FROM_EMAIL') ?: (getenv('SMTP_USER') ?: 'airship.express07@gmail.com');
 
-    $payload = json_encode([
+    $payloadData = [
         'sender'      => ['name' => $fromName, 'email' => $fromEmail],
         'to'          => [['email' => $toEmail, 'name' => $toName]],
         'subject'     => $subject,
         'htmlContent' => $htmlBody,
-        'textContent' => $textBody ?: strip_tags($htmlBody)
-    ]);
+        'textContent' => $textBody ?: strip_tags($htmlBody),
+        'headers'     => [
+            'X-Mailin-ClickTrack' => '0'
+        ]
+    ];
+    $payload = json_encode($payloadData);
 
     $ch = curl_init('https://api.brevo.com/v3/smtp/email');
     curl_setopt_array($ch, [
@@ -588,11 +592,11 @@ function sendApplicationStatusEmail(
                         {$bodyContent}
                         
                         <div style='margin: 24px 0;'>
-                            <a href='{$portalUrl}' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
+                            <a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
                                 {$ctaText}
                             </a>
                         </div>
-                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$portalUrl}</span></p>
+                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>{$portalUrl}</a></p>
                         
                         <div style='margin-top: 32px; font-size: 14px; color: #94a3b8; line-height: 1.5;'>
                             Regards,<br>
@@ -693,11 +697,11 @@ function sendInterviewScheduleEmail(
                         </p>
                         
                         <div style='margin: 24px 0;'>
-                            <a href='{$portalUrl}' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
+                            <a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
                                 Log In to Confirm or Reschedule
                             </a>
                         </div>
-                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 12px;'>{$portalUrl}</span></p>
+                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>{$portalUrl}</a></p>
                         
                         <div style='margin-top: 32px; font-size: 14px; color: #94a3b8; line-height: 1.5;'>
                             Regards,<br>

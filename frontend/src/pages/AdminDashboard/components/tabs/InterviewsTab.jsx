@@ -764,28 +764,27 @@ const InterviewsTab = ({ showToast: propShowToast }) => {
               />
             ) : (
               <>
-                {/* Batch Reschedule Actions Bar with Reserved Space to Prevent Table Shift */}
-                <div style={{
-                  minHeight: '62px',
-                  marginBottom: '16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  transition: 'all 0.2s ease'
-                }}>
-                  {selectedRescheduleIds.length > 0 && (
+                {/* Batch Reschedule Actions Bar — only renders when items are selected to eliminate empty space at table top */}
+                {selectedRescheduleIds.length > 0 && (
+                  <div style={{
+                    padding: '12px 16px',
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    background: '#f8fafc',
+                    borderBottom: '1px solid #e2e8f0',
+                    transition: 'all 0.2s ease'
+                  }}>
                     <div style={{
                       width: '100%',
                       background: '#ffffff',
-                      borderRadius: '12px',
-                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      padding: '8px 16px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: '12px',
                       margin: 0,
-                      boxShadow: '0 4px 16px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04)',
+                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.05)',
                       border: '1.5px solid #e2e8f0',
                       color: '#0f172a',
                       flexWrap: 'wrap'
@@ -795,9 +794,9 @@ const InterviewsTab = ({ showToast: propShowToast }) => {
                           background: '#fdf2f8',
                           color: '#e6007e',
                           border: '1px solid #fbcfe8',
-                          padding: '4px 12px',
+                          padding: '3px 10px',
                           borderRadius: '20px',
-                          fontSize: '12px',
+                          fontSize: '11.5px',
                           fontWeight: '800',
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -806,7 +805,7 @@ const InterviewsTab = ({ showToast: propShowToast }) => {
                           <i className="bx bx-check-double" style={{ fontSize: '15px' }}></i>
                           {selectedRescheduleIds.length} Selected
                         </span>
-                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#475569' }}>
+                        <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>
                           Batch Actions for Reschedule Requests:
                         </span>
                       </div>
@@ -817,21 +816,21 @@ const InterviewsTab = ({ showToast: propShowToast }) => {
                           disabled={confirmingReschedule}
                           style={{
                             background: '#059669',
-                            color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px',
-                            fontWeight: '700', fontSize: '12.5px', cursor: 'pointer', display: 'inline-flex',
-                            alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+                            color: '#fff', border: 'none', padding: '6px 14px', borderRadius: '7px',
+                            fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'inline-flex',
+                            alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(5,150,105,0.2)',
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          <i className="bx bx-check-circle" style={{ fontSize: '16px' }}></i>
-                          {confirmingReschedule ? 'Confirming...' : `Confirm All Selected (${selectedRescheduleIds.length})`}
+                          <i className="bx bx-check-circle" style={{ fontSize: '15px' }}></i>
+                          {confirmingReschedule ? 'Confirming...' : `Confirm Selected (${selectedRescheduleIds.length})`}
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedRescheduleIds([])}
                           style={{
                             background: '#f8fafc', color: '#64748b', border: '1.5px solid #cbd5e1',
-                            padding: '8px 14px', borderRadius: '8px', fontWeight: '600', fontSize: '12px',
+                            padding: '6px 12px', borderRadius: '7px', fontWeight: '600', fontSize: '12px',
                             cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px',
                             transition: 'all 0.15s ease'
                           }}
@@ -840,8 +839,8 @@ const InterviewsTab = ({ showToast: propShowToast }) => {
                         </button>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <table className="admin-table">
                   <thead>

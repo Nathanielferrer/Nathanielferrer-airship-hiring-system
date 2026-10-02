@@ -216,7 +216,7 @@ const ChatbotWidget = () => {
 
   // ── Send Message ────────────────────────────────────────────────────────────
   const handleSend = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!inputValue.trim() || isTyping) return;
 
     const userMessage = {
@@ -399,7 +399,20 @@ const ChatbotWidget = () => {
               disabled={isTyping}
               maxLength={300}
             />
-            <button type="submit" className="chatbot-send-btn" disabled={!inputValue.trim() || isTyping}>
+            <button
+              type="submit"
+              className="chatbot-send-btn"
+              disabled={!inputValue.trim() || isTyping}
+              title="Send Message"
+              aria-label="Send Message"
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchEnd={(e) => {
+                if (inputValue.trim() && !isTyping) {
+                  e.preventDefault();
+                  handleSend(e);
+                }
+              }}
+            >
               <i className="bx bxs-send chatbot-send-icon" />
             </button>
           </form>

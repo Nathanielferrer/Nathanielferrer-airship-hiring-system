@@ -24,9 +24,16 @@ try {
     }
 
     $stmt = $pdo->prepare("
-        SELECT i.*, COALESCE(slot.end_time, '') as end_time 
+        SELECT i.*, COALESCE(slot.end_time, '') as end_time,
+               a.reschedule_reason,
+               a.reschedule_requested_slot_id,
+               req_slot.slot_date as requested_date,
+               req_slot.start_time as requested_start_time,
+               req_slot.end_time as requested_end_time
         FROM interviews_tbl i
+        INNER JOIN applications_tbl a ON a.application_id = i.application_id
         LEFT JOIN interview_slots_tbl slot ON (slot.application_id = i.application_id AND slot.status = 'Booked')
+        LEFT JOIN interview_slots_tbl req_slot ON a.reschedule_requested_slot_id = req_slot.slot_id
         WHERE i.application_id = :app_id 
         ORDER BY i.interview_id DESC LIMIT 1
     ");

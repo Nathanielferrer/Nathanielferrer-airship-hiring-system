@@ -77,47 +77,26 @@ try {
 
     $pdo->commit();
 
-    // Fetch candidate email
-    $emailStmt = $pdo->prepare("SELECT a.candidate_email, u.User_Email, u.User_Fname FROM applications_tbl a INNER JOIN users_tbl u ON a.user_id = u.user_id WHERE a.application_id = :id");
+    // Fetch candidate and job info for email notification
+    $emailStmt = $pdo->prepare("
+        SELECT a.candidate_email, a.candidate_name, u.User_Email, u.User_Fname, u.User_Lname, j.title AS job_title
+        FROM applications_tbl a 
+        INNER JOIN users_tbl u ON a.user_id = u.user_id 
+        LEFT JOIN jobs_tbl j ON a.job_id = j.job_id
+        WHERE a.application_id = :id
+    ");
     $emailStmt->execute(['id' => $applicationId]);
     $emailData = $emailStmt->fetch();
     
     if ($emailData) {
-        $toEmail = !empty($emailData['candidate_email']) ? $emailData['candidate_email'] : $emailData['User_Email'];
+        $toEmail  = !empty($emailData['candidate_email']) ? $emailData['candidate_email'] : $emailData['User_Email'];
+        $toName   = !empty($emailData['candidate_name']) ? $emailData['candidate_name'] : trim(($emailData['User_Fname'] ?? '') . ' ' . ($emailData['User_Lname'] ?? ''));
+        $jobTitle = $emailData['job_title'] ?? 'the position';
         
         try {
-            $mail = new PHPMailer(true);
-            configure_smtp($mail, 'Airship Express Recruitment');
-            $mail->addAddress($toEmail, $emailData['User_Fname']);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Interview Scheduled - Airship Express';
-            
-            $reqHtml = "<ol style='margin: 0; padding-left: 20px; line-height: 1.6;'>";
-            foreach($requirements as $r) {
-                $reqHtml .= "<li>" . htmlspecialchars($r) . "</li>";
-            }
-            $reqHtml .= "</ol>";
-
-            $mail->Body = "
-            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e4e7; border-radius: 8px;'>
-                <h2 style='color: #e6007e; margin-top: 0; font-family: Montserrat, Arial, sans-serif;'>Airship Express - Interview Scheduled</h2>
-                <p>Hello " . htmlspecialchars($emailData['User_Fname']) . ",</p>
-                <p>We are pleased to inform you that your interview has been scheduled.</p>
-                <div style='background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                    <p style='margin: 5px 0;'><strong>Date:</strong> " . date("F j, Y", strtotime($date)) . "</p>
-                    <p style='margin: 5px 0;'><strong>Time:</strong> " . date("g:i A", strtotime($time)) . "</p>
-                    <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
-                </div>
-                <p><strong>Requirements to Bring:</strong></p>
-                $reqHtml
-                <p>Best regards,<br>Airship Express Recruitment Team</p>
-            </div>
-            ";
-            
-            send_email($emailData['User_Email'], $emailData['User_Fname'] . ' ' . $emailData['User_Lname'], $mail->Subject, $mail->Body, '', 'Airship Express Recruitment Team');
+            sendInterviewScheduleEmail($toEmail, $toName, $jobTitle, $date, $time, '', $location);
         } catch (\Throwable $e) {
-            error_log("Email could not be sent. Error: " . $e->getMessage());
+            error_log("Email could not be sent in schedule_interview.php. Error: " . $e->getMessage());
         }
     }
 
