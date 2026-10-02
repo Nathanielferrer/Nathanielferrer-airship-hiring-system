@@ -592,11 +592,19 @@ function sendApplicationStatusEmail(
                         {$bodyContent}
                         
                         <div style='margin: 24px 0;'>
-                            <a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
-                                {$ctaText}
-                            </a>
+                            <table border='0' cellspacing='0' cellpadding='0' role='presentation'>
+                                <tr>
+                                    <td align='center' bgcolor='#e6007e' style='border-radius: 6px;'>
+                                        <a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; mso-padding-alt: 0; text-underline-color: #e6007e;'>
+                                            <!--[if mso]><i style='letter-spacing: 24px; mso-font-width: -100%; mso-text-raise: 18pt;'>&nbsp;</i><![endif]-->
+                                            <span style='mso-text-raise: 9pt; color: #ffffff;'>{$ctaText}</span>
+                                            <!--[if mso]><i style='letter-spacing: 24px; mso-font-width: -100%;'>&nbsp;</i><![endif]-->
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
-                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>{$portalUrl}</a></p>
+                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, copy and paste this link into your browser:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>{$portalUrl}</span></p>
                         
                         <div style='margin-top: 32px; font-size: 14px; color: #94a3b8; line-height: 1.5;'>
                             Regards,<br>
@@ -697,11 +705,19 @@ function sendInterviewScheduleEmail(
                         </p>
                         
                         <div style='margin: 24px 0;'>
-                            <a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='background: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block;'>
-                                Log In to Confirm or Reschedule
-                            </a>
+                            <table border='0' cellspacing='0' cellpadding='0' role='presentation'>
+                                <tr>
+                                    <td align='center' bgcolor='#e6007e' style='border-radius: 6px;'>
+                                        <a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; mso-padding-alt: 0; text-underline-color: #e6007e;'>
+                                            <!--[if mso]><i style='letter-spacing: 24px; mso-font-width: -100%; mso-text-raise: 18pt;'>&nbsp;</i><![endif]-->
+                                            <span style='mso-text-raise: 9pt; color: #ffffff;'>Log In to Confirm or Reschedule</span>
+                                            <!--[if mso]><i style='letter-spacing: 24px; mso-font-width: -100%;'>&nbsp;</i><![endif]-->
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
-                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><a href='{$portalUrl}' target='_blank' rel='noopener noreferrer' style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>{$portalUrl}</a></p>
+                        <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, copy and paste this link into your browser:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>{$portalUrl}</span></p>
                         
                         <div style='margin-top: 32px; font-size: 14px; color: #94a3b8; line-height: 1.5;'>
                             Regards,<br>

@@ -75,9 +75,19 @@ function sendConfirmRescheduleEmail($toEmail, $toName, $date, $startTime, $endTi
                     <p style='margin: 5px 0;'><strong>Location:</strong> " . htmlspecialchars($location) . "</p>
                 </div>
                 <div style='margin: 24px 0;'>
-                    <a href='" . get_frontend_url() . "/application-status' target='_blank' rel='noopener noreferrer' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;'>Log In to Portal</a>
+                    <table border='0' cellspacing='0' cellpadding='0' role='presentation'>
+                        <tr>
+                            <td align='center' bgcolor='#e6007e' style='border-radius: 6px;'>
+                                <a href='" . get_frontend_url() . "/application-status' target='_blank' rel='noopener noreferrer' style='background-color: #e6007e; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; display: inline-block; mso-padding-alt: 0; text-underline-color: #e6007e;'>
+                                    <!--[if mso]><i style='letter-spacing: 24px; mso-font-width: -100%; mso-text-raise: 18pt;'>&nbsp;</i><![endif]-->
+                                    <span style='mso-text-raise: 9pt; color: #ffffff;'>Log In to Portal</span>
+                                    <!--[if mso]><i style='letter-spacing: 24px; mso-font-width: -100%;'>&nbsp;</i><![endif]-->
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
-                <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, visit your candidate portal directly:<br><a href='" . get_frontend_url() . "/application-status' target='_blank' rel='noopener noreferrer' style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>" . get_frontend_url() . "/application-status</a></p>
+                <p style='font-size: 13px; color: #64748b; line-height: 1.5; margin-top: 14px;'>If the button above does not work, copy and paste this link into your browser:<br><span style='color: #e6007e; word-break: break-all; font-family: monospace; font-size: 13px; font-weight: 600;'>" . get_frontend_url() . "/application-status</span></p>
                 <p style='font-size: 13px; color: #94a3b8; margin-top: 30px;'>Regards,<br>Airship Express Recruitment Team</p>
             </div>
         ";
