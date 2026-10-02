@@ -347,6 +347,15 @@ const ChatbotWidget = () => {
               <p className="chatbot-subtitle">Online • Support Bot</p>
             </div>
           </div>
+          <button
+            type="button"
+            className="chatbot-close-btn"
+            onClick={handleToggle}
+            title="Close Chat"
+            aria-label="Close Chat"
+          >
+            <i className="bx bx-x" style={{ fontSize: '24px' }} />
+          </button>
         </div>
 
         {/* Conversation History */}

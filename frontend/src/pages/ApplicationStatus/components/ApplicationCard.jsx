@@ -664,21 +664,21 @@ const ApplicationCard = ({
 
       {/* ── RESCHEDULING: Pending Request Notice & Requested Schedule Details ── */}
       {isRescheduling && !feedback && (
-        <div className="app-card__action-panel" style={{ background: '#fffbeb', borderColor: '#fde68a', padding: '18px 20px', borderRadius: '12px', border: '1.5px solid #fde68a' }}>
-          <div className="app-card__action-heading" style={{ borderBottom: '1px solid #fef3c7', paddingBottom: '12px', marginBottom: '14px' }}>
+        <div className="app-card__confirmed-panel" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{
-                background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a',
-                padding: '3px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase'
+                background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1',
+                padding: '3px 10px', borderRadius: '16px', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase'
               }}>
                 <i className="bx bx-time-five" style={{ marginRight: '4px', verticalAlign: 'middle' }} />
                 Pending HR Review
               </span>
             </div>
-            <p className="app-card__action-title" style={{ marginTop: '8px', color: '#92400e', fontSize: '16px', fontWeight: '700' }}>
+            <p style={{ margin: '8px 0 0 0', color: '#0f172a', fontSize: '15px', fontWeight: '700' }}>
               Reschedule Request Submitted
             </p>
-            <p className="app-card__action-subtitle" style={{ color: '#b45309', fontSize: '13px', margin: '4px 0 0 0' }}>
+            <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
               Our recruitment team is reviewing your requested interview schedule. You will receive an update once confirmed.
             </p>
           </div>
@@ -687,19 +687,19 @@ const ApplicationCard = ({
           <div style={{
             background: '#ffffff',
             borderRadius: '10px',
-            border: '1px solid #fde68a',
+            border: '1px solid #e2e8f0',
             padding: '16px 18px',
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '14px',
-            boxShadow: '0 2px 6px rgba(245, 158, 11, 0.05)'
+            boxShadow: 'none'
           }}>
             <div>
               <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', display: 'block', marginBottom: '4px' }}>
                 Requested New Date
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: '700', fontSize: '14.5px' }}>
-                <i className="bx bx-calendar-event" style={{ color: '#e6007e', fontSize: '18px' }} />
+                <i className="bx bx-calendar-event" style={{ color: '#0284c7', fontSize: '18px' }} />
                 <span>{formattedRequestedDate || 'Preferred date requested'}</span>
               </div>
             </div>
@@ -709,7 +709,7 @@ const ApplicationCard = ({
                 Requested Time Slot
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: '700', fontSize: '14.5px' }}>
-                <i className="bx bx-time" style={{ color: '#e6007e', fontSize: '18px' }} />
+                <i className="bx bx-time" style={{ color: '#0284c7', fontSize: '18px' }} />
                 <span>{formattedRequestedTime || 'Pending assignment'}</span>
               </div>
             </div>
@@ -727,11 +727,11 @@ const ApplicationCard = ({
           </div>
 
           {rescheduleReason && (
-            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(254, 243, 199, 0.5)', borderRadius: '8px', border: '1px dashed #fcd34d' }}>
-              <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#92400e', textTransform: 'uppercase', display: 'block', marginBottom: '3px' }}>
+            <div style={{ padding: '12px 14px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', display: 'block', marginBottom: '4px', letterSpacing: '0.05em' }}>
                 Reason for Rescheduling:
               </span>
-              <p style={{ margin: 0, fontSize: '13px', color: '#78350f', fontStyle: 'italic', lineHeight: 1.4 }}>
+              <p style={{ margin: 0, fontSize: '13px', color: '#334155', fontStyle: 'italic', lineHeight: 1.4 }}>
                 "{rescheduleReason}"
               </p>
             </div>
