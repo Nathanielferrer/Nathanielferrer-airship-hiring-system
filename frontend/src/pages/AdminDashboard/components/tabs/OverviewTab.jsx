@@ -527,128 +527,130 @@ const OverviewTab = ({ setActiveTab }) => {
           </button>
         </div>
 
-        {/* Table Body */}
-        {loading ? (
-          <TableSkeleton
-            columns={['Candidate', 'Applied Position', 'Current Stage', 'Schedule', 'Status']}
-            columnTypes={['avatar', 'text', 'text', 'date', 'status']}
-            rows={4}
-          />
-        ) : fetchError ? (
-          <DatabaseErrorState
-            title="Unable to Load Pipeline Data"
-            message={fetchError}
-            onRetry={fetchDashboardOverviewData}
-          />
-        ) : recentApps.length === 0 ? (
-          <div style={{ padding: '48px 20px', textAlign: 'center', background: '#ffffff' }}>
-            <i className='bx bx-check-circle' style={{ fontSize: '40px', color: '#10b981', marginBottom: '8px' }}></i>
-            <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>All Clear! No Active Pending Candidates</div>
-            <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '4px' }}>All candidates have been evaluated and recorded in audit records.</div>
-          </div>
-        ) : (
-          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
-                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Candidate</th>
-                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Applied Position</th>
-                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current Stage</th>
-                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Schedule</th>
-                <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentApps.map((app, idx) => {
-                const candidateName = app.candidate_name || `${app.User_Fname || ''} ${app.User_Lname || ''}`.trim() || 'Applicant';
-                const candidateEmail = app.candidate_email || app.User_Email || '—';
-                const initials = getInitials(candidateName);
-                const avatarBg = getAvatarBg(idx);
+        {/* Table Body (Scrollable container on small viewports) */}
+        <div className="admin-table-responsive">
+          {loading ? (
+            <TableSkeleton
+              columns={['Candidate', 'Applied Position', 'Current Stage', 'Schedule', 'Status']}
+              columnTypes={['avatar', 'text', 'text', 'date', 'status']}
+              rows={4}
+            />
+          ) : fetchError ? (
+            <DatabaseErrorState
+              title="Unable to Load Pipeline Data"
+              message={fetchError}
+              onRetry={fetchDashboardOverviewData}
+            />
+          ) : recentApps.length === 0 ? (
+            <div style={{ padding: '48px 20px', textAlign: 'center', background: '#ffffff' }}>
+              <i className='bx bx-check-circle' style={{ fontSize: '40px', color: '#10b981', marginBottom: '8px' }}></i>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', fontFamily: 'Montserrat, sans-serif' }}>All Clear! No Active Pending Candidates</div>
+              <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '4px' }}>All candidates have been evaluated and recorded in audit records.</div>
+            </div>
+          ) : (
+            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
+                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Candidate</th>
+                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Applied Position</th>
+                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current Stage</th>
+                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Schedule</th>
+                  <th style={{ padding: '14px 20px', textAlign: 'left', fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentApps.map((app, idx) => {
+                  const candidateName = app.candidate_name || `${app.User_Fname || ''} ${app.User_Lname || ''}`.trim() || 'Applicant';
+                  const candidateEmail = app.candidate_email || app.User_Email || '—';
+                  const initials = getInitials(candidateName);
+                  const avatarBg = getAvatarBg(idx);
 
-                return (
-                  <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}>
-                    
-                    {/* Candidate Name, Avatar & Email */}
-                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="admin-avatar-initials" style={{ background: avatarBg }}>
-                          {initials}
+                  return (
+                    <tr key={app.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s ease' }}>
+                      
+                      {/* Candidate Name, Avatar & Email */}
+                      <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div className="admin-avatar-initials" style={{ background: avatarBg }}>
+                            {initials}
+                          </div>
+                          <div className="admin-candidate-cell">
+                            <span className="admin-candidate-name" style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
+                              {candidateName}
+                            </span>
+                            <span className="admin-candidate-email" style={{ fontSize: '11.5px', color: '#64748b' }}>
+                              {candidateEmail}
+                            </span>
+                          </div>
                         </div>
-                        <div className="admin-candidate-cell">
-                          <span className="admin-candidate-name" style={{ fontSize: '13.5px', fontWeight: '700', color: '#0f172a' }}>
-                            {candidateName}
-                          </span>
-                          <span className="admin-candidate-email" style={{ fontSize: '11.5px', color: '#64748b' }}>
-                            {candidateEmail}
-                          </span>
+                      </td>
+
+                      {/* Applied Position */}
+                      <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'inline-block', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px' }}>
+                          <strong style={{ fontSize: '12.5px', color: '#1e293b' }}>
+                            {app.job_title || 'General Position'}
+                          </strong>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Applied Position */}
-                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'inline-block', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '4px 10px' }}>
-                        <strong style={{ fontSize: '12.5px', color: '#1e293b' }}>
-                          {app.job_title || 'General Position'}
-                        </strong>
-                      </div>
-                    </td>
+                      {/* Current Stage */}
+                      <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                        {app.isScreening ? (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '5px 12px',
+                            borderRadius: '8px',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            background: '#f0f9ff',
+                            color: '#0369a1',
+                            border: '1px solid #bae6fd'
+                          }}>
+                            <i className='bx bx-file-blank' style={{ color: '#0284c7', fontSize: '14px' }}></i>
+                            Resume Screening
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '5px 12px',
+                            borderRadius: '8px',
+                            fontSize: '11.5px',
+                            fontWeight: '700',
+                            background: '#fdf2f8',
+                            color: '#be123c',
+                            border: '1px solid #fbcfe8'
+                          }}>
+                            <i className='bx bx-calendar-event' style={{ color: '#e6007e', fontSize: '14px' }}></i>
+                            Interview Phase
+                          </span>
+                        )}
+                      </td>
 
-                    {/* Current Stage */}
-                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
-                      {app.isScreening ? (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '5px 12px',
-                          borderRadius: '8px',
-                          fontSize: '11.5px',
-                          fontWeight: '700',
-                          background: '#f0f9ff',
-                          color: '#0369a1',
-                          border: '1px solid #bae6fd'
-                        }}>
-                          <i className='bx bx-file-blank' style={{ color: '#0284c7', fontSize: '14px' }}></i>
-                          Resume Screening
-                        </span>
-                      ) : (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          padding: '5px 12px',
-                          borderRadius: '8px',
-                          fontSize: '11.5px',
-                          fontWeight: '700',
-                          background: '#fdf2f8',
-                          color: '#be123c',
-                          border: '1px solid #fbcfe8'
-                        }}>
-                          <i className='bx bx-calendar-event' style={{ color: '#e6007e', fontSize: '14px' }}></i>
-                          Interview Phase
-                        </span>
-                      )}
-                    </td>
+                      {/* Schedule / Date */}
+                      <td style={{ padding: '16px 24px', verticalAlign: 'middle', fontSize: '12.5px', color: '#475569', fontWeight: app.isScreening ? '500' : '600' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <i className={app.isScreening ? 'bx bx-time-five' : 'bx bx-alarm'} style={{ color: '#94a3b8' }}></i>
+                          {app.schedule}
+                        </div>
+                      </td>
 
-                    {/* Schedule / Date */}
-                    <td style={{ padding: '16px 24px', verticalAlign: 'middle', fontSize: '12.5px', color: '#475569', fontWeight: app.isScreening ? '500' : '600' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <i className={app.isScreening ? 'bx bx-time-five' : 'bx bx-alarm'} style={{ color: '#94a3b8' }}></i>
-                        {app.schedule}
-                      </div>
-                    </td>
+                      {/* Status Badge */}
+                      <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
+                        {getStatusBadge(app.status)}
+                      </td>
 
-                    {/* Status Badge */}
-                    <td style={{ padding: '16px 24px', verticalAlign: 'middle' }}>
-                      {getStatusBadge(app.status)}
-                    </td>
-
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
 
     </div>

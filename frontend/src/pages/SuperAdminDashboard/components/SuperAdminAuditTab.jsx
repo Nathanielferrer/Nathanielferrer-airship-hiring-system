@@ -575,8 +575,8 @@ const SuperAdminAuditTab = () => {
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="admin-table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="admin-table" style={{ width: '100%', minWidth: '920px', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
                   <th style={{ width: '150px', padding: '14px 16px', textAlign: 'center', fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>

@@ -57,9 +57,13 @@ try {
     } else if ($status_filter === 'partially_compliant') {
         $baseSql .= " AND UPPER(a.status) IN ('PARTIALLY COMPLIANT', 'PARTIALLY_COMPLIANT')";
     } else if ($status_filter === 'rejected') {
-        $baseSql .= " AND UPPER(a.status) IN ('REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'JOB OFFER DECLINED', 'JOB_OFFER_DECLINED')";
+        $baseSql .= " AND UPPER(a.status) IN ('REJECTED', 'SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'JOB OFFER DECLINED', 'JOB_OFFER_DECLINED')";
     } else if ($status_filter === 'passed_final_interview') {
         $baseSql .= " AND UPPER(a.status) IN ('PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW')";
+    } else if ($status_filter === 'failed_final_interview') {
+        $baseSql .= " AND UPPER(a.status) IN ('FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAIL_FINAL_INTERVIEW')";
+    } else if ($status_filter === 'waitlisted' || $status_filter === 'waitlist') {
+        $baseSql .= " AND UPPER(a.status) IN ('PASSED FINAL — WAITING FOR SLOT', 'PASSED FINAL - WAITING FOR SLOT', 'WAITING_FOR_SLOT', 'WAITLIST', 'WAITLISTED')";
     } else if ($status_filter === 'withdrawn') {
         $baseSql .= " AND UPPER(a.status) IN ('CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW')";
     } else if ($status_filter === 'no_show') {
@@ -69,7 +73,9 @@ try {
     } else if ($status_filter === 'pending_evaluation') {
         $baseSql .= " AND UPPER(a.status) IN ('PENDING', 'REVIEW_REQUIRED')";
     } else if ($status_filter === 'passed_initial') {
-        $baseSql .= " AND UPPER(a.status) IN ('PASSED INITIAL', 'PASSED_INITIAL', 'PASSED INITIAL SCREENING')";
+        $baseSql .= " AND UPPER(a.status) IN ('PASSED INITIAL', 'PASSED_INITIAL', 'PASSED INITIAL SCREENING', 'PASSED INITIAL INTERVIEW', 'PASSED_INITIAL_INTERVIEW')";
+    } else if ($status_filter === 'initial_interview_rejected') {
+        $baseSql .= " AND UPPER(a.status) IN ('INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'SCREENING_REJECTED')";
     } else if ($status_filter === 'pending_scheduled') {
         $baseSql .= " AND UPPER(a.status) IN ('PENDING SCHEDULED', 'PENDING SCHEDULE', 'PENDING_SCHEDULED')";
     } else if ($status_filter === 'confirmed_schedule') {
@@ -80,8 +86,6 @@ try {
         $baseSql .= " AND UPPER(a.status) IN ('SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED', 'DECLINED - UNRESPONSIVE', 'UNRESPONSIVE', 'DECLINED_UNRESPONSIVE')";
     } else if ($status_filter === 'offer_expired') {
         $baseSql .= " AND UPPER(a.status) IN ('OFFER EXPIRED', 'OFFER_EXPIRED', 'JOB OFFER EXPIRED')";
-    } else if ($status_filter === 'waitlisted') {
-        $baseSql .= " AND UPPER(a.status) IN ('PASSED FINAL — WAITING FOR SLOT', 'PASSED FINAL - WAITING FOR SLOT', 'WAITING_FOR_SLOT', 'WAITLIST', 'WAITLISTED')";
     }
 
     // 1. Get Total Count for Pagination

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import logoImg from '../../assets/images/Logo Airship Express.png';
+import { useTheme } from '../../context/ThemeContext';
+import SquishSwitch from '../SquishSwitch/SquishSwitch';
+import logoImg from '../../assets/images/Logo Airship Express.webp';
 import './ApplicantNavbar.css';
 
 /**
@@ -38,6 +40,7 @@ const ApplicantNavbar = ({
   dropdownRef,
 }) => {
   const navigate = useNavigate();
+  const { isDarkMode, setIsDarkMode } = useTheme();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const unreadCount = (notifications || []).filter(n => !n.is_read).length;
@@ -62,7 +65,7 @@ const ApplicantNavbar = ({
     updateIndicator();
     const handleResize = () => {
       updateIndicator();
-      if (window.innerWidth > 768) {
+      if (window.innerWidth > 880) {
         setShowMobileMenu(false);
       }
     };
@@ -73,6 +76,7 @@ const ApplicantNavbar = ({
 
   const handleNav = (path) => {
     setShowMobileMenu(false);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     navigate(path);
   };
 
@@ -95,14 +99,21 @@ const ApplicantNavbar = ({
     <header className="dashboard-navbar">
       {/* Brand */}
       <div className="dashboard-navbar-left" onClick={() => handleNav(getHomePath())}>
-        <img src={logoImg} alt="Airship Express Logo" className="dashboard-navbar-logo-img" />
+        <img
+          src={logoImg}
+          alt="Airship Express Logo"
+          className="dashboard-navbar-logo-img"
+          width="160"
+          height="40"
+          decoding="async"
+        />
         <div className="dashboard-navbar-brand-text">
           <span className="brand-name">AIRSHIP EXPRESS</span>
           <span className="brand-platform">Hiring Platform</span>
         </div>
       </div>
 
-      {/* Center Nav links with Animated Sliding Underline */}
+      {/* Center Nav links with Animated Underline */}
       <nav className="dashboard-navbar-nav-wrapper">
         <ul className="dashboard-navbar-nav">
           <li>
@@ -111,7 +122,8 @@ const ApplicantNavbar = ({
               className={`nav-link-item ${activePage === 'home' ? 'active' : ''}`}
               onClick={() => handleNav(getHomePath())}
             >
-              Home
+              <i className="bx bx-home nav-icon" />
+              <span>Home</span>
             </span>
           </li>
           <li>
@@ -120,7 +132,8 @@ const ApplicantNavbar = ({
               className={`nav-link-item ${activePage === 'vacancy' ? 'active' : ''}`}
               onClick={() => handleNav('/vacancy')}
             >
-              Vacancy
+              <i className="bx bx-briefcase nav-icon" />
+              <span>Vacancies</span>
             </span>
           </li>
           <li>
@@ -129,7 +142,8 @@ const ApplicantNavbar = ({
               className={`nav-link-item ${activePage === 'about' ? 'active' : ''}`}
               onClick={() => handleNav('/about')}
             >
-              About
+              <i className="bx bx-info-circle nav-icon" />
+              <span>About Us</span>
             </span>
           </li>
           <li>
@@ -144,7 +158,8 @@ const ApplicantNavbar = ({
                 }
               }}
             >
-              Application Status
+              <i className="bx bx-task nav-icon" />
+              <span>Application Status</span>
             </span>
           </li>
         </ul>
@@ -158,8 +173,29 @@ const ApplicantNavbar = ({
         />
       </nav>
 
-      {/* Right side: notifications + profile or sign in + mobile burger */}
+      {/* Right side: dark mode switch + notifications + profile or login/get-started + mobile burger */}
       <div className="dashboard-navbar-right" ref={dropdownRef}>
+        {/* SquishSwitch for Dark Mode */}
+        <div className="nav-theme-toggle-wrap" title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+          <SquishSwitch
+            checked={isDarkMode}
+            onChange={setIsDarkMode}
+            trackColor="#27272a"
+            trackOnColor="#f5f5f5"
+            width={48}
+            height={26}
+            radius={13}
+            speed={50}
+            stretch={20}
+            hoverScale={1.035}
+            colorDuration={320}
+            disabled={false}
+            thumbColor="#4e4e51"
+            thumbOnColor="#27272a"
+            ariaLabel="Dark mode switch"
+          />
+        </div>
+
         {activeUser ? (
           <>
             {/* Notification Bell */}
@@ -295,10 +331,12 @@ const ApplicantNavbar = ({
         ) : (
           <div className="nav-auth-buttons">
             <button onClick={() => handleNav('/login')} className="nav-login-btn">
-              Log In
+              <i className="bx bx-log-in nav-btn-icon" />
+              <span>Log In</span>
             </button>
             <button onClick={() => handleNav('/register')} className="nav-signup-btn">
-              Sign Up
+              <span>Get Started</span>
+              <i className="bx bx-up-arrow-alt nav-btn-arrow" />
             </button>
           </div>
         )}
@@ -324,19 +362,22 @@ const ApplicantNavbar = ({
             className={`mobile-nav-item ${activePage === 'home' ? 'active' : ''}`}
             onClick={() => handleNav(getHomePath())}
           >
-            Home
+            <i className="bx bx-home mobile-nav-icon" />
+            <span>Home</span>
           </div>
           <div
             className={`mobile-nav-item ${activePage === 'vacancy' ? 'active' : ''}`}
             onClick={() => handleNav('/vacancy')}
           >
-            Vacancy
+            <i className="bx bx-briefcase mobile-nav-icon" />
+            <span>Vacancies</span>
           </div>
           <div
             className={`mobile-nav-item ${activePage === 'about' ? 'active' : ''}`}
             onClick={() => handleNav('/about')}
           >
-            About
+            <i className="bx bx-info-circle mobile-nav-icon" />
+            <span>About Us</span>
           </div>
           <div
             className={`mobile-nav-item ${activePage === 'status' ? 'active' : ''}`}
@@ -349,8 +390,22 @@ const ApplicantNavbar = ({
               }
             }}
           >
-            Application Status
+            <i className="bx bx-task mobile-nav-icon" />
+            <span>Application Status</span>
           </div>
+
+          {!activeUser && (
+            <div className="mobile-nav-auth-container">
+              <button onClick={() => handleNav('/login')} className="nav-login-btn mobile-auth-btn">
+                <i className="bx bx-log-in nav-btn-icon" />
+                <span>Log In</span>
+              </button>
+              <button onClick={() => handleNav('/register')} className="nav-signup-btn mobile-auth-btn">
+                <span>Get Started</span>
+                <i className="bx bx-up-arrow-alt nav-btn-arrow" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

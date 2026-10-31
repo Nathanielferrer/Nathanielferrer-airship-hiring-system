@@ -177,3 +177,32 @@
     justify-content: center;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR CONFIRMATION MODALS
+   ══════════════════════════════════════════════════ */
+[data-theme="dark"] .custom-confirm-card {
+  background: #111420 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .custom-confirm-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .custom-confirm-message {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .custom-confirm-btn.cancel {
+  background: #1e2230 !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .custom-confirm-btn.cancel:hover {
+  background: #282d40 !important;
+  color: #ffffff !important;
+}

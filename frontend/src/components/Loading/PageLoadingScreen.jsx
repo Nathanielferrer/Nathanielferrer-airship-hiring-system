@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from '../../assets/images/only_logo.png';
+import logoImg from '../../assets/images/only_logo.webp';
 import './LoadingStyles.css';
 
 /**
@@ -16,6 +16,9 @@ const PageLoadingScreen = ({
           src={logoImg}
           alt="Airship Express"
           className="page-loader-brand-logo"
+          decoding="async"
+          width="64"
+          height="64"
         />
         <div className="page-loader-progress-track">
           <div className="page-loader-progress-bar" />

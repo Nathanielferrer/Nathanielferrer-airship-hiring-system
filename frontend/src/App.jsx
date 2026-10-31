@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
@@ -15,6 +15,7 @@ import Vacancy from './pages/Vacancy/Vacancy';
 import About from './pages/About/About';
 import Settings from './pages/Settings/Settings';
 import ChatbotWidget from './components/ChatbotWidget/ChatbotWidget';
+import { ThemeProvider } from './context/ThemeContext';
 import './App.css';
 
 const APPLICANT_CHATBOT_ROUTES = [
@@ -26,13 +27,41 @@ const APPLICANT_CHATBOT_ROUTES = [
   '/settings',
 ];
 
+/**
+ * Automatically resets window scroll to the top on every route change,
+ * ensuring users start at the top of the page rather than maintaining prior scroll offsets.
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    if (document.documentElement) document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
+  }, [pathname]);
+
+  return null;
+}
+
 function AppContent() {
   const location = useLocation();
   const normalizedPath = location.pathname.replace(/\/$/, '') || '/';
   const showChatbot = APPLICANT_CHATBOT_ROUTES.includes(normalizedPath);
 
+  useEffect(() => {
+    // If a guest visits any subpage directly (e.g. /vacancy, /about, /login),
+    // record that they have already visited the website so Home will not trigger staggering
+    if (normalizedPath !== '/' && normalizedPath !== '/applicant-dashboard') {
+      try {
+        localStorage.setItem('airship_guest_visited', 'true');
+        sessionStorage.setItem('airship_guest_visited', 'true');
+      } catch {}
+    }
+  }, [normalizedPath]);
+
   return (
     <div className="app-container">
+      <ScrollToTop />
       <Routes>
         {/* Public / Landing Routes */}
         <Route path="/" element={<ApplicantDashboard />} />
@@ -63,9 +92,11 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ThemeProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </ThemeProvider>
   );
 }
 

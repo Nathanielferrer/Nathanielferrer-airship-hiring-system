@@ -1,5 +1,5 @@
 import React from 'react';
-import logoImg from '../../../assets/images/Logo Airship Express.png';
+import logoImg from '../../../assets/images/Logo Airship Express.webp';
 
 const SIDEBAR_SECTIONS = [
   {
@@ -12,7 +12,7 @@ const SIDEBAR_SECTIONS = [
     category: 'RECRUITMENT PIPELINE',
     items: [
       { key: 'jobs',        label: 'Job Posting',               icon: 'bx-briefcase' },
-      { key: 'applicants',  label: 'Resume Screening',          icon: 'bx-file-find' },
+      { key: 'applicants',  label: 'Initial Interview',         icon: 'bx-file-find' },
       { key: 'interviews',  label: 'Interview Management',      icon: 'bx-calendar-check' },
       { key: 'master_list', label: 'Application Audit Records', icon: 'bx-file' },
     ]

@@ -392,7 +392,7 @@ const ChatbotKbTab = ({ showToast: propShowToast }) => {
             </div>
 
             {/* Scrollable Table Area */}
-            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <div className="admin-table-responsive" style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', minHeight: 0 }}>
               {loadingKb ? (
                 <TableSkeleton
                   columns={['Question', 'Predefined Answer', 'Keyword Tags', 'Actions']}
@@ -410,19 +410,19 @@ const ChatbotKbTab = ({ showToast: propShowToast }) => {
                   {kbSearch ? 'No responses match your search.' : 'No saved responses yet. Add your first response!'}
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <table className="admin-table" style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr style={{ background: '#f8fafc' }}>
                       {['Question', 'Predefined Answer', 'Keyword Tags', 'Actions'].map(h => (
-                        <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                        <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {paginatedKb.map((entry) => (
                       <tr key={entry.id} style={{ borderBottom: '1px solid #e2e8f0', background: '#ffffff' }}>
-                        <td style={{ padding: '14px 18px', color: '#1e293b', fontWeight: '600', maxWidth: '280px', wordBreak: 'break-word' }}>{entry.primary_question}</td>
-                        <td style={{ padding: '14px 18px', color: '#475569', maxWidth: '380px', wordBreak: 'break-word', lineHeight: '1.5' }}>{entry.predefined_answer}</td>
+                        <td className="admin-cell-multiline" style={{ padding: '14px 18px', color: '#1e293b', fontWeight: '600', minWidth: '240px', maxWidth: '320px', wordBreak: 'break-word', whiteSpace: 'normal' }}>{entry.primary_question}</td>
+                        <td className="admin-cell-multiline" style={{ padding: '14px 18px', color: '#475569', minWidth: '320px', maxWidth: '440px', wordBreak: 'break-word', lineHeight: '1.5', whiteSpace: 'normal' }}>{entry.predefined_answer}</td>
                         <td style={{ padding: '14px 18px', maxWidth: '200px' }}>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                             {entry.keyword_tags.split(',').map((tag, ti) => (
@@ -533,7 +533,7 @@ const ChatbotKbTab = ({ showToast: propShowToast }) => {
                 <i className='bx bx-refresh' style={{ fontSize: '16px' }}></i> Refresh Queue
               </button>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <div className="admin-table-responsive" style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', minHeight: 0 }}>
               {loadingQueue ? (
                 <TableSkeleton
                   columns={['Date', 'Applicant', 'Question Asked', 'Status', 'Action']}
@@ -553,11 +553,11 @@ const ChatbotKbTab = ({ showToast: propShowToast }) => {
                   <p style={{ color: '#94a3b8', margin: '4px 0 0 0', fontSize: '12px' }}>Unanswered questions asked by applicants will automatically land here.</p>
                 </div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <table className="admin-table" style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr style={{ background: '#f8fafc' }}>
                       {['Date', 'Applicant', 'Question Asked', 'Status', 'Action'].map(h => (
-                        <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                        <th key={h} style={{ padding: '12px 18px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -565,7 +565,7 @@ const ChatbotKbTab = ({ showToast: propShowToast }) => {
                     {paginatedQueue.map((entry) => (
                       <tr key={entry.id} style={{ borderBottom: '1px solid #e2e8f0', background: '#ffffff' }}>
                         <td style={{ padding: '14px 18px', color: '#64748b', whiteSpace: 'nowrap' }}>{new Date(entry.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
-                        <td style={{ padding: '14px 18px', color: '#475569' }}>
+                        <td style={{ padding: '14px 18px', color: '#475569', whiteSpace: 'nowrap' }}>
                           {entry.first_name ? (
                             <div>
                               <div style={{ fontWeight: '600', color: '#1e293b' }}>{entry.first_name} {entry.last_name}</div>
@@ -573,7 +573,7 @@ const ChatbotKbTab = ({ showToast: propShowToast }) => {
                             </div>
                           ) : <span style={{ color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>Guest / Pre-login</span>}
                         </td>
-                        <td style={{ padding: '14px 18px', color: '#1e293b', maxWidth: '350px', wordBreak: 'break-word' }}>
+                        <td className="admin-cell-multiline" style={{ padding: '14px 18px', color: '#1e293b', minWidth: '280px', maxWidth: '420px', wordBreak: 'break-word', whiteSpace: 'normal' }}>
                           <span style={{ background: '#fff7ed', color: '#92400e', borderRadius: '8px', padding: '6px 12px', display: 'inline-block', fontSize: '13px', border: '1px solid #ffedd5', fontWeight: '500' }}>"{entry.raw_question_text}"</span>
                         </td>
                         <td style={{ padding: '14px 18px' }}>

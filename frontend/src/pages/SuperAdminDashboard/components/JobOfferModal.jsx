@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import LoadingScreen from '../../../components/LoadingScreen/LoadingScreen';
+import WeekdayCalendarPicker from '../../../components/WeekdayCalendarPicker/WeekdayCalendarPicker';
 
 import { API_BASE_URL } from '../../../utils/apiConfig';
 const getDefaultOfferDate = () => {
@@ -122,19 +123,11 @@ const JobOfferModal = ({
 
     // 1. Date validation (Weekdays only)
     if (!offerDate) {
-      if (dateInputRef.current) {
-        dateInputRef.current.setCustomValidity('Please select an expiration date (weekdays only).');
-        dateInputRef.current.reportValidity();
-      }
       setFormError('Please select an expiration date (weekdays only).');
       return false;
     }
     const dayOfWeek = new Date(offerDate + 'T00:00:00').getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      if (dateInputRef.current) {
-        dateInputRef.current.setCustomValidity('Weekends are disabled. Please select a weekday (Monday to Friday).');
-        dateInputRef.current.reportValidity();
-      }
       setFormError('Weekends are disabled. Please select a weekday (Monday to Friday).');
       return false;
     }
@@ -265,13 +258,13 @@ const JobOfferModal = ({
               maxWidth: '640px',
               boxShadow: '0 20px 40px -15px rgba(0,0,0,0.25)',
               border: '1px solid #e2e8f0',
-              overflow: 'hidden',
+              overflow: 'visible',
               animation: 'scaleInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with Dark Navy Background & Accent */}
-            <div style={{ background: '#0f172a', padding: '20px 24px', color: '#ffffff', position: 'relative' }}>
+            <div style={{ background: '#0f172a', padding: '20px 24px', color: '#ffffff', position: 'relative', borderRadius: '15px 15px 0 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#e6007e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px' }}>
                   <i className="bx bx-file" />
@@ -462,42 +455,16 @@ const JobOfferModal = ({
                     Expiration Date <span style={{ color: '#e6007e' }}>*</span>
                   </label>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="date"
-                      ref={dateInputRef}
+                    <WeekdayCalendarPicker
                       value={offerDate}
                       min={getMinOfferDate()}
-                      onChange={(e) => {
-                        const val = e.target.value;
+                      onChange={(val) => {
                         setOfferDate(val);
                         setFormError('');
-                        if (val) {
-                          const day = new Date(val + 'T00:00:00').getDay();
-                          if (day === 0 || day === 6) {
-                            if (dateInputRef.current) {
-                              dateInputRef.current.setCustomValidity('Weekends are disabled. Please select a weekday (Monday to Friday).');
-                              setTimeout(() => dateInputRef.current?.reportValidity(), 50);
-                            }
-                            setFormError('Weekends are disabled. Please select a weekday (Monday to Friday).');
-                            return;
-                          }
-                        }
-                        if (dateInputRef.current) dateInputRef.current.setCustomValidity('');
                       }}
+                      placeholder="Select expiration date..."
+                      placement="top"
                       required
-                      style={{
-                        flex: 1,
-                        padding: '8.5px 12px',
-                        borderRadius: '8px',
-                        border: '1.5px solid #cbd5e1',
-                        fontSize: '12.5px',
-                        fontWeight: '600',
-                        color: '#0f172a',
-                        outline: 'none',
-                        background: '#ffffff',
-                        boxSizing: 'border-box',
-                        cursor: 'pointer'
-                      }}
                     />
                     <div style={{
                       minWidth: '78px',

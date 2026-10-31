@@ -17,6 +17,8 @@ $remarks = isset($data['remarks']) ? trim($data['remarks']) : '';
 
 $allowedStatuses = [
     'PENDING', 'REVIEW_REQUIRED', 'REJECTED', 'SCREENING_REJECTED', 'PASSED INITIAL',
+    'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'Initial Interview Rejected',
+    'PASSED INITIAL INTERVIEW', 'Passed Initial Interview',
     'SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED', 'Scheduling Expired',
     'DECLINED - UNRESPONSIVE', 'PENDING SCHEDULED', 'CONFIRMED',
     'RESCHEDULING', 'HIRED', 'PASSED', 'HIRED / PASSED',
@@ -68,7 +70,7 @@ try {
         'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'WITHDRAWN',
         'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW', 'NO SHOW', 'NO_SHOW',
         'OFFER DECLINED', 'OFFER_DECLINED', 'JOB OFFER DECLINED',
-        'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED',
+        'REJECTED', 'SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED',
         'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED FINAL APPROVAL'
     ]);
     $withdrawnSql = $isTerminalStatus ? ", withdrawn_at = COALESCE(withdrawn_at, NOW())" : "";
@@ -122,7 +124,15 @@ try {
                     UPDATE applications_tbl 
                     SET is_archived = 1 
                     WHERE job_id = :jid 
-                    AND UPPER(status) IN ('HIRED', 'PASSED FINAL APPROVAL', 'FAILED FINAL APPROVAL', 'FAILED FINAL INTERVIEW', 'REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'DECLINED - UNRESPONSIVE', 'SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED', 'CANDIDATE WITHDREW')
+                    AND UPPER(status) IN (
+                        'HIRED', 'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'OFFICIALLY HIRED', 'OFFICIALLY_HIRED',
+                        'REJECTED', 'SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED',
+                        'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED INTERVIEW', 'INTERVIEW_FAILED',
+                        'FAILED FINAL APPROVAL', 'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW',
+                        'DECLINED - UNRESPONSIVE', 'UNRESPONSIVE', 'SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED',
+                        'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'OFFER DECLINED', 'OFFER_DECLINED',
+                        'OFFER EXPIRED', 'OFFER_EXPIRED', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'
+                    )
                 ");
                 $autoArchStmt->execute(['jid' => $jobId]);
             }
@@ -292,7 +302,7 @@ require_once '../audit_helper.php';
                     'Final Interview Update',
                     "Dear {$candName}, your final interview result for {$jobTitle} has been posted. Please check your Application Status."
                 ]);
-            } elseif (in_array($upperStatus, ['SCREENING_REJECTED', 'REJECTED'])) {
+            } elseif (in_array($upperStatus, ['SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'REJECTED'])) {
                 sendApplicationStatusEmail($candEmail, $candName, $jobTitle, 'INITIAL_REJECTED', '');
 
                 // In-app notification

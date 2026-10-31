@@ -1201,3 +1201,333 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR APPLICATION CARD
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .app-card {
+  background: #11131a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .app-card__job-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__applied-date {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .app-card__title-icon {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__hired-panel {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+[data-theme="dark"] .app-card__hired-panel h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__hired-panel div {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .app-card__hired-panel span {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__hired-panel [style*="background: rgb(248, 250, 252)"],
+[data-theme="dark"] .app-card__hired-panel [style*="background: #f8fafc"] {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__notice {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .app-card__notice h4 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__notice p {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__meta-box {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .app-card__meta-value {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__meta-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .app-card__requirements-list-container {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .app-card__requirements-list-heading span {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__checklist-item {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__checklist-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__checklist-sub {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .app-card__checklist-badge--verified {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.45) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .app-card__checklist-badge--pending {
+  background: #1e2233 !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="dark"] .app-card__checklist-badge--waived {
+  background: rgba(249, 115, 22, 0.22) !important;
+  color: #fb923c !important;
+  border: 1px solid rgba(249, 115, 22, 0.4) !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .app-card__checklist-circle--verified {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #10b981 !important;
+}
+
+[data-theme="dark"] .app-card__checklist-circle--pending {
+  background: #1e2233 !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .app-card__checklist-circle--waived {
+  background: #c2410c !important;
+  color: #ffffff !important;
+  border-color: #ea580c !important;
+}
+
+/* ── Confirmed Interview Schedule Box ── */
+[data-theme="dark"] .app-card__confirmed-panel {
+  background: #141724 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .app-card__confirmed-header {
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .app-card__confirmed-header i {
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .app-card__details {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .app-card__detail-row {
+  color: #f1f5f9 !important;
+}
+
+[data-theme="dark"] .app-card__detail-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .app-card__detail-label i {
+  color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .app-card__detail-value--bold {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__detail-row span {
+  color: #e2e8f0 !important;
+}
+
+/* ── Action Required Panel (Pending Schedule) ── */
+[data-theme="dark"] .app-card__action-panel {
+  background: #141724 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .app-card__action-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__action-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .app-card__btn--reschedule {
+  background: #1e2233 !important;
+  color: #f1f5f9 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .app-card__btn--reschedule:hover:not(:disabled) {
+  background: #282d42 !important;
+  color: #ffffff !important;
+}
+
+/* ── Rejection Letter Panels ── */
+[data-theme="dark"] .app-card__letter {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__letter-subject {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .app-card__letter-subject-label {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .app-card__letter-subject-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__letter-greeting,
+[data-theme="dark"] .app-card__letter-sender {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__letter-body {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__letter-regards {
+  color: #94a3b8 !important;
+}
+
+/* ── Feedback Banners ── */
+[data-theme="dark"] .app-card__feedback--confirm {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="dark"] .app-card__feedback--confirm i {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .app-card__feedback--default {
+  background: #181b28 !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .app-card__feedback--default i {
+  color: #94a3b8 !important;
+}
+
+/* ── Reschedule Request Notice & Child Elements ── */
+[data-theme="dark"] .app-card__confirmed-panel[style*="background: #f8fafc"],
+[data-theme="dark"] .app-card__confirmed-panel[style*="background: rgb(248, 250, 252)"] {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .app-card__confirmed-panel div[style*="background: #ffffff"],
+[data-theme="dark"] .app-card__confirmed-panel div[style*="background: rgb(255, 255, 255)"] {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .app-card__confirmed-panel p {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__confirmed-panel p[style*="color: #0f172a"],
+[data-theme="dark"] .app-card__confirmed-panel p[style*="color: rgb(15, 23, 42)"] {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__confirmed-panel div[style*="color: #0f172a"],
+[data-theme="dark"] .app-card__confirmed-panel div[style*="color: rgb(15, 23, 42)"] {
+  color: #ffffff !important;
+}
+
+/* ── Priority Waitlist Notice ── */
+[data-theme="dark"] .app-card__notice[style*="background: #eff6ff"],
+[data-theme="dark"] .app-card__notice[style*="background: rgb(239, 246, 255)"] {
+  background: #141724 !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="dark"] .app-card__notice--passed-interview {
+  background: #141724 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-theme="dark"] .app-card__notice-icon--passed-interview {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .app-card__notice-title--passed-interview {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .app-card__notice-body--passed-interview {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__hired-deadline-banner {
+  background: #141724 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-theme="dark"] .app-card__hired-step {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .app-card__hired-step-body {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .app-card__hired-step-body strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .app-card__hired-welcome {
+  color: #cbd5e1 !important;
+}
+

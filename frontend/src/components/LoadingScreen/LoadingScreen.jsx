@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import splashVideo from '../../assets/images/Splash_loading_screen.mp4';
+import { useTheme } from '../../context/ThemeContext';
 import './LoadingScreen.css';
 
 /**
@@ -13,10 +14,16 @@ const LoadingScreen = ({
   subtitle = 'Please wait a moment while the system completes your request.',
   videoSrc = splashVideo
 }) => {
+  const { isDarkMode } = useTheme();
+
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
-    <div className="video-loading-overlay" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`video-loading-overlay ${isDarkMode ? 'dark-mode' : ''}`}
+      data-theme={isDarkMode ? 'dark' : 'light'}
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className="video-loading-card">
         {/* Large Prominent Video Container */}
         <div className="video-loading-media-wrapper">

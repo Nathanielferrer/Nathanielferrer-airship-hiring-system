@@ -491,8 +491,8 @@ const InterviewsTab = ({ showToast: propShowToast }) => {
         borderBottom: '2px solid #f1f5f9',
         marginBottom: '0',
         background: '#ffffff',
-        borderRadius: '10px 10px 0 0',
-        overflow: 'hidden',
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
         boxShadow: '0 1px 0 #f1f5f9',
       }}>
         {TABS.map((tab) => {

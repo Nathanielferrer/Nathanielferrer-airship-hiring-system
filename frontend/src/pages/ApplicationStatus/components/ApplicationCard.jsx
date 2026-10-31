@@ -25,11 +25,16 @@ const STATUS_CONFIG = {
   // 1. Screening
   'pending': { bg: '#fef3c7', color: '#b45309', label: 'UNDER REVIEW' },
   'review_required': { bg: '#fff7ed', color: '#c2410c', label: 'UNDER REVIEW' },
-  'PASSED INITIAL': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Screening' },
-  'Passed Initial Screening': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Screening' },
-  'PASSED INITIAL SCREENING': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Screening' },
-  'rejected': { bg: '#fee2e2', color: '#b91c1c', label: 'Screening Rejected' },
-  'SCREENING_REJECTED': { bg: '#fee2e2', color: '#b91c1c', label: 'Screening Rejected' },
+  'PASSED INITIAL': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Interview' },
+  'Passed Initial Interview': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Interview' },
+  'PASSED INITIAL INTERVIEW': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Interview' },
+  'Passed Initial Screening': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Interview' },
+  'PASSED INITIAL SCREENING': { bg: '#d1fae5', color: '#047857', label: 'Passed Initial Interview' },
+  'rejected': { bg: '#fee2e2', color: '#b91c1c', label: 'Initial Interview Rejected' },
+  'INITIAL_INTERVIEW_REJECTED': { bg: '#fee2e2', color: '#b91c1c', label: 'Initial Interview Rejected' },
+  'Initial Interview Rejected': { bg: '#fee2e2', color: '#b91c1c', label: 'Initial Interview Rejected' },
+  'INITIAL INTERVIEW REJECTED': { bg: '#fee2e2', color: '#b91c1c', label: 'Initial Interview Rejected' },
+  'SCREENING_REJECTED': { bg: '#fee2e2', color: '#b91c1c', label: 'Initial Interview Rejected' },
 
   // 2. Final Interview & Scheduling
   'PENDING SCHEDULED': { bg: '#fef3c7', color: '#b45309', label: 'Pending Schedule' },

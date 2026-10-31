@@ -109,12 +109,14 @@
   width: 100%;
   background: #ffffff;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   animation: fadeScaleIn 0.3s ease forwards;
 }
 
 .table-skeleton {
   width: 100%;
+  min-width: 880px;
   border-collapse: collapse;
 }
 
@@ -123,12 +125,14 @@
   text-align: left;
   border-bottom: 1.5px solid #e2e8f0;
   background: #f8fafc;
+  white-space: nowrap;
 }
 
 .table-skeleton td {
-  padding: 16px 18px;
+  padding: 14px 18px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .table-skeleton tr:last-child td {
@@ -391,4 +395,75 @@
   font-size: 13px;
   color: #94a3b8;
   margin: 0;
+}
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR SKELETONS & LOADERS
+   ══════════════════════════════════════════════════ */
+[data-theme="dark"] .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #141724 0%,
+    #222738 35%,
+    #1a1e2d 50%,
+    #222738 65%,
+    #141724 100%
+  ) !important;
+  background-size: 250% 100% !important;
+}
+
+[data-theme="dark"] .card-skeleton {
+  background: #111420 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .card-skeleton-footer {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .table-skeleton-container {
+  background: #111420 !important;
+}
+
+[data-theme="dark"] .table-skeleton th {
+  background: #151826 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .table-skeleton td {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .data-loading-card {
+  background: #111420 !important;
+}
+
+[data-theme="dark"] .data-loading-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .data-loading-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .data-loading-spinner-ring:nth-child(2) {
+  border-top-color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .db-error-card {
+  background: #191216 !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+[data-theme="dark"] .db-error-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .db-error-message {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .page-loader-overlay {
+  background: #07090e !important;
 }

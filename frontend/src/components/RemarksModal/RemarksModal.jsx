@@ -18,7 +18,7 @@ import './RemarksModal.css';
 const ACTION_CONFIG = {
   pass: {
     icon: 'bx bx-check-circle',
-    title: 'Pass Initial Screening',
+    title: 'Pass Initial Interview',
     subtitle: 'Move this candidate to the interview scheduling queue.',
     confirmText: 'Confirm & Pass',
     btnClass: 'remarks-modal__btn--pass',
@@ -28,7 +28,7 @@ const ACTION_CONFIG = {
   },
   fail: {
     icon: 'bx bx-x-circle',
-    title: 'Reject Initial Screening',
+    title: 'Reject Initial Interview',
     subtitle: 'This candidate will not advance to the interview stage.',
     confirmText: 'Confirm & Reject',
     btnClass: 'remarks-modal__btn--fail',

@@ -354,3 +354,138 @@
     justify-content: center;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR CHANGE EMAIL MODAL
+   ══════════════════════════════════════════════════ */
+[data-theme="dark"] .change-email-card,
+.dark-theme .change-email-card {
+  background: #111420 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75) !important;
+}
+
+[data-theme="dark"] .change-email-header,
+.dark-theme .change-email-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .change-email-close-btn,
+.dark-theme .change-email-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .change-email-close-btn:hover:not(:disabled),
+.dark-theme .change-email-close-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .change-email-title,
+.dark-theme .change-email-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .change-email-subtitle,
+.dark-theme .change-email-subtitle {
+  color: #cbd5e1 !important;
+}
+
+/* Security Reminder Banner */
+[data-theme="dark"] .change-email-security-note,
+.dark-theme .change-email-security-note {
+  background: #181b28 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .change-email-security-note i,
+.dark-theme .change-email-security-note i {
+  color: #e6007e !important;
+}
+
+/* Current Email Box (Readonly input) */
+[data-theme="dark"] .change-email-current-box,
+.dark-theme .change-email-current-box {
+  background: #181b28 !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .change-email-current-box i,
+.dark-theme .change-email-current-box i {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .change-email-current-text,
+.dark-theme .change-email-current-text {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .change-email-readonly-badge,
+.dark-theme .change-email-readonly-badge {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .change-email-label,
+.dark-theme .change-email-label {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .change-email-input,
+.dark-theme .change-email-input {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .change-email-input:disabled,
+.dark-theme .change-email-input:disabled {
+  background: #141724 !important;
+  color: #94a3b8 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .change-email-field-hint,
+.dark-theme .change-email-field-hint {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .change-email-pass-toggle,
+.dark-theme .change-email-pass-toggle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .change-email-pass-toggle:hover,
+.dark-theme .change-email-pass-toggle:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .change-email-alert-error,
+.dark-theme .change-email-alert-error {
+  background: #241318 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .change-email-footer,
+[data-theme="dark"] .change-email-actions,
+.dark-theme .change-email-footer,
+.dark-theme .change-email-actions {
+  background: #0d0f18 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .change-email-btn-cancel,
+.dark-theme .change-email-btn-cancel {
+  background: #1e2230 !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .change-email-btn-cancel:hover:not(:disabled),
+.dark-theme .change-email-btn-cancel:hover:not(:disabled) {
+  background: #282d40 !important;
+  color: #ffffff !important;
+}

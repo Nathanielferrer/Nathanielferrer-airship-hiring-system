@@ -803,5 +803,152 @@ describe('Hiring System Modules - Verification & Business Rules Suite', () => {
     });
   });
 
+  // ── 11. Final Interview Schedule Readiness Evaluator ─────────────────────
+  describe('Final Interview Schedule Readiness Evaluator (Action Buttons & Checkbox)', () => {
+    const isInterviewScheduleReady = (interviewDate, startTime, simulatedNow) => {
+      if (!interviewDate) return true;
+      const dateStr = interviewDate.split('T')[0];
+      const timeStr = startTime ? startTime.trim() : '00:00:00';
+      const schedTime = new Date(`${dateStr}T${timeStr}`);
+      if (isNaN(schedTime.getTime())) return true;
+      const now = simulatedNow || new Date();
+      return now >= schedTime;
+    };
+
+    it('disables candidate evaluation when scheduled date is in the future (e.g. Oct 29 when today is Oct 27)', () => {
+      const simulatedNow = new Date('2026-10-27T10:00:00');
+      const futureCandidateDate = '2026-10-29';
+      const futureCandidateTime = '09:00:00';
+
+      const isReady = isInterviewScheduleReady(futureCandidateDate, futureCandidateTime, simulatedNow);
+      expect(isReady).toBe(false);
+    });
+
+    it('disables candidate evaluation when scheduled date is today but interview time has not arrived yet', () => {
+      const simulatedNow = new Date('2026-10-27T08:30:00');
+      const candidateDate = '2026-10-27';
+      const candidateTime = '10:00:00';
+
+      const isReady = isInterviewScheduleReady(candidateDate, candidateTime, simulatedNow);
+      expect(isReady).toBe(false);
+    });
+
+    it('enables candidate evaluation when interview schedule date and time has arrived or elapsed', () => {
+      const simulatedNow = new Date('2026-10-27T10:30:00');
+      const candidateDate = '2026-10-27';
+      const candidateTime = '10:00:00';
+
+      const isReady = isInterviewScheduleReady(candidateDate, candidateTime, simulatedNow);
+      expect(isReady).toBe(true);
+    });
+
+    it('enables candidate evaluation when scheduled date is in the past', () => {
+      const simulatedNow = new Date('2026-10-27T10:00:00');
+      const pastCandidateDate = '2026-10-25';
+      const pastCandidateTime = '14:00:00';
+
+      const isReady = isInterviewScheduleReady(pastCandidateDate, pastCandidateTime, simulatedNow);
+      expect(isReady).toBe(true);
+    });
+  });
+
+  // ── 12. Weekday Calendar Disabling Rules (No Weekends) ───────────────────
+  describe('Weekday-Only Calendar Rules (Contract Signing, Onboarding, Interview Slots)', () => {
+    it('disallows Saturday (day 6) and Sunday (day 0) across all calendars', () => {
+      // 2026-10-24 is Saturday, 2026-10-25 is Sunday
+      expect(isWeekday('2026-10-24')).toBe(false);
+      expect(isWeekday('2026-10-25')).toBe(false);
+      // 2026-10-31 is Saturday, 2026-11-01 is Sunday
+      expect(isWeekday('2026-10-31')).toBe(false);
+      expect(isWeekday('2026-11-01')).toBe(false);
+    });
+
+    it('permits Monday through Friday across all calendars', () => {
+      expect(isWeekday('2026-10-26')).toBe(true); // Monday
+      expect(isWeekday('2026-10-27')).toBe(true); // Tuesday
+      expect(isWeekday('2026-10-28')).toBe(true); // Wednesday
+      expect(isWeekday('2026-10-29')).toBe(true); // Thursday
+      expect(isWeekday('2026-10-30')).toBe(true); // Friday
+    });
+  });
+
+  // ── 13. Chatbot Navigation Action Button Rules ───────────────────────────
+  describe('Chatbot Navigation Action Button Suppression Rules', () => {
+    const shouldShowActionButtons = (msg) => {
+      const rawText = msg.text || '';
+      const lower = rawText.toLowerCase();
+      const isSecurityRefusal = lower.includes('security notice') || lower.includes('unauthorized');
+      const isError = lower.includes('connection error');
+      
+      const isGreeting = 
+        msg.id === 'greeting-initial' ||
+        lower.includes('welcome to airship express') ||
+        lower.includes('airship express ai companion') ||
+        lower.includes('ai companion ng airship express') ||
+        lower.includes('what would you like to ask') ||
+        lower.includes('what would you like to know') ||
+        lower.includes('ano ang nais mong malaman');
+
+      const isInterviewProcess =
+        lower.includes('interview process') ||
+        lower.includes('consists of two stages') ||
+        lower.includes('two stages:') ||
+        lower.includes('dalawang yugto') ||
+        lower.includes('proseso ng interview');
+
+      return !isSecurityRefusal && !isError && !isGreeting && !isInterviewProcess && msg.sender === 'bot';
+    };
+
+    it('suppresses action buttons on initial greeting message', () => {
+      const greetingMsg = {
+        id: 'greeting-initial',
+        sender: 'bot',
+        text: "Hello! 👋 Welcome to Airship Express. I am your AI Companion! I can help you with job openings, requirements, the application process, interview schedules, and more. You can ask me in English or Filipino/Tagalog. What would you like to ask?"
+      };
+      expect(shouldShowActionButtons(greetingMsg)).toBe(false);
+    });
+
+    it('suppresses action buttons on subsequent greeting messages', () => {
+      const dynamicGreeting = {
+        id: 'bot-123',
+        sender: 'bot',
+        text: "Hello! 👋 I'm the Airship Express AI Companion. I can help you with information about job openings, the application process, interview schedules, and more. You can ask me in English or Filipino/Tagalog. What would you like to know?"
+      };
+      expect(shouldShowActionButtons(dynamicGreeting)).toBe(false);
+
+      const tagalogGreeting = {
+        id: 'bot-124',
+        sender: 'bot',
+        text: "Kumusta! 👋 Ako ang AI Companion ng Airship Express. Matutulungan kita sa impormasyon tungkol sa mga bakanteng trabaho, proseso ng aplikasyon, iskedyul ng interview, at iba pa. Maaari kang magtanong sa akin sa Filipino/Tagalog o English. Ano ang nais mong malaman?"
+      };
+      expect(shouldShowActionButtons(tagalogGreeting)).toBe(false);
+    });
+
+    it('suppresses action buttons on knowledge base interview process explanations', () => {
+      const interviewKbMsg = {
+        id: 'bot-125',
+        sender: 'bot',
+        text: "Our interview process consists of two stages: 1) Initial Screening Interview, and 2) Final Departmental Interview for open positions."
+      };
+      expect(shouldShowActionButtons(interviewKbMsg)).toBe(false);
+    });
+
+    it('allows action buttons on actual vacancy listings or status lookups', () => {
+      const vacancyMsg = {
+        id: 'bot-126',
+        sender: 'bot',
+        text: "Here are the currently available job openings: 1. Software Engineer 2. Operations Specialist."
+      };
+      expect(shouldShowActionButtons(vacancyMsg)).toBe(true);
+
+      const statusMsg = {
+        id: 'bot-127',
+        sender: 'bot',
+        text: "Here is your application status update: Under Initial Review."
+      };
+      expect(shouldShowActionButtons(statusMsg)).toBe(true);
+    });
+  });
+
 });
 

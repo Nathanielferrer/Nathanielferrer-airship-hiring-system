@@ -577,3 +577,34 @@ input::-webkit-credentials-auto-fill-button {
     opacity: 1;
   }
 }
+
+@keyframes fadeUpStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Dark Mode Global Overrides (Turns UI black) ── */
+[data-theme="dark"] body,
+body.dark-theme {
+  background-color: #000000 !important;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .app-container {
+  background: #000000;
+}
+
+[data-theme="dark"] .vacancy-wrapper,
+[data-theme="dark"] .about-wrapper,
+[data-theme="dark"] .status-page-wrapper,
+[data-theme="dark"] .settings-page-wrapper {
+  background: #000000;
+  color: #f1f5f9;
+}
+

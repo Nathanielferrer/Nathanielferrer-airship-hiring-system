@@ -422,3 +422,38 @@
     text-align: left;
   }
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR PROCESS TRACKER
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .process-tracker__title--prominent,
+[data-theme="dark"] .process-tracker__title--withdrawn,
+[data-theme="dark"] .process-tracker__title--cancelled {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .process-tracker__title--faint {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .process-tracker__subtext--completed {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .process-tracker__subtext--upcoming {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .process-tracker__circle--upcoming,
+[data-theme="dark"] .process-tracker__circle--cancelled {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .process-tracker__line-connector--gray,
+[data-theme="dark"] .process-tracker__line-start--gray,
+[data-theme="dark"] .process-tracker__line-end--gray {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+

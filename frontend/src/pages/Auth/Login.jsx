@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
-import bgImage from '../../assets/images/log_bg.png';
-import './Login.css';
-
+import AuthLayout from './components/AuthLayout';
 import { API_BASE_URL } from '../../utils/apiConfig';
+
 const Login = () => {
   useEffect(() => {
     document.title = 'Sign In - Airship Express Hiring Portal';
@@ -78,6 +76,29 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (lockoutSeconds > 0) return;
+
+    // ── CLIENT-SIDE INPUT VALIDATION ──────────────────────────────────────────
+    const trimmedEmail = (formData.Email || '').trim();
+    const trimmedPassword = formData.Password || '';
+
+    if (!trimmedEmail && !trimmedPassword) {
+      setError('Please enter your email address and password.');
+      return;
+    }
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!trimmedPassword) {
+      setError('Please enter your password.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setSessionMessage('');
@@ -95,7 +116,10 @@ const Login = () => {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          Email: trimmedEmail,
+          Password: trimmedPassword
+        })
       });
 
       const result = await response.json();
@@ -134,14 +158,13 @@ const Login = () => {
       }
 
       // Success - Save JWT token and user data in local storage
-      // JWT token: used for secure API authentication & session guard heartbeat
-      // hiring_user: used for UI display (name, role) only
       if (result.token) {
         localStorage.setItem('hiring_token', result.token);
       }
       localStorage.setItem('hiring_user', JSON.stringify(result.user));
       try { window.dispatchEvent(new CustomEvent('auth_login', { detail: result.user })); } catch (e) {}
       sessionStorage.setItem('just_logged_in', 'true');
+      sessionStorage.setItem('trigger_dashboard_stagger', 'true');
 
       // Redirect based on role
       if (result.user.is_admin === 3) {
@@ -160,109 +183,115 @@ const Login = () => {
   };
 
   return (
-    <div className="login-page-wrapper" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' }}>
-      {/* Dark Tint Overlay Layer */}
-      <div className="login-video-overlay" />
+    <AuthLayout>
+      {/* Form Header Group */}
+      <div className="auth-form-header">
+        <h2 className="auth-title">Welcome Back!</h2>
+        <p className="auth-subtitle">
+          Sign in to your account to manage your applications and stay updated on your hiring progress.
+        </p>
+      </div>
 
-      {/* Brand Navbar */}
-      <header className="login-navbar">
-        <div className="login-navbar-brand">
-          <img src={onlyLogoImg} alt="Airship Express Logo" className="brand-logo-only" />
-          <div className="brand-text-stack">
-            <span className="brand-melons">AIRSHIP</span>
-            <span className="brand-lemons">EXPRESS</span>
-          </div>
+      {/* Session Notification Alert (e.g. timeout, forced reset) */}
+      {sessionMessage && !error && (
+        <div className="auth-alert auth-alert-warning" role="alert">
+          <i className="bx bx-error auth-alert-icon" />
+          <span>{sessionMessage}</span>
         </div>
-      </header>
+      )}
 
-      {/* Glassmorphism Login Card */}
-      <div className="login-glass-card">
-        <div className="login-header-group">
-          <h2 className="login-title">LOG IN</h2>
-          <p className="login-subtitle">
-            Welcome to our Hiring Portal. Let's build your future together.
-          </p>
+      {/* Error / Lockout Alert */}
+      {error && (
+        <div className={`auth-alert ${unverified ? 'auth-alert-warning' : 'auth-alert-error'}`} role="alert">
+          <i className={`bx ${unverified ? 'bx-error' : 'bx-error-circle'} auth-alert-icon`} />
+          <span>{error}</span>
         </div>
+      )}
 
-        {sessionMessage && !error && (
-          <div className="login-alert" style={{ background: 'rgba(251,191,36,0.12)', border: '1px solid rgba(251,191,36,0.4)', color: '#b45309', marginBottom: '12px', borderRadius: '10px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
-            <i className="bx bx-error" style={{ fontSize: '18px', flexShrink: 0 }}></i>
-            <span>{sessionMessage}</span>
-          </div>
-        )}
-
-        {error && (
-          <div className={`login-alert ${unverified ? 'login-alert-warning' : 'login-alert-error'}`}>
-            <i className={`bx ${unverified ? 'bx-error' : 'bx-error-circle'}`} style={{ fontSize: '18px', flexShrink: 0 }}></i>
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="login-form-group">
-            <label htmlFor="Email" className="login-label">Email Address</label>
+      {/* Sign In Form */}
+      <form onSubmit={handleSubmit} className="auth-form" noValidate>
+        {/* Email Address */}
+        <div className="auth-input-group">
+          <label htmlFor="Email" className="auth-label">
+            Email Address
+          </label>
+          <div className="auth-input-wrapper">
+            <i className="bx bx-envelope auth-input-icon" aria-hidden="true" />
             <input
               type="email"
               id="Email"
               name="Email"
               value={formData.Email}
               onChange={handleChange}
-              className="login-input"
-              required
+              className="auth-input has-left-icon"
+              placeholder="Enter your email address"
+              autoComplete="email"
             />
           </div>
+        </div>
 
-          <div className="login-form-group">
-            <label htmlFor="Password" className="login-label">Password</label>
-            <div className="password-input-container">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="Password"
-                name="Password"
-                value={formData.Password}
-                onChange={handleChange}
-                className="login-input"
-                style={{ paddingRight: '44px' }}
-                required
-              />
-              <button 
-                type="button" 
-                className="password-toggle-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                <i className={`bx ${showPassword ? 'bx-hide' : 'bx-show'}`} style={{ fontSize: '20px' }}></i>
-              </button>
-            </div>
+        {/* Password */}
+        <div className="auth-input-group">
+          <label htmlFor="Password" className="auth-label">
+            Password
+          </label>
+          <div className="auth-input-wrapper">
+            <i className="bx bx-lock-alt auth-input-icon" aria-hidden="true" />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              id="Password"
+              name="Password"
+              value={formData.Password}
+              onChange={handleChange}
+              className="auth-input has-left-icon has-right-btn"
+              placeholder="Enter your password"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              className="auth-password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              <i className={`bx ${showPassword ? 'bx-hide' : 'bx-show'}`} />
+            </button>
           </div>
+        </div>
 
-          {/* Right-aligned "Forgot Password?" text link */}
-          <div className="login-helper-block">
-            <Link to="/forgot-password" className="login-forgot-link">
-              Forgot Password?
-            </Link>
-          </div>
-
-          {/* Premium Gold/Amber Brand Button */}
-          <button
-            type="submit"
-            className="login-submit-button"
-            disabled={loading || lockoutSeconds > 0}
-          >
-            {loading ? 'Signing In...' : lockoutSeconds > 0 ? `Locked (${formatLockoutTime(lockoutSeconds)})` : 'Sign In'}
-          </button>
-        </form>
-
-        <p className="login-footer">
-          Don't have an account?{' '}
-          <Link to="/register" className="login-register-link">
-            Register Here
+        {/* Right-aligned "Forgot Password?" Link */}
+        <div className="auth-helper-row">
+          <Link to="/forgot-password" className="auth-forgot-link">
+            Forgot Password?
           </Link>
-        </p>
-      </div>
-    </div>
+        </div>
+
+        {/* Full-width Magenta Gradient Submit Button */}
+        <button
+          type="submit"
+          className="auth-primary-btn"
+          disabled={loading || lockoutSeconds > 0}
+        >
+          {loading ? (
+            'Signing In...'
+          ) : lockoutSeconds > 0 ? (
+            `Locked (${formatLockoutTime(lockoutSeconds)})`
+          ) : (
+            <>
+              Sign In <i className="bx bx-right-arrow-alt auth-btn-arrow" />
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Bottom Navigation */}
+      <p className="auth-bottom-nav">
+        Don't have an account?{' '}
+        <Link to="/register" className="auth-link-magenta">
+          Create an Account <i className="bx bx-right-arrow-alt" />
+        </Link>
+      </p>
+    </AuthLayout>
   );
 };
 
 export default Login;
-

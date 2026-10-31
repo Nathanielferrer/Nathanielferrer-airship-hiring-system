@@ -1,6 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import bgImage from '../../../assets/images/Airship Exporess - BG.png';
+import { useTheme } from '../../../context/ThemeContext';
+import bgDay from '../../../assets/images/Airship Exporess - BG.webp';
+import bgNight from '../../../assets/images/Background_night.webp';
 
 /**
  * Hero landing banner with CTA button navigating to Vacancies.
@@ -8,6 +10,7 @@ import bgImage from '../../../assets/images/Airship Exporess - BG.png';
  */
 const HeroSection = ({ user }) => {
   const navigate = useNavigate();
+  const { isDarkMode } = useTheme();
 
   const getApplicantName = () => {
     if (!user) return '';
@@ -23,10 +26,19 @@ const HeroSection = ({ user }) => {
   };
 
   const applicantName = getApplicantName();
+  const activeBg = isDarkMode ? bgNight : bgDay;
 
   return (
     <section className="hero-section">
-      <img className="hero-image-bg" src={bgImage} alt="Hero Background" />
+      <img
+        className="hero-image-bg"
+        src={activeBg}
+        alt="Hero Background"
+        fetchPriority="high"
+        decoding="async"
+        width="1548"
+        height="1016"
+      />
       <div className="hero-overlay"></div>
       <div className="hero-content">
         <div className="hero-text-block">
@@ -39,7 +51,7 @@ const HeroSection = ({ user }) => {
             <h1 className="hero-title">Start Your Career<br />Journey</h1>
           )}
           <p className="hero-subtitle">
-            Step into a career that always <br />
+            Step into a career that always <br className="hero-br-desktop" />
             keeps you moving forward
           </p>
           <button

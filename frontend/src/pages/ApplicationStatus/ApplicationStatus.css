@@ -40,6 +40,12 @@
   gap: 24px;
 }
 
+@media (max-width: 1100px) {
+  .status-main-container {
+    padding: 32px 28px 60px 28px;
+  }
+}
+
 @media (max-width: 992px) {
   .status-grid {
     grid-template-columns: 1fr;
@@ -180,3 +186,34 @@
 .apps-empty__btn:hover {
   background: #c4006b;
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR APPLICATION STATUS
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .status-page-wrapper {
+  background: #000000 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .status-page-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .status-page-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .status-card {
+  background: #0c0e14 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .status-card-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .status-card-title i {
+  color: #e6007e !important;
+}
+

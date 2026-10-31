@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import bgImage from '../../assets/images/log_bg.png';
-import onlyLogoImg from '../../assets/images/only_logo.png';
+import bgImage from '../../assets/images/log_bg.webp';
+import onlyLogoImg from '../../assets/images/only_logo.webp';
 import './Login.css';
 
 import { API_BASE_URL } from '../../utils/apiConfig';

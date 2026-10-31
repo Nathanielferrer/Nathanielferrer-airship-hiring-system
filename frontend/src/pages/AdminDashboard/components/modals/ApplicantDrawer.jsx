@@ -403,7 +403,7 @@ const ApplicantDrawer = ({
                     }
                   }}
                 >
-                  <span>Pass Initial Screening</span>
+                  <span>Pass Initial Interview</span>
                 </button>
 
                 <button 
@@ -431,7 +431,7 @@ const ApplicantDrawer = ({
                     if (confirmReject) {
                       confirmReject(drawerApp);
                     } else {
-                      handleUpdateStatus(drawerApp.id, 'SCREENING_REJECTED');
+                      handleUpdateStatus(drawerApp.id, 'INITIAL_INTERVIEW_REJECTED');
                     }
                   }}
                 >

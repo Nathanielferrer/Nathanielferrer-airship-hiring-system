@@ -20,9 +20,11 @@ function format_applicant_status($rawStatus) {
         'PENDING REVIEW'                            => 'Pending Review',
         'UNDER REVIEW'                              => 'Pending Review',
         'PENDING_REVIEW'                            => 'Pending Review',
-        'PASSED INITIAL'                            => 'Passed Initial Screening',
-        'PASSED_INITIAL'                            => 'Passed Initial Screening',
-        'PASSED INITIAL SCREENING'                  => 'Passed Initial Screening',
+        'PASSED INITIAL'                            => 'Passed Initial Interview',
+        'PASSED_INITIAL'                            => 'Passed Initial Interview',
+        'PASSED INITIAL SCREENING'                  => 'Passed Initial Interview',
+        'PASSED INITIAL INTERVIEW'                  => 'Passed Initial Interview',
+        'PASSED_INITIAL_INTERVIEW'                  => 'Passed Initial Interview',
         'PENDING SCHEDULED'                         => 'Pending Schedule',
         'PENDING SCHEDULE'                          => 'Pending Schedule',
         'PENDING_SCHEDULED'                         => 'Pending Schedule',
@@ -39,9 +41,9 @@ function format_applicant_status($rawStatus) {
         'DECLINED_UNRESPONSIVE'                     => 'Declined (Unresponsive)',
         'PASSED FINAL INTERVIEW'                    => 'Passed Final Interview',
         'PASSED_FINAL_INTERVIEW'                    => 'Passed Final Interview',
-        'PASSED FINAL — WAITING FOR SLOT'           => 'Waitlisted (No Open Slot)',
-        'PASSED FINAL - WAITING FOR SLOT'           => 'Waitlisted (No Open Slot)',
-        'WAITING_FOR_SLOT'                          => 'Waitlisted (No Open Slot)',
+        'PASSED FINAL — WAITING FOR SLOT'           => 'Waitlisted',
+        'PASSED FINAL - WAITING FOR SLOT'           => 'Waitlisted',
+        'WAITING_FOR_SLOT'                          => 'Waitlisted',
         'WAITLIST'                                  => 'Waitlisted',
         'WAITLISTED'                                => 'Waitlisted',
         'APPROVED FOR JOB OFFER'                    => 'Ready for Job Offer',
@@ -85,7 +87,9 @@ function format_applicant_status($rawStatus) {
         'HIRED_PRE_EMPLOYMENT'                      => 'Hired (Pre-Employment)',
         'FAILED INTERVIEW'                          => 'Interview Failed',
         'INTERVIEW_FAILED'                          => 'Interview Failed',
-        'SCREENING_REJECTED'                        => 'Screening Rejected',
+        'SCREENING_REJECTED'                        => 'Initial Interview Rejected',
+        'INITIAL_INTERVIEW_REJECTED'                => 'Initial Interview Rejected',
+        'INITIAL INTERVIEW REJECTED'                => 'Initial Interview Rejected',
         'REJECTED'                                  => 'Rejected',
         'FAILED'                                    => 'Rejected',
         'FAILED FINAL APPROVAL'                     => "President's Approval Declined",
@@ -181,9 +185,13 @@ try {
     } elseif ($status_filter === 'partially_compliant') {
         $sql .= " AND UPPER(a.status) IN ('PARTIALLY COMPLIANT', 'PARTIALLY_COMPLIANT')";
     } elseif ($status_filter === 'rejected') {
-        $sql .= " AND UPPER(a.status) IN ('REJECTED', 'SCREENING_REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'JOB OFFER DECLINED', 'JOB_OFFER_DECLINED', 'OFFER DECLINED', 'OFFER_DECLINED', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT', 'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW')";
+        $sql .= " AND UPPER(a.status) IN ('REJECTED', 'SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'INTERVIEW_FAILED', 'FAILED INTERVIEW', 'FAILED', 'DECLINED - UNRESPONSIVE', 'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'JOB OFFER DECLINED', 'JOB_OFFER_DECLINED', 'OFFER DECLINED', 'OFFER_DECLINED', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT', 'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW')";
     } elseif ($status_filter === 'passed_final_interview') {
         $sql .= " AND UPPER(a.status) IN ('PASSED FINAL INTERVIEW', 'PASSED_FINAL_INTERVIEW')";
+    } elseif ($status_filter === 'failed_final_interview') {
+        $sql .= " AND UPPER(a.status) IN ('FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAIL_FINAL_INTERVIEW')";
+    } elseif ($status_filter === 'waitlisted' || $status_filter === 'waitlist') {
+        $sql .= " AND UPPER(a.status) IN ('PASSED FINAL — WAITING FOR SLOT', 'PASSED FINAL - WAITING FOR SLOT', 'WAITING_FOR_SLOT', 'WAITLIST', 'WAITLISTED')";
     } elseif ($status_filter === 'withdrawn') {
         $sql .= " AND UPPER(a.status) IN ('CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'APPLICATION WITHDRAWN', 'APPLICATION_WITHDRAWN', 'WITHDRAWN')";
     } elseif ($status_filter === 'no_show') {
@@ -193,7 +201,9 @@ try {
     } elseif ($status_filter === 'pending_evaluation') {
         $sql .= " AND UPPER(a.status) IN ('PENDING', 'REVIEW_REQUIRED', 'PENDING REVIEW', 'UNDER REVIEW', 'PENDING_REVIEW')";
     } elseif ($status_filter === 'passed_initial') {
-        $sql .= " AND UPPER(a.status) IN ('PASSED INITIAL', 'PASSED_INITIAL', 'PASSED INITIAL SCREENING', 'PASSED_INITIAL_SCREENING')";
+        $sql .= " AND UPPER(a.status) IN ('PASSED INITIAL', 'PASSED_INITIAL', 'PASSED INITIAL SCREENING', 'PASSED_INITIAL_SCREENING', 'PASSED INITIAL INTERVIEW', 'PASSED_INITIAL_INTERVIEW')";
+    } elseif ($status_filter === 'initial_interview_rejected') {
+        $sql .= " AND UPPER(a.status) IN ('INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED', 'SCREENING_REJECTED')";
     } elseif ($status_filter === 'pending_scheduled') {
         $sql .= " AND UPPER(a.status) IN ('PENDING SCHEDULED', 'PENDING SCHEDULE', 'PENDING_SCHEDULED')";
     } elseif ($status_filter === 'confirmed_schedule') {
@@ -204,8 +214,6 @@ try {
         $sql .= " AND UPPER(a.status) IN ('SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED', 'DECLINED - UNRESPONSIVE', 'UNRESPONSIVE', 'DECLINED_UNRESPONSIVE')";
     } elseif ($status_filter === 'offer_expired') {
         $sql .= " AND UPPER(a.status) IN ('OFFER EXPIRED', 'OFFER_EXPIRED', 'JOB OFFER EXPIRED')";
-    } elseif ($status_filter === 'waitlisted') {
-        $sql .= " AND UPPER(a.status) IN ('PASSED FINAL — WAITING FOR SLOT', 'PASSED FINAL - WAITING FOR SLOT', 'WAITING_FOR_SLOT', 'WAITLIST', 'WAITLISTED')";
     } elseif (!empty($status_filter)) {
         $sql .= " AND (LOWER(a.status) = :sf_exact OR LOWER(REPLACE(a.status, ' ', '_')) = :sf_slug)";
         $params['sf_exact'] = $status_filter;

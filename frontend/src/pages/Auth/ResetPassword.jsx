@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import bgImage from '../../assets/images/log_bg.png';
-import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
-import './Login.css';
-
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import AuthLayout from './components/AuthLayout';
 import { API_BASE_URL } from '../../utils/apiConfig';
+
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = 'Reset Password - Airship Express Hiring Portal';
@@ -84,6 +83,11 @@ const ResetPassword = () => {
       return;
     }
 
+    if (!password) {
+      setError('Please enter a new password.');
+      return;
+    }
+
     if (password.length < 8 || password.length > 64) {
       setError('Password must be between 8 and 64 characters long.');
       return;
@@ -131,6 +135,10 @@ const ResetPassword = () => {
       }
 
       setSuccess(true);
+      // Optional smooth auto-redirect after 3.5 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 3500);
     } catch (err) {
       setError(err.message || 'Connection error. Please check your network and try again.');
     } finally {
@@ -138,77 +146,36 @@ const ResetPassword = () => {
     }
   };
 
-  // Fixed wrapper layout: scrollable, prevents clipping behind fixed navbar
-  const renderWrapper = (children) => (
-    <div
-      className="login-page-wrapper"
-      style={{
-        backgroundImage: `url(${bgImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        padding: '88px 16px 36px',
-        boxSizing: 'border-box'
-      }}
-    >
-      <div className="login-video-container" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, pointerEvents: 'none' }}>
-        <div className="login-video-overlay" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.45)' }} />
-      </div>
-
-      {/* Brand Navbar - fixed at top */}
-      <header className="login-navbar" style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '75px', zIndex: 100 }}>
-        <div className="login-navbar-brand">
-          <img src={onlyLogoImg} alt="Airship Express Logo" className="brand-logo-only" />
-          <div className="brand-text-stack">
-            <span className="brand-melons">AIRSHIP</span>
-            <span className="brand-lemons">EXPRESS</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Centered responsive card container */}
-      <div style={{ position: 'relative', zIndex: 10, width: '100%', display: 'flex', justifyContent: 'center', margin: 'auto 0' }}>
-        {children}
-      </div>
-    </div>
-  );
-
+  // Success Confirmation Screen
   if (success) {
-    return renderWrapper(
-      <div className="login-glass-card success-card animate-fade-in" style={{ textAlign: 'center', maxWidth: '440px', width: '100%', padding: '28px 24px' }}>
-        <div className="success-icon" style={{ color: '#16a34a', width: '54px', height: '54px', margin: '0 auto 14px' }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-check-circle" style={{ width: '100%', height: '100%' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        </div>
-        <h2 className="login-title" style={{ fontSize: '24px', marginBottom: '8px' }}>Password Reset!</h2>
-        <p className="login-subtitle" style={{ marginBottom: '20px', lineHeight: '1.6', fontSize: '13.5px' }}>
-          Your password has been successfully updated. {isSuperAdmin ? 'Two-factor authorization confirmed.' : ''} You can now sign in using your new credentials.
-        </p>
-        <div style={{ marginTop: '16px', width: '100%', boxSizing: 'border-box' }}>
-          <Link to="/login" className="login-submit-button" style={{ textDecoration: 'none', width: '100%', boxSizing: 'border-box', display: 'inline-block' }}>
-            Go to Login
+    return (
+      <AuthLayout showExplore={false}>
+        <div className="auth-success-box">
+          <div className="auth-success-icon-wrap" aria-hidden="true">
+            <i className="bx bx-check-circle" />
+          </div>
+          <h2 className="auth-success-title">Password Reset!</h2>
+          <p className="auth-success-desc">
+            Your password has been successfully updated.{' '}
+            {isSuperAdmin ? 'Two-factor authorization confirmed. ' : ''}
+            You can now sign in using your new credentials.
+          </p>
+          <Link to="/login" className="auth-primary-btn" style={{ textDecoration: 'none' }}>
+            Go to Login <i className="bx bx-right-arrow-alt auth-btn-arrow" />
           </Link>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
-  return renderWrapper(
-    <div className="login-glass-card" style={{ maxWidth: '450px', width: '100%', padding: '24px 28px', boxSizing: 'border-box' }}>
-      <div className="login-header-group" style={{ marginBottom: '14px', textAlign: 'center' }}>
-        <h2 className="login-title" style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>
+  return (
+    <AuthLayout isScrollable={true} showExplore={false}>
+      {/* Form Header */}
+      <div className="auth-form-header">
+        <h2 className="auth-title">
           {isSuperAdmin ? 'Super Admin Password Reset' : 'New Password'}
         </h2>
-        <p className="login-subtitle" style={{ fontSize: '12.5px', color: '#64748b', margin: 0 }}>
+        <p className="auth-subtitle">
           {isSuperAdmin
             ? 'Root authorization: Set a new password and verify your Authenticator code.'
             : 'Choose a secure, strong password for your account.'}
@@ -216,39 +183,60 @@ const ResetPassword = () => {
       </div>
 
       {verifyingToken ? (
-        <div style={{ textAlign: 'center', padding: '24px 0', color: '#64748b' }}>
-          <div style={{ display: 'inline-block', width: '26px', height: '26px', border: '3px solid #e2e8f0', borderTopColor: '#e6007e', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <p style={{ marginTop: '10px', fontSize: '12.5px' }}>Verifying reset authorization link...</p>
+        <div style={{ textAlign: 'center', padding: '32px 0', color: '#64748b' }}>
+          <div
+            style={{
+              display: 'inline-block',
+              width: '32px',
+              height: '32px',
+              border: '3px solid #e2e8f0',
+              borderTopColor: '#e6007e',
+              borderRadius: '50%',
+              animation: 'authSpin 0.8s linear infinite'
+            }}
+          />
+          <style>{`
+            @keyframes authSpin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+          <p style={{ marginTop: '12px', fontSize: '13.5px' }}>Verifying reset authorization link...</p>
         </div>
       ) : tokenError ? (
         <div style={{ textAlign: 'center' }}>
-          <div className="login-alert login-alert-error" style={{ marginBottom: '16px' }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="login-alert-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            <span style={{ fontSize: '12.5px' }}>{tokenError}</span>
+          <div className="auth-alert auth-alert-error" role="alert">
+            <i className="bx bx-error-circle auth-alert-icon" />
+            <span>{tokenError}</span>
           </div>
-          <Link to="/forgot-password" className="login-submit-button" style={{ textDecoration: 'none', display: 'inline-block', width: '100%', boxSizing: 'border-box' }}>
-            Request New Reset Link
+          <Link
+            to="/forgot-password"
+            className="auth-primary-btn"
+            style={{ textDecoration: 'none', marginTop: '16px' }}
+          >
+            Request New Reset Link <i className="bx bx-right-arrow-alt auth-btn-arrow" />
           </Link>
         </div>
       ) : (
         <>
           {/* Super Admin Privileged Security Badge */}
           {isSuperAdmin && (
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(230, 0, 126, 0.06) 0%, rgba(59, 130, 246, 0.06) 100%)',
-              border: '1px solid rgba(230, 0, 126, 0.25)',
-              borderRadius: '8px',
-              padding: '8px 12px',
-              marginBottom: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <span style={{ fontSize: '18px', lineHeight: 1 }}>🛡️</span>
-              <div style={{ fontSize: '11.5px', color: '#334155', lineHeight: 1.4 }}>
+            <div
+              style={{
+                background: 'linear-gradient(135deg, rgba(230, 0, 126, 0.06) 0%, rgba(59, 130, 246, 0.06) 100%)',
+                border: '1px solid rgba(230, 0, 126, 0.25)',
+                borderRadius: '10px',
+                padding: '10px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}
+            >
+              <span style={{ fontSize: '20px', lineHeight: 1 }}>🛡️</span>
+              <div style={{ fontSize: '12px', color: '#334155', lineHeight: 1.45 }}>
                 <strong style={{ color: '#0f172a' }}>Super Administrator Identity Gate: </strong>
                 <span>{maskedEmail}</span>
-                <span style={{ display: 'block', color: '#64748b', fontSize: '11px' }}>
+                <span style={{ display: 'block', color: '#64748b', fontSize: '11.5px', marginTop: '2px' }}>
                   {totpEnabled
                     ? 'Two-Factor Authentication (2FA) is enforced.'
                     : '2FA not yet active. Please set up 2FA after signing in.'}
@@ -257,116 +245,131 @@ const ResetPassword = () => {
             </div>
           )}
 
+          {/* Error Alert */}
           {error && (
-            <div className="login-alert login-alert-error" style={{ marginBottom: '12px', padding: '10px 12px' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="login-alert-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-              <span style={{ fontSize: '12px' }}>{error}</span>
+            <div className="auth-alert auth-alert-error" role="alert">
+              <i className="bx bx-error-circle auth-alert-icon" />
+              <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="login-form-group" style={{ marginBottom: '10px' }}>
-              <label htmlFor="password" className="login-label" style={{ fontSize: '11.5px', marginBottom: '3px' }}>
-                New Password <span style={{ textTransform: 'none', fontWeight: 'normal', color: '#64748b', fontSize: '10px' }}>(8-64 chars, upper, lower, num, special)</span>
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+            {/* New Password */}
+            <div className="auth-input-group">
+              <label htmlFor="password" className="auth-label">
+                New Password <span className="auth-label-opt">(8-64 characters)</span>
               </label>
-              <div className="password-input-container">
+              <div className="auth-input-wrapper">
+                <i className="bx bx-lock-alt auth-input-icon" aria-hidden="true" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   id="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="login-input"
-                  style={{ paddingRight: '40px', padding: '9px 12px', fontSize: '13.5px' }}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError('');
+                  }}
+                  className="auth-input has-left-icon has-right-btn"
+                  placeholder="Enter new password"
+                  autoComplete="new-password"
                   minLength={8}
                   maxLength={64}
                   required
                 />
                 <button
                   type="button"
-                  className="password-toggle-btn"
+                  className="auth-password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  )}
+                  <i className={`bx ${showPassword ? 'bx-hide' : 'bx-show'}`} />
                 </button>
+              </div>
+
+              {/* Dynamic Password Requirements Checklist */}
+              <div className="auth-password-requirements">
+                <div className={`auth-req-item ${passChecks.length ? 'is-met' : ''}`}>
+                  <i className={`bx ${passChecks.length ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+                  <span>8–64 Characters</span>
+                </div>
+                <div className={`auth-req-item ${passChecks.uppercase ? 'is-met' : ''}`}>
+                  <i className={`bx ${passChecks.uppercase ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+                  <span>Uppercase (A–Z)</span>
+                </div>
+                <div className={`auth-req-item ${passChecks.lowercase ? 'is-met' : ''}`}>
+                  <i className={`bx ${passChecks.lowercase ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+                  <span>Lowercase (a–z)</span>
+                </div>
+                <div className={`auth-req-item ${passChecks.numSpecial ? 'is-met' : ''}`}>
+                  <i className={`bx ${passChecks.numSpecial ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+                  <span>Number & Special</span>
+                </div>
               </div>
             </div>
 
-            <div className="login-form-group" style={{ marginBottom: '8px' }}>
-              <label htmlFor="confirmPassword" className="login-label" style={{ fontSize: '11.5px', marginBottom: '3px' }}>Confirm Password</label>
-              <div className="password-input-container">
+            {/* Confirm Password */}
+            <div className="auth-input-group">
+              <label htmlFor="confirmPassword" className="auth-label">
+                Confirm Password
+              </label>
+              <div className="auth-input-wrapper">
+                <i className="bx bx-lock auth-input-icon" aria-hidden="true" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   id="confirmPassword"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="login-input"
-                  style={{ paddingRight: '40px', padding: '9px 12px', fontSize: '13.5px' }}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (error) setError('');
+                  }}
+                  className="auth-input has-left-icon has-right-btn"
+                  placeholder="Confirm new password"
+                  autoComplete="new-password"
                   minLength={8}
                   maxLength={64}
                   required
                 />
                 <button
                   type="button"
-                  className="password-toggle-btn"
+                  className="auth-password-toggle"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showConfirmPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  )}
+                  <i className={`bx ${showConfirmPassword ? 'bx-hide' : 'bx-show'}`} />
                 </button>
               </div>
-              {confirmPassword && !passwordsMatch && (
-                <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '3px', fontWeight: '600' }}>
-                  ⚠️ Passwords do not match.
-                </p>
-              )}
-            </div>
 
-            {/* Compact Real-time Password Strength checklist */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 10px', margin: '2px 0 10px 0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: passChecks.length ? '#15803d' : '#64748b', fontWeight: passChecks.length ? '600' : 'normal' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  {passChecks.length ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-                </svg>
-                <span>8-64 Characters</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: passChecks.uppercase ? '#15803d' : '#64748b', fontWeight: passChecks.uppercase ? '600' : 'normal' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  {passChecks.uppercase ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-                </svg>
-                <span>Uppercase (A-Z)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: passChecks.lowercase ? '#15803d' : '#64748b', fontWeight: passChecks.lowercase ? '600' : 'normal' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  {passChecks.lowercase ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-                </svg>
-                <span>Lowercase (a-z)</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: passChecks.numSpecial ? '#15803d' : '#64748b', fontWeight: passChecks.numSpecial ? '600' : 'normal' }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  {passChecks.numSpecial ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-                </svg>
-                <span>Number & Special</span>
-              </div>
+              {/* Match Feedback */}
+              {confirmPassword.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', fontWeight: '600' }}>
+                  {passwordsMatch ? (
+                    <>
+                      <i className="bx bx-check-circle" style={{ color: '#16a34a', fontSize: '15px' }} />
+                      <span style={{ color: '#16a34a' }}>Passwords match</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="bx bx-x-circle" style={{ color: '#dc2626', fontSize: '15px' }} />
+                      <span style={{ color: '#dc2626' }}>Passwords do not match</span>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Super Admin 2FA Verification Input */}
             {isSuperAdmin && totpEnabled && (
-              <div style={{
-                background: '#f8fafc',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                padding: '10px 14px',
-                marginBottom: '12px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <label className="login-label" style={{ margin: 0, color: '#0f172a', fontWeight: '600', fontSize: '11px' }}>
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
+                  marginTop: '4px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className="auth-label" style={{ margin: 0, fontSize: '12px' }}>
                     {isBackupMode ? 'Emergency Backup Recovery Code' : 'Google Authenticator 6-Digit Code'}
                   </label>
                   <button
@@ -379,7 +382,7 @@ const ResetPassword = () => {
                       background: 'none',
                       border: 'none',
                       color: '#e6007e',
-                      fontSize: '11px',
+                      fontSize: '11.5px',
                       cursor: 'pointer',
                       fontWeight: '600',
                       padding: 0,
@@ -398,20 +401,19 @@ const ResetPassword = () => {
                     setTotpCode(val);
                   }}
                   placeholder={isBackupMode ? 'e.g. A3B4-C5D6' : '000000'}
-                  className="login-input"
+                  className="auth-input"
                   maxLength={isBackupMode ? 12 : 6}
                   style={{
-                    letterSpacing: isBackupMode ? '2px' : '5px',
-                    fontSize: '17px',
+                    letterSpacing: isBackupMode ? '2px' : '6px',
+                    fontSize: '18px',
                     fontWeight: 'bold',
                     textAlign: 'center',
                     fontFamily: 'monospace',
-                    backgroundColor: '#ffffff',
                     padding: '8px'
                   }}
                   required
                 />
-                <p style={{ margin: '4px 0 0 0', fontSize: '10.5px', color: '#64748b', textAlign: 'center' }}>
+                <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
                   {isBackupMode
                     ? 'Enter one of your 8 single-use emergency backup recovery codes.'
                     : 'Open Google Authenticator on your phone to view your current 6-digit code.'}
@@ -419,25 +421,24 @@ const ResetPassword = () => {
               </div>
             )}
 
+            {/* Submit Action Button */}
             <button
               type="submit"
-              className="login-submit-button"
+              className="auth-primary-btn"
               disabled={loading || !isPasswordStrong || !passwordsMatch || !isTotpValid}
-              style={{ padding: '11px 20px', fontSize: '14px', marginTop: '2px' }}
             >
-              {loading ? 'Authorizing & Updating...' : 'Update Password'}
+              {loading ? (
+                'Authorizing & Updating...'
+              ) : (
+                <>
+                  Update Password <i className="bx bx-right-arrow-alt auth-btn-arrow" />
+                </>
+              )}
             </button>
           </form>
         </>
       )}
-
-      <p className="login-footer" style={{ marginTop: '14px', marginBottom: 0, fontSize: '12.5px' }}>
-        Back to{' '}
-        <Link to="/login" className="login-register-link">
-          Sign In
-        </Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 };
 

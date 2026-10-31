@@ -234,13 +234,15 @@ const MasterListTab = ({ showToast: propShowToast }) => {
             >
               <option value="">All Statuses</option>
               <option value="pending_evaluation">Pending Review</option>
-              <option value="passed_initial">Passed Initial Screening</option>
+              <option value="passed_initial">Passed Initial Interview</option>
+              <option value="initial_interview_rejected">Initial Interview Rejected</option>
               <option value="pending_scheduled">Pending Schedule</option>
               <option value="confirmed_schedule">Confirmed Schedule</option>
               <option value="rescheduling">Rescheduling Requested</option>
               <option value="scheduling_expired">Scheduling Expired</option>
               <option value="no_show">Interview No Show</option>
               <option value="passed_final_interview">Passed Final Interview</option>
+              <option value="failed_final_interview">Failed Final Interview</option>
               <option value="waitlisted">Waitlisted</option>
               <option value="ready_for_offer">Ready for Offer</option>
               <option value="job_offer_pending">Job Offer Pending</option>
@@ -442,6 +444,11 @@ const MasterListTab = ({ showToast: propShowToast }) => {
                     badgeBg = '#d1fae5';
                     badgeBorder = '#a7f3d0';
                     statusLabel = 'PASSED FINAL INTERVIEW';
+                  } else if (statusText === 'PASSED FINAL — WAITING FOR SLOT' || statusText === 'PASSED FINAL - WAITING FOR SLOT' || statusText === 'WAITING_FOR_SLOT' || statusText === 'WAITLIST' || statusText === 'WAITLISTED') {
+                    badgeColor = '#1d4ed8';
+                    badgeBg = '#eff6ff';
+                    badgeBorder = '#bfdbfe';
+                    statusLabel = 'WAITLISTED';
                   } else if (statusText === 'CANDIDATE NO SHOW' || statusText === 'CANDIDATE_NO_SHOW') {
                     badgeColor = '#b45309';
                     badgeBg = '#fffbeb';
@@ -472,11 +479,11 @@ const MasterListTab = ({ showToast: propShowToast }) => {
                     badgeBg = '#fef2f2';
                     badgeBorder = '#fecaca';
                     statusLabel = 'FAILED PRE-EMPLOYMENT';
-                  } else if (statusText === 'PASSED INITIAL' || statusText === 'PASSED_INITIAL' || statusText === 'PASSED INITIAL SCREENING') {
+                  } else if (statusText === 'PASSED INITIAL' || statusText === 'PASSED_INITIAL' || statusText === 'PASSED INITIAL SCREENING' || statusText === 'PASSED INITIAL INTERVIEW' || statusText === 'PASSED_INITIAL_INTERVIEW') {
                     badgeColor = '#047857';
                     badgeBg = '#d1fae5';
                     badgeBorder = '#a7f3d0';
-                    statusLabel = 'PASSED INITIAL SCREENING';
+                    statusLabel = 'PASSED INITIAL INTERVIEW';
                   } else if (statusText === 'PENDING SCHEDULED' || statusText === 'PENDING SCHEDULE' || statusText === 'PENDING_SCHEDULED') {
                     badgeColor = '#c2410c';
                     badgeBg = '#ffedd5';
@@ -492,21 +499,16 @@ const MasterListTab = ({ showToast: propShowToast }) => {
                     badgeBg = '#fff7ed';
                     badgeBorder = '#fed7aa';
                     statusLabel = 'RESCHEDULING REQUESTED';
-                  } else if (['PASSED FINAL — WAITING FOR SLOT', 'PASSED FINAL - WAITING FOR SLOT', 'WAITING_FOR_SLOT', 'WAITLIST', 'WAITLISTED'].includes(statusText)) {
-                    badgeColor = '#1d4ed8';
-                    badgeBg = '#eff6ff';
-                    badgeBorder = '#bfdbfe';
-                    statusLabel = 'WAITLISTED';
                   } else if (statusText === 'OFFER EXPIRED' || statusText === 'OFFER_EXPIRED' || statusText === 'JOB OFFER EXPIRED') {
                     badgeColor = '#b91c1c';
                     badgeBg = '#fee2e2';
                     badgeBorder = '#fecaca';
                     statusLabel = 'OFFER EXPIRED';
-                  } else if (statusText === 'SCREENING_REJECTED' || statusText === 'REJECTED') {
+                  } else if (statusText === 'INITIAL_INTERVIEW_REJECTED' || statusText === 'INITIAL INTERVIEW REJECTED' || statusText === 'SCREENING_REJECTED' || statusText === 'REJECTED') {
                     badgeColor = '#b91c1c';
                     badgeBg = '#fee2e2';
                     badgeBorder = '#fecaca';
-                    statusLabel = 'SCREENING REJECTED';
+                    statusLabel = (statusText === 'INITIAL_INTERVIEW_REJECTED' || statusText === 'INITIAL INTERVIEW REJECTED' || statusText === 'SCREENING_REJECTED') ? 'INITIAL INTERVIEW REJECTED' : 'REJECTED';
                   } else if (statusText === 'SCHEDULING EXPIRED' || statusText === 'SCHEDULING_EXPIRED' || statusText === 'DECLINED - UNRESPONSIVE' || statusText === 'UNRESPONSIVE') {
                     badgeColor = '#dc2626';
                     badgeBg = '#fee2e2';

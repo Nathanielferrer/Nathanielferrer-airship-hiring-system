@@ -47,6 +47,18 @@
   gap: 28px;
 }
 
+@media (max-width: 1100px) {
+  .settings-main-container {
+    padding: 32px 24px 48px;
+  }
+  .settings-cards-grid {
+    gap: 20px;
+  }
+  .settings-card {
+    padding: 24px 24px;
+  }
+}
+
 @media (max-width: 992px) {
   .settings-cards-grid {
     grid-template-columns: 1fr;
@@ -778,6 +790,177 @@
   border-color: #b91c1c;
   box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR SETTINGS PAGE
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .settings-page-wrapper {
+  background: #000000 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .settings-page-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-page-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .settings-card {
+  background: #11131a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .settings-card:hover {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .settings-card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .settings-card-icon {
+  background: #181b26 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-card-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-card-desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .settings-label {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .settings-input,
+[data-theme="dark"] .settings-select {
+  background: #181b26 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-input:focus,
+[data-theme="dark"] .settings-select:focus {
+  border-color: #e6007e !important;
+  box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.2) !important;
+}
+
+[data-theme="dark"] .settings-helper-text {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .settings-danger-card {
+  background: #141116 !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+[data-theme="dark"] .settings-danger-row-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-danger-row-desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .settings-2fa-status-box {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .settings-2fa-status-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-2fa-status-desc {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .settings-user-identity {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .settings-user-fullname {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-user-email {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .settings-user-avatar {
+  background: #0f121d !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-badge {
+  background: rgba(16, 185, 129, 0.16) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+[data-theme="dark"] .settings-requirements-grid {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .settings-req-item.met {
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .settings-req-item.unmet {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .settings-btn-primary:disabled {
+  background: #1c202e !important;
+  color: #64748b !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .settings-pending-email-card {
+  background: #141724 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .settings-pending-email-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .settings-pending-btn.resend {
+  background: #1e2230 !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .settings-pending-btn.cancel {
+  background: #241318 !important;
+  color: #f87171 !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+[data-theme="dark"] .settings-password-toggle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .settings-password-toggle:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .settings-locked-notice {
+  background: #1e1824 !important;
+  border-color: rgba(230, 0, 126, 0.25) !important;
+  color: #cbd5e1 !important;
+}
+
 
 
 

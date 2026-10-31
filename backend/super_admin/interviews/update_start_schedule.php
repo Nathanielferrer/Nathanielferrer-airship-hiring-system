@@ -28,6 +28,13 @@ if (!$application_id || empty($work_start_date)) {
     exit();
 }
 
+$startDayOfWeek = (int)date('N', strtotime($work_start_date)); // 1 (Mon) to 7 (Sun)
+if ($startDayOfWeek >= 6) {
+    http_response_code(400);
+    echo json_encode(["status" => "error", "message" => "Weekends are disabled. Work start date can only be scheduled on weekdays (Monday to Friday)."]);
+    exit();
+}
+
 try {
     $candStmt = $pdo->prepare("
         SELECT 
@@ -88,6 +95,22 @@ try {
         if ($jobData && (int)$jobData['availability'] <= 0) {
             $closeStmt = $pdo->prepare("UPDATE jobs_tbl SET status = 'Closed', availability = 0 WHERE job_id = ?");
             $closeStmt->execute([$jobId]);
+
+            // Auto-archive terminal applications for this filled job so they are moved to Audit Records
+            $autoArchStmt = $pdo->prepare("
+                UPDATE applications_tbl 
+                SET is_archived = 1 
+                WHERE job_id = ? 
+                AND UPPER(status) IN (
+                    'REJECTED', 'SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED',
+                    'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED INTERVIEW', 'INTERVIEW_FAILED',
+                    'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW',
+                    'DECLINED - UNRESPONSIVE', 'UNRESPONSIVE', 'SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED',
+                    'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'OFFER DECLINED', 'OFFER_DECLINED',
+                    'OFFER EXPIRED', 'OFFER_EXPIRED', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'
+                )
+            ");
+            $autoArchStmt->execute([$jobId]);
         }
     }
 

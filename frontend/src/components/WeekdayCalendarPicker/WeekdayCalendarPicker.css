@@ -1,0 +1,277 @@
+/* ── Weekday Calendar Picker Component Styles ── */
+
+.weekday-picker {
+  position: relative;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  box-sizing: border-box;
+}
+
+.weekday-picker__trigger {
+  width: 100%;
+  height: 42px;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.weekday-picker__trigger:hover {
+  border-color: #94a3b8;
+  background: #fcfcfd;
+}
+
+.weekday-picker__trigger:focus,
+.weekday-picker__trigger--open {
+  border-color: #e6007e;
+  box-shadow: 0 0 0 3px rgba(230, 0, 126, 0.12);
+  outline: none;
+}
+
+.weekday-picker--disabled .weekday-picker__trigger {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.weekday-picker__icon {
+  font-size: 18px;
+  color: #e6007e;
+  flex-shrink: 0;
+}
+
+.weekday-picker__text {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.weekday-picker__trigger--empty .weekday-picker__text {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.weekday-picker__chevron {
+  font-size: 16px;
+  color: #64748b;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+/* ── Floating Dropdown Popup ── */
+.weekday-picker__dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100000;
+  width: 280px;
+  max-width: 90vw;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 10px 12px;
+  box-sizing: border-box;
+  animation: weekdayPickerFadeIn 0.16s ease-out;
+}
+
+/* Upward Placement (when space below is tight) */
+.weekday-picker__dropdown--top {
+  top: auto;
+  bottom: calc(100% + 6px);
+  animation: weekdayPickerFadeInUp 0.16s ease-out;
+}
+
+@keyframes weekdayPickerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes weekdayPickerFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.weekday-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.weekday-picker__title {
+  font-size: 13.5px;
+  color: #0f172a;
+  font-family: 'Inter', sans-serif;
+}
+
+.weekday-picker__title strong {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.weekday-picker__nav-btn {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #334155;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.weekday-picker__nav-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #e6007e;
+}
+
+.weekday-picker__nav-btn i {
+  font-size: 18px;
+}
+
+/* Day Names Row */
+.weekday-picker__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.weekday-picker__weekday-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  padding: 4px 0;
+  border-radius: 4px;
+}
+
+.weekday-picker__weekday-label--weekend {
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+/* Grid of Days */
+.weekday-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.weekday-picker__cell {
+  aspect-ratio: 1;
+  min-height: 28px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  box-sizing: border-box;
+  padding: 0;
+  transition: all 0.14s ease;
+}
+
+.weekday-picker__cell--blank {
+  pointer-events: none;
+}
+
+.weekday-picker__cell--day {
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.weekday-picker__cell--day:hover:not(:disabled) {
+  background: #fdf2f8;
+  color: #e6007e;
+  transform: scale(1.04);
+}
+
+.weekday-picker__cell--today:not(.weekday-picker__cell--selected) {
+  border: 1.5px solid #f472b6;
+  color: #e6007e;
+}
+
+.weekday-picker__cell--selected {
+  background: #e6007e !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(230, 0, 126, 0.35);
+}
+
+/* ── Weekend Disabled Cells: Light Color Tint ── */
+.weekday-picker__cell--weekend {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border: 1px dashed #cbd5e1 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Past Dates Disabled Cells */
+.weekday-picker__cell--past {
+  color: #cbd5e1 !important;
+  cursor: not-allowed !important;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Footer Notice */
+.weekday-picker__footer {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.weekday-picker__legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #f1f5f9;
+  border: 1px dashed #cbd5e1;
+  display: inline-block;
+  flex-shrink: 0;
+}

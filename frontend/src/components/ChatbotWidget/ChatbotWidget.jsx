@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import './ChatbotWidget.css';
 import assistantVideo from '../../assets/images/AI COMPANION.mp4';
 import ChatbotLoadingIndicator from './ChatbotLoadingIndicator';
@@ -14,14 +15,26 @@ const DEFAULT_GREETING = {
   sender: 'bot',
   text: 'Hello! 👋 Welcome to Airship Express. I am your AI Companion! I can help you with job openings, requirements, the application process, interview schedules, and more. You can ask me in English or Filipino/Tagalog. What would you like to ask?',
   time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  timestamp: Date.now(),
+  isHistory: false,
 };
 
+const QUICK_PROMPTS = [
+  { id: 'jobs', icon: 'bx-briefcase-alt-2', label: 'Available Jobs', query: 'What jobs are available?' },
+  { id: 'status', icon: 'bx-time-five', label: 'My Application Status', query: 'What is the status of my application?' },
+  { id: 'company_bg', icon: 'bx-buildings', label: 'Company Background', query: 'What is the background of the company?' },
+  { id: 'office', icon: 'bx-map-pin', label: 'Office & Interview', query: 'Where is your main office located?' }
+];
+
 const ChatbotWidget = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(() => {
     return sessionStorage.getItem('airship_chatbot_open') === 'true';
   });
   const [showPopBubble, setShowPopBubble]   = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isCooldown, setIsCooldown] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
 
   // ── Helper to resolve logged-in user ID ─────────────────────────────────────
   const getUserId = () => {
@@ -102,12 +115,17 @@ const ChatbotWidget = () => {
       const res = await fetch(`${API_GET_HISTORY}?applicant_id=${uid}`);
       const data = await res.json();
       if (data.status === 'success' && Array.isArray(data.history) && data.history.length > 0) {
-        const formatted = data.history.map(item => ({
-          id:     item.id,
-          sender: item.sender,
-          text:   item.message_text,
-          time:   new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        }));
+        const formatted = data.history.map(item => {
+          const itemDate = item.created_at ? new Date(item.created_at) : new Date();
+          return {
+            id:        item.id,
+            sender:    item.sender,
+            text:      item.message_text,
+            time:      itemDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: itemDate.getTime(),
+            isHistory: true,
+          };
+        });
         setMessages(formatted);
         try {
           sessionStorage.setItem(getStorageKey(uid), JSON.stringify(formatted));
@@ -214,22 +232,35 @@ const ChatbotWidget = () => {
     setShowPopBubble(false);
   };
 
-  // ── Send Message ────────────────────────────────────────────────────────────
-  const handleSend = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    if (!inputValue.trim() || isTyping) return;
+  // ── Copy Message to Clipboard ─────────────────────────────────────────────
+  const handleCopy = (id, text) => {
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
 
+  // ── Unified Send Message Query (Supports form submit & quick chips) ─────────
+  const sendMessageQuery = async (queryText) => {
+    const trimmed = (queryText !== undefined ? queryText : inputValue).trim();
+    if (!trimmed || isTyping || isCooldown) return;
+
+    const now = Date.now();
     const userMessage = {
-      id:     Date.now(),
-      sender: 'user',
-      text:   inputValue.trim(),
-      time:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      id:        now,
+      sender:    'user',
+      text:      trimmed,
+      time:      new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: now,
+      isHistory: false,
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const query = inputValue.trim();
     setInputValue('');
     setIsTyping(true);
+    setIsCooldown(true);
+    setTimeout(() => setIsCooldown(false), 2000); // 2-second anti-spam cooldown
 
     try {
       const userId = getUserId();
@@ -237,28 +268,239 @@ const ChatbotWidget = () => {
       const res  = await fetch(API_QUERY, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ message: query, user_id: userId }),
+        body:    JSON.stringify({ message: trimmed, user_id: userId }),
       });
       const data = await res.json();
 
+      const botNow = Date.now();
       const botMessage = {
-        id:     Date.now() + 1,
-        sender: 'bot',
-        text:   data.response ?? "Sorry, I encountered an issue. Please try again.",
-        time:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        id:        botNow + 1,
+        sender:    'bot',
+        status:    data.status || 'match',
+        text:      data.response ?? "Sorry, I encountered an issue. Please try again.",
+        time:      new Date(botNow).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: botNow,
+        isHistory: false,
       };
       setMessages(prev => [...prev, botMessage]);
     } catch {
+      const errNow = Date.now();
       const errorMessage = {
-        id:     Date.now() + 1,
-        sender: 'bot',
-        text:   "I am currently unable to process your request. Please wait a moment and try sending your message again. Thank you for your patience.",
-        time:   new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        id:        errNow + 1,
+        sender:    'bot',
+        status:    'error',
+        text:      "I am currently unable to process your request. Please wait a moment and try sending your message again. Thank you for your patience.",
+        time:      new Date(errNow).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: errNow,
+        isHistory: false,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
     }
+  };
+
+  const handleSend = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    sendMessageQuery(inputValue);
+  };
+
+  // ── Helper to Render Clean Formatted Messages with Bold, Bullets & Nav Links ──
+  const renderFormattedMessage = (msg) => {
+    const rawText = msg.text || '';
+    const isSecurityRefusal = msg.status === 'security_refusal' ||
+      rawText.includes('violates our system security guidelines') ||
+      rawText.includes('security guidelines') ||
+      rawText.includes('Hindi maproseso ang kahilingang ito') ||
+      rawText.includes('I am unable to follow those instructions') ||
+      rawText.includes('hindi ko maaaring sundin ang tagubiling iyan') ||
+      rawText.includes('Paumanhin po, ngunit hindi ko maaaring sundin');
+    const isOutOfDomain = msg.status === 'ood' ||
+      rawText.includes('I specialize exclusively in Airship Express recruitment') ||
+      rawText.includes('Eksklusibo po akong nakatalaga para sa recruitment');
+    const isPendingReview = msg.status === 'pending_review';
+    const isKnowledgeGap = isPendingReview ||
+      rawText.includes('We do not have official guidelines for this inquiry yet') ||
+      rawText.includes('Wala pa po kaming opisyal na impormasyon ukol dito') ||
+      rawText.includes('logged your question for our') ||
+      rawText.includes('naitala ko na po ang inyong katanungan') ||
+      rawText.includes('Naitala ko na po ang inyong katanungan') ||
+      rawText.includes('This inquiry has already been logged');
+    const isError = msg.status === 'error';
+
+    const lower = rawText.toLowerCase();
+
+    // Distinguish "How to Apply" tutorials from actual status lookups
+    const isApplyGuide = lower.includes('how to apply') ||
+      lower.includes('ready to apply') ||
+      lower.includes('here is how to apply') ||
+      lower.includes('paano mag-apply') ||
+      lower.includes('submit your application') ||
+      lower.includes('pre-screening check');
+
+    // Detect greeting messages (initial or subsequent greeting replies in English / Tagalog)
+    const isGreeting = 
+      msg.id === 'greeting-initial' ||
+      lower.includes('welcome to airship express') ||
+      lower.includes('airship express ai companion') ||
+      lower.includes('ai companion ng airship express') ||
+      lower.includes('what would you like to ask') ||
+      lower.includes('what would you like to know') ||
+      lower.includes('ano ang nais mong malaman');
+
+    // Detect interview process description messages
+    const isInterviewProcess =
+      lower.includes('interview process') ||
+      lower.includes('consists of two stages') ||
+      lower.includes('two stages:') ||
+      lower.includes('dalawang yugto') ||
+      lower.includes('proseso ng interview');
+
+    // Never show navigation buttons on security refusal, OOD, knowledge-gap, system errors, greetings, or interview process messages
+    const canShowActions = !isSecurityRefusal && !isOutOfDomain && !isKnowledgeGap && !isError && !isGreeting && !isInterviewProcess && msg.sender === 'bot';
+
+    // Detect if message is informing user that they already applied for this job
+    const hasAlreadyAppliedNote =
+      lower.includes('you have already submitted an application') ||
+      lower.includes('you have already applied') ||
+      lower.includes('naipasa mo na ang iyong aplikasyon') ||
+      lower.includes('note on your application') ||
+      lower.includes('paalala sa iyong aplikasyon');
+
+    // Vacancy action button should show for job queries, application guides, and vacancy mentions (BUT NOT if user already applied)
+    const hasVacancyAction = canShowActions && !hasAlreadyAppliedNote && (
+      lower.includes('vacanc') || // matches "vacancy", "vacancies"
+      lower.includes('job opening') ||
+      lower.includes('open position') ||
+      lower.includes('available position') ||
+      lower.includes('bakanteng') ||
+      lower.includes('mag-apply') ||
+      isApplyGuide
+    );
+
+    // Status action button should appear when checking status or when user already applied for the discussed role,
+    // and NEVER on a "How to Apply" guide where the user hasn't submitted yet
+    const hasStatusAction = canShowActions && !isApplyGuide && (
+      hasAlreadyAppliedNote ||
+      lower.includes('track status') ||
+      lower.includes('track my application') ||
+      lower.includes('check status') ||
+      lower.includes('check your application') ||
+      lower.includes('status ng iyong aplikasyon') ||
+      lower.includes('status of your application') ||
+      lower.includes('real-time status') ||
+      lower.includes('application status page') ||
+      lower.includes('under initial review') ||
+      lower.includes('under detailed review') ||
+      lower.includes('interview confirmed') ||
+      lower.includes('pre-employment phase')
+    );
+
+    // About action button should appear when asking about company background or history
+    const hasAboutAction = canShowActions && (
+      lower.includes('established in 2016') ||
+      lower.includes('background of the company') ||
+      lower.includes('company background') ||
+      lower.includes('about airship express') ||
+      lower.includes('tungkol sa airship express') ||
+      lower.includes('kasaysayan ng airship')
+    );
+
+    const lines = rawText.split('\n');
+
+    return (
+      <div className={`chat-bubble-inner ${isSecurityRefusal ? 'is-security-refusal' : ''} ${isOutOfDomain ? 'is-out-of-domain' : ''} ${isPendingReview ? 'is-pending-review' : ''}`}>
+        {isSecurityRefusal && (
+          <div className="chatbot-security-badge">
+            <i className="bx bx-shield-quarter" />
+            <span>Security Notice</span>
+          </div>
+        )}
+        {isOutOfDomain && (
+          <div className="chatbot-ood-badge">
+            <i className="bx bx-error-circle" />
+            <span>Out of Scope</span>
+          </div>
+        )}
+        {isPendingReview && (
+          <div className="chatbot-pending-badge">
+            <i className="bx bx-time-five" />
+            <span>Under HR Review</span>
+          </div>
+        )}
+
+        <div className="chat-message-lines">
+          {lines.map((line, idx) => {
+            const trimmed = line.trim();
+            if (!trimmed) {
+              return <div key={idx} className="chat-empty-line" />;
+            }
+
+            const isBullet = trimmed.startsWith('•') || trimmed.startsWith('- ') || /^\d+[\.\)]\s/.test(trimmed);
+
+            // Parse bold markdown **bold**
+            const parts = line.split(/(\*\*[^*]+\*\*)/g);
+            const content = parts.map((part, pIdx) => {
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={pIdx} className="chat-bold-text">{part.slice(2, -2)}</strong>;
+              }
+              return part;
+            });
+
+            return (
+              <p key={idx} className={`chat-message-line ${isBullet ? 'is-bullet-item' : ''}`}>
+                {content}
+              </p>
+            );
+          })}
+        </div>
+
+        {/* In-Chat Quick Action Navigation Buttons (Only for helpful guidance, never on security refusal) */}
+        {canShowActions && (hasVacancyAction || hasStatusAction || hasAboutAction) && (
+          <div className="chatbot-action-pills">
+            {hasVacancyAction && (
+              <button
+                type="button"
+                className="chatbot-action-pill"
+                onClick={() => {
+                  navigate('/vacancy');
+                }}
+                title="Open Vacancy Page"
+              >
+                <i className="bx bx-briefcase-alt-2" />
+                <span>Open Vacancy Page</span>
+              </button>
+            )}
+            {hasStatusAction && (
+              <button
+                type="button"
+                className="chatbot-action-pill"
+                onClick={() => {
+                  navigate('/application-status');
+                }}
+                title="View Application Status"
+              >
+                <i className="bx bx-list-check" />
+                <span>View Application Status</span>
+              </button>
+            )}
+            {hasAboutAction && (
+              <button
+                type="button"
+                className="chatbot-action-pill"
+                onClick={() => {
+                  navigate('/about');
+                }}
+                title="Learn More About Us"
+              >
+                <i className="bx bx-buildings" />
+                <span>Learn More About Us</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ── Trigger Delete Confirmation Modal ───────────────────────────────────────
@@ -291,6 +533,41 @@ const ChatbotWidget = () => {
     } catch (e) {}
 
     setMessages([DEFAULT_GREETING]);
+  };
+
+  // ── Timestamp & History Divider Helpers ─────────────────────────────────────
+  const formatDividerTime = (msg) => {
+    if (!msg) return '';
+    if (msg.timestamp) {
+      const d = new Date(msg.timestamp);
+      if (!isNaN(d.getTime())) {
+        const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const now = new Date();
+        const isToday = d.toDateString() === now.toDateString();
+        if (isToday) return timeStr;
+        const yesterday = new Date();
+        yesterday.setDate(now.getDate() - 1);
+        if (d.toDateString() === yesterday.toDateString()) {
+          return `Yesterday, ${timeStr}`;
+        }
+        return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+      }
+    }
+    return msg.time || '';
+  };
+
+  const shouldRenderTimeDivider = (currentMsg, prevMsg, index) => {
+    if (index === 0) return true;
+    if (!prevMsg) return false;
+    // Transitioning from loaded history messages to new active conversation
+    if (prevMsg.isHistory && !currentMsg.isHistory) return true;
+    // Time difference between consecutive messages is >= 20 minutes (1200000ms)
+    if (currentMsg.timestamp && prevMsg.timestamp) {
+      if (Math.abs(currentMsg.timestamp - prevMsg.timestamp) >= 20 * 60 * 1000) {
+        return true;
+      }
+    }
+    return false;
   };
 
   const bubbleText = userName
@@ -360,17 +637,67 @@ const ChatbotWidget = () => {
 
         {/* Conversation History */}
         <div className="chatbot-messages">
-          {messages.map(msg => (
-            <div key={msg.id} className={`chat-message-row ${msg.sender}`}>
-              <div className="chat-message-bubble">
-                <p className="chat-message-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
-                <span className="chat-message-time">{msg.time}</span>
-              </div>
-            </div>
-          ))}
+          {messages.map((msg, idx) => {
+            const prevMsg = idx > 0 ? messages[idx - 1] : null;
+            const showDivider = shouldRenderTimeDivider(msg, prevMsg, idx);
+            const dividerText = showDivider ? formatDividerTime(msg) : '';
+
+            return (
+              <React.Fragment key={msg.id}>
+                {showDivider && dividerText && (
+                  <div className="chat-time-divider">
+                    <span className="chat-divider-line" />
+                    <span className="chat-divider-text">{dividerText}</span>
+                    <span className="chat-divider-line" />
+                  </div>
+                )}
+                <div className={`chat-message-row ${msg.sender}`}>
+                  <div className="chat-message-bubble">
+                    {renderFormattedMessage(msg)}
+                    <div className="chat-message-footer">
+                      <span className="chat-message-time">{msg.time}</span>
+                      {msg.sender === 'bot' && (
+                        <button
+                          type="button"
+                          className="chat-copy-btn"
+                          onClick={() => handleCopy(msg.id, msg.text)}
+                          title="Copy message"
+                          aria-label="Copy message"
+                        >
+                          <i className={`bx ${copiedId === msg.id ? 'bx-check text-green' : 'bx-copy'}`} />
+                          {copiedId === msg.id && <span className="copy-label">Copied</span>}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </React.Fragment>
+            );
+          })}
           {isTyping && <ChatbotLoadingIndicator />}
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Quick Action Suggestion Chips for Logged-In Users */}
+        {user && !isTyping && (
+          <div className="chatbot-quick-chips-wrapper">
+            <div className="chatbot-quick-chips">
+              {QUICK_PROMPTS.map(chip => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  className="chatbot-chip-btn"
+                  onClick={() => sendMessageQuery(chip.query)}
+                  disabled={isTyping || isCooldown}
+                  title={`Ask: "${chip.query}"`}
+                >
+                  <i className={`bx ${chip.icon}`} />
+                  <span>{chip.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Input Area: Hard Gate for Guest, Active Form for Logged-In */}
         {!user ? (
@@ -399,24 +726,31 @@ const ChatbotWidget = () => {
             >
               <i className="bx bx-trash chatbot-clear-icon" />
             </button>
-            <input
-              type="text"
-              className="chatbot-input"
-              placeholder="Ask about jobs, status, interviews..."
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
-              disabled={isTyping}
-              maxLength={300}
-            />
+            <div className="chatbot-input-wrapper">
+              <input
+                type="text"
+                className="chatbot-input"
+                placeholder={isCooldown ? "Please wait a moment..." : "Ask about jobs, status, interviews..."}
+                value={inputValue}
+                onChange={e => setInputValue(e.target.value)}
+                disabled={isTyping || isCooldown}
+                maxLength={300}
+              />
+              {inputValue.length > 0 && (
+                <span className={`chatbot-char-counter ${inputValue.length >= 280 ? 'warn' : ''}`}>
+                  {inputValue.length}/300
+                </span>
+              )}
+            </div>
             <button
               type="submit"
-              className="chatbot-send-btn"
-              disabled={!inputValue.trim() || isTyping}
-              title="Send Message"
+              className={`chatbot-send-btn ${isCooldown ? 'cooldown' : ''}`}
+              disabled={!inputValue.trim() || isTyping || isCooldown}
+              title={isCooldown ? "Please wait..." : "Send Message"}
               aria-label="Send Message"
               onMouseDown={(e) => e.preventDefault()}
               onTouchEnd={(e) => {
-                if (inputValue.trim() && !isTyping) {
+                if (inputValue.trim() && !isTyping && !isCooldown) {
                   e.preventDefault();
                   handleSend(e);
                 }

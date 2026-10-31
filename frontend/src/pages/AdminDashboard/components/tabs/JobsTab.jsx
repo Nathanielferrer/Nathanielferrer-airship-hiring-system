@@ -1001,7 +1001,8 @@ const JobsTab = ({ showToast: propShowToast }) => {
 
           return (
             <>
-              <table className="admin-table">
+              <div className="admin-table-responsive">
+                <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Position Title</th>
@@ -1197,6 +1198,7 @@ const JobsTab = ({ showToast: propShowToast }) => {
                 ))}
               </tbody>
             </table>
+          </div>
 
             {/* Pagination Controls */}
             {jobs.length > 0 && (

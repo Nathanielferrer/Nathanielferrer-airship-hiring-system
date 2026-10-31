@@ -14,7 +14,8 @@ import OnboardingDrawer from './components/OnboardingDrawer';
 import PreEmploymentDrawer from './components/PreEmploymentDrawer';
 import JobOfferModal from './components/JobOfferModal';
 import SuperAdminMfaModal from './components/SuperAdminMfaModal';
-import logoImg from '../../assets/images/Logo Airship Express.png';
+import WeekdayCalendarPicker from '../../components/WeekdayCalendarPicker/WeekdayCalendarPicker';
+import logoImg from '../../assets/images/Logo Airship Express.webp';
 import useInactivityTimeout from '../../hooks/useInactivityTimeout';
 import useToast from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast/ToastNotification';
@@ -32,6 +33,50 @@ const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Returns true only if the scheduled interview date and time has arrived (today on time, or in the past)
+const isInterviewScheduleReady = (interviewDate, startTime) => {
+  if (!interviewDate) return false;
+  const dateStr = interviewDate.split('T')[0].split(' ')[0];
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+
+  if (dateStr > todayStr) {
+    return false; // Scheduled in future date
+  }
+  if (dateStr < todayStr) {
+    return true; // Scheduled in past date (already took place)
+  }
+  // If dateStr === todayStr: check if startTime has arrived
+  if (!startTime) {
+    return true;
+  }
+  try {
+    let cleanTime = startTime.trim();
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(cleanTime)) {
+      if (cleanTime.length === 5) cleanTime += ':00';
+      const scheduledDateTime = new Date(`${dateStr}T${cleanTime}`);
+      if (!isNaN(scheduledDateTime.getTime())) {
+        return now >= scheduledDateTime;
+      }
+    } else {
+      const match = cleanTime.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (match) {
+        let h = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10);
+        const ampm = match[3].toUpperCase();
+        if (ampm === 'PM' && h < 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        const scheduledDateTime = new Date(year, now.getMonth(), now.getDate(), h, m, 0);
+        return now >= scheduledDateTime;
+      }
+    }
+  } catch (e) {}
+  return true;
+};
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -571,18 +616,12 @@ const SuperAdminDashboard = () => {
     e.preventDefault();
     setSlotError('');
     if (!newSlot.date) {
-      if (slotDateRef.current) {
-        slotDateRef.current.setCustomValidity('Please select an interview date (weekdays only).');
-        slotDateRef.current.reportValidity();
-      }
+      setSlotError('Please select an interview date (weekdays only).');
       return;
     }
     const slotDateObj = new Date(newSlot.date + 'T00:00:00');
     if (slotDateObj.getDay() === 0 || slotDateObj.getDay() === 6) {
-      if (slotDateRef.current) {
-        slotDateRef.current.setCustomValidity('Weekends are disabled. Please select a weekday (Monday to Friday).');
-        slotDateRef.current.reportValidity();
-      }
+      setSlotError('Weekends are disabled. Please select a weekday (Monday to Friday).');
       return;
     }
     const slotsCount = Math.max(1, parseInt(newSlot.num_slots, 10) || 1);
@@ -1191,7 +1230,7 @@ const SuperAdminDashboard = () => {
     {
       category: 'INITIAL SCREENING',
       items: [
-        { key: 'applicants', label: 'Resume Screening', icon: 'bx-file-find' },
+        { key: 'applicants', label: 'Initial Interview', icon: 'bx-file-find' },
         { key: 'interviews', label: 'Interview Management', icon: 'bx-calendar-check' },
       ]
     },
@@ -1293,16 +1332,36 @@ const SuperAdminDashboard = () => {
                 <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f59e0b' }}></span>
                 <span>Booked Slots</span>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: '#f1f5f9', border: '1px dashed #cbd5e1' }}></span>
+                <span>Weekend (Disabled)</span>
+              </div>
             </div>
           </div>
 
           {/* Day Names Row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px', marginBottom: '8px' }}>
-            {DAY_NAMES.map(d => (
-              <div key={d} style={{ textAlign: 'center', fontSize: '12px', fontWeight: '800', color: '#64748b', letterSpacing: '0.8px', padding: '6px 0', textTransform: 'uppercase', background: '#f8fafc', borderRadius: '6px' }}>
-                {d}
-              </div>
-            ))}
+            {DAY_NAMES.map((d, idx) => {
+              const isWeekendHeader = idx === 0 || idx === 6;
+              return (
+                <div
+                  key={d}
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '12px',
+                    fontWeight: '800',
+                    color: isWeekendHeader ? '#94a3b8' : '#64748b',
+                    letterSpacing: '0.8px',
+                    padding: '6px 0',
+                    textTransform: 'uppercase',
+                    background: isWeekendHeader ? '#f1f5f9' : '#f8fafc',
+                    borderRadius: '6px'
+                  }}
+                >
+                  {d}
+                </div>
+              );
+            })}
           </div>
 
           {/* Expanded Grid Days */}
@@ -1310,12 +1369,51 @@ const SuperAdminDashboard = () => {
             {cells.map((day, idx) => {
               if (!day) return <div key={`empty-${idx}`} style={{ background: '#f8fafc', borderRadius: '12px', opacity: 0.4 }} />;
               const dateStr = padDate(calYear, calMonth, day);
+              const dayOfWeek = new Date(calYear, calMonth, day).getDay();
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
               const daySlots = slotsByDate[dateStr] || [];
               const hasSlots = daySlots.length > 0;
               const openCount = daySlots.filter(s => s.status === 'Open').length;
               const bookedCount = daySlots.length - openCount;
               const isToday = dateStr === today.toISOString().split('T')[0];
               const isSelected = dateStr === calSelectedDay;
+
+              // Weekend cell styling: disabled with light color tint
+              if (isWeekend) {
+                return (
+                  <div
+                    key={day}
+                    style={{
+                      borderRadius: '12px',
+                      padding: '10px 8px',
+                      textAlign: 'left',
+                      cursor: 'not-allowed',
+                      background: '#f1f5f9',
+                      border: '1.5px dashed #cbd5e1',
+                      minHeight: '85px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      opacity: 0.85,
+                      userSelect: 'none'
+                    }}
+                    title="Weekends are disabled for interview slots"
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '15px', fontWeight: '700', color: '#94a3b8' }}>
+                        {day}
+                      </span>
+                      <span style={{ fontSize: '9px', fontWeight: '800', background: '#e2e8f0', color: '#64748b', padding: '1px 5px', borderRadius: '4px', textTransform: 'uppercase' }}>
+                        Closed
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '10.5px', color: '#94a3b8', fontStyle: 'italic', marginTop: 'auto' }}>
+                      Weekend
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <div
@@ -1612,7 +1710,7 @@ const SuperAdminDashboard = () => {
               </div>
 
               {/* Status Filter Tabs: Active Admins | Inactive Admins */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   onClick={() => setAdminStatusTab('active')}
@@ -1857,8 +1955,30 @@ const SuperAdminDashboard = () => {
                 </div>
 
                 {/* Top Search Bar */}
-                <div style={{ position: 'relative', minWidth: '300px', maxWidth: '420px', flex: '1 1 300px' }}>
-                  <i className="bx bx-search" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: '#94a3b8' }}></i>
+                <div
+                  className="admin-search-wrapper"
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    maxWidth: '380px',
+                    flex: 'none',
+                    height: '40px'
+                  }}
+                >
+                  <i
+                    className="bx bx-search"
+                    style={{
+                      position: 'absolute',
+                      left: '14px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      fontSize: '18px',
+                      color: '#94a3b8',
+                      pointerEvents: 'none'
+                    }}
+                  />
                   <input
                     type="text"
                     value={resumeSearch}
@@ -1866,8 +1986,9 @@ const SuperAdminDashboard = () => {
                     placeholder="Search candidate, email, contact #, or position..."
                     style={{
                       width: '100%',
-                      padding: '10px 36px 10px 40px',
-                      borderRadius: '10px',
+                      height: '40px',
+                      padding: '0 36px 0 40px',
+                      borderRadius: '8px',
                       border: '1.5px solid #e2e8f0',
                       fontSize: '13px',
                       color: '#0f172a',
@@ -1883,8 +2004,15 @@ const SuperAdminDashboard = () => {
                       type="button"
                       onClick={() => { setResumeSearch(''); setResumePage(1); }}
                       style={{
-                        position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
-                        background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '15px'
+                        position: 'absolute',
+                        right: '12px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                        fontSize: '15px'
                       }}
                       title="Clear search"
                     >
@@ -3050,7 +3178,7 @@ const SuperAdminDashboard = () => {
                   </div>
                 ) : (
                   <>
-                    <table className="admin-table" style={{ width: '100%', minWidth: evalTab === 'final_approval' ? '920px' : '780px', borderCollapse: 'collapse' }}>
+                    <table className="admin-table" style={{ width: '100%', minWidth: evalTab === 'final_approval' ? '960px' : '880px', borderCollapse: 'collapse' }}>
                       <thead>
                         {evalTab === 'final_approval' ? (
                           <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #cbd5e1' }}>
@@ -3105,21 +3233,34 @@ const SuperAdminDashboard = () => {
                             {evalTab === 'pending' && (
                               <th style={{ width: '48px', minWidth: '48px', maxWidth: '48px', padding: '14px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <input
-                                    type="checkbox"
-                                    title="Select All on Current Page"
-                                    checked={paginatedList.length > 0 && paginatedList.every(i => selectedFinalInterviewIds.includes(i.application_id))}
-                                    onChange={() => {
-                                      const currentIds = paginatedList.map(x => x.application_id);
-                                      const allSelected = currentIds.every(id => selectedFinalInterviewIds.includes(id));
-                                      if (allSelected) {
-                                        setSelectedFinalInterviewIds(prev => prev.filter(id => !currentIds.includes(id)));
-                                      } else {
-                                        setSelectedFinalInterviewIds(prev => Array.from(new Set([...prev, ...currentIds])));
-                                      }
-                                    }}
-                                    style={{ margin: 0, padding: 0, cursor: 'pointer', width: '16px', height: '16px', accentColor: '#e6007e', display: 'block', flexShrink: 0 }}
-                                  />
+                                  {(() => {
+                                    const actionableCandidates = paginatedList.filter(x => isInterviewScheduleReady(x.interview_date, x.start_time));
+                                    const actionableIds = actionableCandidates.map(x => x.application_id);
+                                    const allActionableSelected = actionableIds.length > 0 && actionableIds.every(id => selectedFinalInterviewIds.includes(id));
+                                    return (
+                                      <input
+                                        type="checkbox"
+                                        title={actionableIds.length === 0 ? "No candidates with current or past interview schedules on this page" : (allActionableSelected ? "Deselect all actionable candidates" : "Select all actionable candidates")}
+                                        disabled={actionableIds.length === 0}
+                                        checked={allActionableSelected}
+                                        onChange={() => {
+                                          if (actionableIds.length === 0) return;
+                                          if (allActionableSelected) {
+                                            setSelectedFinalInterviewIds(prev => prev.filter(id => !actionableIds.includes(id)));
+                                          } else {
+                                            setSelectedFinalInterviewIds(prev => Array.from(new Set([...prev, ...actionableIds])));
+                                          }
+                                        }}
+                                        style={{
+                                          margin: 0, padding: 0,
+                                          cursor: actionableIds.length === 0 ? 'not-allowed' : 'pointer',
+                                          width: '16px', height: '16px', accentColor: '#e6007e',
+                                          display: 'block', flexShrink: 0,
+                                          opacity: actionableIds.length === 0 ? 0.45 : 1
+                                        }}
+                                      />
+                                    );
+                                  })()}
                                 </div>
                               </th>
                             )}
@@ -3134,9 +3275,11 @@ const SuperAdminDashboard = () => {
                                     ? 'Offer Sent Date'
                                     : 'Interview Schedule'))}
                             </th>
-                            {(evalTab === 'job_offer' || evalTab === 'contract_signing') && (
+                            {(evalTab === 'pending' || evalTab === 'job_offer' || evalTab === 'contract_signing') && (
                               <th style={{ padding: '14px 18px', textAlign: 'center' }}>
-                                {evalTab === 'job_offer' ? 'Offer Status' : 'Contract Status'}
+                                {evalTab === 'pending'
+                                  ? 'Interview Status'
+                                  : (evalTab === 'job_offer' ? 'Offer Status' : 'Contract Status')}
                               </th>
                             )}
                             {evalTab === 'onboarding' ? (
@@ -3186,6 +3329,7 @@ const SuperAdminDashboard = () => {
                           const deadlineStr = deadlineObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 
                           const isSelected = (evalTab === 'pending' && selectedFinalInterviewIds.includes(i.application_id)) || (evalTab === 'final_approval' && selectedApprovalIds.includes(i.application_id));
+                          const isSchedReady = isInterviewScheduleReady(i.interview_date, i.start_time);
 
                           /* ── DEDICATED ROW FOR PRESIDENT'S FINAL APPROVAL (7-COLUMN EXECUTIVE BOARD) ── */
                           if (evalTab === 'final_approval') {
@@ -3495,13 +3639,22 @@ const SuperAdminDashboard = () => {
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <input
                                       type="checkbox"
-                                      checked={selectedFinalInterviewIds.includes(i.application_id)}
+                                      disabled={!isSchedReady}
+                                      title={!isSchedReady ? "Interview schedule has not arrived yet." : "Select candidate"}
+                                      checked={isSchedReady && selectedFinalInterviewIds.includes(i.application_id)}
                                       onChange={() => {
+                                        if (!isSchedReady) return;
                                         setSelectedFinalInterviewIds(prev =>
                                           prev.includes(i.application_id) ? prev.filter(x => x !== i.application_id) : [...prev, i.application_id]
                                         );
                                       }}
-                                      style={{ margin: 0, padding: 0, cursor: 'pointer', width: '16px', height: '16px', accentColor: '#e6007e', display: 'block', flexShrink: 0 }}
+                                      style={{
+                                        margin: 0, padding: 0,
+                                        cursor: isSchedReady ? 'pointer' : 'not-allowed',
+                                        width: '16px', height: '16px', accentColor: '#e6007e',
+                                        display: 'block', flexShrink: 0,
+                                        opacity: isSchedReady ? 1 : 0.4
+                                      }}
                                     />
                                   </div>
                                 </td>
@@ -3598,8 +3751,47 @@ const SuperAdminDashboard = () => {
                                 )}
                               </td>
 
-                              {/* Column 4: Offer Status / Contract Status */}
-                              {(evalTab === 'job_offer' || evalTab === 'contract_signing') && (() => {
+                              {/* Column 4: Interview Status / Offer Status / Contract Status */}
+                              {(evalTab === 'pending' || evalTab === 'job_offer' || evalTab === 'contract_signing') && (() => {
+                                if (evalTab === 'pending') {
+                                  return (
+                                    <td style={{ padding: '14px 18px', verticalAlign: 'middle', textAlign: 'center' }}>
+                                      {!isSchedReady ? (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '5px',
+                                          background: '#fffbeb',
+                                          color: '#d97706',
+                                          border: '1.5px solid #fde68a',
+                                          borderRadius: '20px',
+                                          padding: '4px 12px',
+                                          fontSize: '11.5px',
+                                          fontWeight: '700',
+                                          whiteSpace: 'nowrap'
+                                        }}>
+                                          <i className="bx bx-time-five" style={{ fontSize: '13px' }}></i> Upcoming
+                                        </span>
+                                      ) : (
+                                        <span style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '5px',
+                                          background: '#ecfdf5',
+                                          color: '#047857',
+                                          border: '1.5px solid #a7f3d0',
+                                          borderRadius: '20px',
+                                          padding: '4px 12px',
+                                          fontSize: '11.5px',
+                                          fontWeight: '700',
+                                          whiteSpace: 'nowrap'
+                                        }}>
+                                          <i className="bx bx-check-circle" style={{ fontSize: '13px' }}></i> Ready
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                }
                                 if (evalTab === 'job_offer') {
                                   const isDeclined = ['OFFER DECLINED', 'OFFER_DECLINED'].includes((i.status || '').toUpperCase());
                                   const hasOfferSent = ['JOB OFFER PENDING', 'OFFER EXTENDED', 'JOB_OFFER_PENDING', 'OFFER_EXTENDED'].includes((i.status || '').toUpperCase());
@@ -3667,40 +3859,44 @@ const SuperAdminDashboard = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '10px', flexWrap: 'nowrap' }}>
                                       <button
                                         type="button"
-                                        onClick={() => handleUpdateResult(i.application_id, 'Passed Final Interview', candidateName, i.job_title)}
+                                        disabled={!isSchedReady}
+                                        onClick={() => isSchedReady && handleUpdateResult(i.application_id, 'Passed Final Interview', candidateName, i.job_title)}
                                         style={{
                                           background: '#059669',
                                           color: '#ffffff',
                                           border: 'none',
                                           padding: '8px 18px',
                                           borderRadius: '10px',
-                                          cursor: 'pointer',
+                                          cursor: isSchedReady ? 'pointer' : 'not-allowed',
+                                          opacity: isSchedReady ? 1 : 0.45,
                                           fontWeight: '600',
                                           fontSize: '13px',
                                           fontFamily: "'Inter', sans-serif",
                                           display: 'inline-flex',
                                           alignItems: 'center',
                                           gap: '6px',
-                                          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.08)',
+                                          boxShadow: isSchedReady ? '0 1px 3px rgba(0, 0, 0, 0.08)' : 'none',
                                           transition: 'all 0.15s ease',
                                           whiteSpace: 'nowrap'
                                         }}
-                                        onMouseOver={(e) => { e.currentTarget.style.filter = 'brightness(1.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                        onMouseOver={(e) => { if (isSchedReady) { e.currentTarget.style.filter = 'brightness(1.08)'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
                                         onMouseOut={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'none'; }}
-                                        title="Mark candidate as Passed Final Interview"
+                                        title={!isSchedReady ? "Action disabled: Scheduled interview has not taken place yet." : "Mark candidate as Passed Final Interview"}
                                       >
                                         <i className="bx bx-check-circle" style={{ fontSize: '16px' }}></i> Pass
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleUpdateResult(i.application_id, 'Failed Final Interview', candidateName, i.job_title)}
+                                        disabled={!isSchedReady}
+                                        onClick={() => isSchedReady && handleUpdateResult(i.application_id, 'Failed Final Interview', candidateName, i.job_title)}
                                         style={{
                                           background: '#fff1f2',
                                           color: '#e11d48',
                                           border: '1.5px solid #fecdd3',
                                           padding: '8px 18px',
                                           borderRadius: '10px',
-                                          cursor: 'pointer',
+                                          cursor: isSchedReady ? 'pointer' : 'not-allowed',
+                                          opacity: isSchedReady ? 1 : 0.45,
                                           fontWeight: '600',
                                           fontSize: '13px',
                                           fontFamily: "'Inter', sans-serif",
@@ -3710,22 +3906,24 @@ const SuperAdminDashboard = () => {
                                           transition: 'all 0.15s ease',
                                           whiteSpace: 'nowrap'
                                         }}
-                                        onMouseOver={(e) => { e.currentTarget.style.background = '#ffe4e6'; e.currentTarget.style.borderColor = '#fb7185'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                        onMouseOver={(e) => { if (isSchedReady) { e.currentTarget.style.background = '#ffe4e6'; e.currentTarget.style.borderColor = '#fb7185'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
                                         onMouseOut={(e) => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.borderColor = '#fecdd3'; e.currentTarget.style.transform = 'none'; }}
-                                        title="Mark candidate as Failed Final Interview"
+                                        title={!isSchedReady ? "Action disabled: Scheduled interview has not taken place yet." : "Mark candidate as Failed Final Interview"}
                                       >
                                         <i className="bx bx-x-circle" style={{ fontSize: '16px' }}></i> Fail
                                       </button>
                                       <button
                                         type="button"
-                                        onClick={() => handleUpdateResult(i.application_id, 'Candidate No Show', candidateName, i.job_title)}
+                                        disabled={!isSchedReady}
+                                        onClick={() => isSchedReady && handleUpdateResult(i.application_id, 'Candidate No Show', candidateName, i.job_title)}
                                         style={{
                                           background: '#fffbeb',
                                           color: '#d97706',
                                           border: '1.5px solid #fde68a',
                                           padding: '8px 18px',
                                           borderRadius: '10px',
-                                          cursor: 'pointer',
+                                          cursor: isSchedReady ? 'pointer' : 'not-allowed',
+                                          opacity: isSchedReady ? 1 : 0.45,
                                           fontWeight: '600',
                                           fontSize: '13px',
                                           fontFamily: "'Inter', sans-serif",
@@ -3735,9 +3933,9 @@ const SuperAdminDashboard = () => {
                                           transition: 'all 0.15s ease',
                                           whiteSpace: 'nowrap'
                                         }}
-                                        onMouseOver={(e) => { e.currentTarget.style.background = '#fef3c7'; e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                        onMouseOver={(e) => { if (isSchedReady) { e.currentTarget.style.background = '#fef3c7'; e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.transform = 'translateY(-1px)'; } }}
                                         onMouseOut={(e) => { e.currentTarget.style.background = '#fffbeb'; e.currentTarget.style.borderColor = '#fde68a'; e.currentTarget.style.transform = 'none'; }}
-                                        title="Mark candidate as No Show for the interview"
+                                        title={!isSchedReady ? "Action disabled: Scheduled interview has not taken place yet." : "Mark candidate as No Show for the interview"}
                                       >
                                         <i className="bx bx-user-x" style={{ fontSize: '16px' }}></i> No Show
                                       </button>
@@ -4262,29 +4460,20 @@ const SuperAdminDashboard = () => {
             <form onSubmit={handleAddSlot}>
               <div style={{ marginBottom: '16px' }}>
                 <label style={LABEL_STYLE}>Interview Date (Weekdays Only)</label>
-                <input
-                  ref={slotDateRef}
-                  required type="date" value={newSlot.date}
+                <WeekdayCalendarPicker
+                  value={newSlot.date}
                   min={new Date().toISOString().split('T')[0]}
-                  onChange={e => {
-                    const chosenDate = e.target.value;
+                  onChange={(chosenDate) => {
                     setNewSlot(prev => ({ ...prev, date: chosenDate }));
                     setSlotError('');
                     if (chosenDate) {
-                      const day = new Date(chosenDate + 'T00:00:00').getDay();
-                      if (day === 0 || day === 6) {
-                        if (slotDateRef.current) {
-                          slotDateRef.current.setCustomValidity('Weekends are disabled. Please select a weekday (Monday to Friday).');
-                          setTimeout(() => slotDateRef.current?.reportValidity(), 50);
-                        }
-                        setSlotDayCount(null);
-                        return;
-                      }
+                      fetchSlotDayCount(chosenDate);
+                    } else {
+                      setSlotDayCount(null);
                     }
-                    if (slotDateRef.current) slotDateRef.current.setCustomValidity('');
-                    fetchSlotDayCount(chosenDate);
                   }}
-                  style={FIELD_STYLE}
+                  placeholder="Select interview date (Mon – Fri)..."
+                  required
                 />
                 {slotDayCount !== null && (
                   <div style={{ marginTop: '8px', padding: '8px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '7px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
@@ -4596,29 +4785,15 @@ const SuperAdminDashboard = () => {
                   Scheduled Date &amp; Day <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '10px' }}>
-                  <input
-                    ref={contractDateRef}
-                    type="date"
-                    required
+                  <WeekdayCalendarPicker
                     value={contractDate}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => {
-                      const val = e.target.value;
+                    onChange={(val) => {
                       setContractDate(val);
                       setContractScheduleError(null);
-                      if (val) {
-                        const day = new Date(val + 'T00:00:00').getDay();
-                        if (day === 0 || day === 6) {
-                          if (contractDateRef.current) {
-                            contractDateRef.current.setCustomValidity('Weekends are disabled. Contract signing can only be scheduled on weekdays (Monday to Friday).');
-                            setTimeout(() => contractDateRef.current?.reportValidity(), 50);
-                          }
-                          return;
-                        }
-                      }
-                      if (contractDateRef.current) contractDateRef.current.setCustomValidity('');
                     }}
-                    style={{ ...FIELD_STYLE, flex: 1 }}
+                    min={new Date().toISOString().split('T')[0]}
+                    placeholder="Select signing date..."
+                    required
                   />
                   <div style={{
                     minWidth: '110px',

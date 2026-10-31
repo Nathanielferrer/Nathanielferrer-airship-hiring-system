@@ -110,3 +110,56 @@
   }
 }
 
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR VIDEO LOADING SPLASH
+   ══════════════════════════════════════════════════ */
+[data-theme="dark"] .video-loading-overlay,
+.dark-theme .video-loading-overlay,
+.video-loading-overlay[data-theme="dark"],
+.video-loading-overlay.dark-mode {
+  background: rgba(0, 0, 0, 0.75) !important;
+}
+
+[data-theme="dark"] .video-loading-card,
+.dark-theme .video-loading-card,
+.video-loading-overlay[data-theme="dark"] .video-loading-card,
+.video-loading-overlay.dark-mode .video-loading-card {
+  background: #111420 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(230, 0, 126, 0.25) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .video-loading-title,
+.dark-theme .video-loading-title,
+.video-loading-overlay[data-theme="dark"] .video-loading-title,
+.video-loading-overlay.dark-mode .video-loading-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .video-loading-subtitle,
+.dark-theme .video-loading-subtitle,
+.video-loading-overlay[data-theme="dark"] .video-loading-subtitle,
+.video-loading-overlay.dark-mode .video-loading-subtitle {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .video-loading-media-wrapper,
+.dark-theme .video-loading-media-wrapper,
+.video-loading-overlay[data-theme="dark"] .video-loading-media-wrapper,
+.video-loading-overlay.dark-mode .video-loading-media-wrapper {
+  background: transparent !important;
+  border-radius: 12px !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .video-loading-media,
+.dark-theme .video-loading-media,
+.video-loading-overlay[data-theme="dark"] .video-loading-media,
+.video-loading-overlay.dark-mode .video-loading-media {
+  mix-blend-mode: screen !important;
+  filter: invert(1) hue-rotate(180deg) brightness(1.05) contrast(1.1) !important;
+}
+

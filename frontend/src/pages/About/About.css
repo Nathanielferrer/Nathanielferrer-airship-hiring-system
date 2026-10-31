@@ -128,12 +128,6 @@
 }
 
 /* Hero Badge */
-.about-hero-section {
-  padding: 50px 20px 20px 20px;
-  text-align: center;
-  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-}
-
 .about-tag-badge {
   display: inline-flex;
   align-items: center;
@@ -149,13 +143,14 @@
   border-radius: 50px;
   border: 1px solid rgba(230, 0, 126, 0.2);
   margin-bottom: 16px;
+  align-self: center;
 }
 
 /* Main Content Section - Two Columns with Divider */
 .about-two-col-section {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 48px 80px 48px;
+  padding: 24px 48px 60px 48px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
@@ -176,6 +171,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .about-company-image-container {
@@ -219,9 +216,10 @@
   font-size: 32px;
   font-weight: 800;
   color: #1e293b;
-  margin: 0 0 24px 0;
+  margin: 0 0 20px 0;
   letter-spacing: -0.5px;
   position: relative;
+  text-align: center;
 }
 
 /* Subtle accent line below heading */
@@ -232,7 +230,7 @@
   height: 4px;
   background: #e6007e;
   border-radius: 2px;
-  margin-top: 12px;
+  margin: 12px auto 0 auto;
 }
 
 .about-body-text {
@@ -492,6 +490,32 @@
 }
 
 /* Responsive Media Queries */
+@media (max-width: 1100px) {
+  .about-hero-section {
+    padding: 0 36px;
+    height: 340px;
+  }
+
+  .about-hero-title {
+    font-size: 38px;
+  }
+
+  .about-two-col-section {
+    padding: 36px 32px 60px 32px;
+    gap: 32px;
+  }
+
+  .about-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  .about-why-section,
+  .about-location-section {
+    padding: 56px 32px;
+  }
+}
+
 @media (max-width: 992px) {
   .about-two-col-section {
     grid-template-columns: 1fr;
@@ -713,3 +737,245 @@
 .about-track-btn:hover {
   background: #db2777;
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR ABOUT US PAGE
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .about-wrapper {
+  background: #000000 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .about-hero-section {
+  background: #000000 !important;
+}
+
+[data-theme="dark"] .about-tag-badge {
+  background: rgba(230, 0, 126, 0.16) !important;
+  color: #ff3b9e !important;
+  border-color: rgba(230, 0, 126, 0.35) !important;
+}
+
+[data-theme="dark"] .about-two-col-section {
+  background: #000000 !important;
+}
+
+[data-theme="dark"] .about-col-left {
+  border-right-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .about-company-image-container {
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .about-heading {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .about-body-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .about-why-section {
+  background: #000000 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .about-section-subtext {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .about-card {
+  background: #11131a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .about-card:hover {
+  border-color: #e6007e !important;
+  box-shadow: 0 16px 36px rgba(230, 0, 126, 0.2) !important;
+}
+
+[data-theme="dark"] .about-card-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .about-card-desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .about-card-icon-wrapper {
+  background: rgba(230, 0, 126, 0.15) !important;
+  color: #e6007e !important;
+}
+
+[data-theme="dark"] .about-location-section {
+  background: #06070a !important;
+}
+
+[data-theme="dark"] .about-location-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .about-map-container {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .about-address-card {
+  background: #11131a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .about-address-value {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .about-status-banner {
+  background: #11131a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .about-status-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .about-status-role {
+  color: #94a3b8 !important;
+}
+
+/* ==========================================================================
+   Staggered Fade-Up Entrance Animations for About Us Page
+   ========================================================================== */
+
+/* Pre-stagger state (avoids flash of unstyled content on first visit) */
+.about--pre-stagger .about-tag-badge,
+.about--pre-stagger .about-company-image-container,
+.about--pre-stagger .about-heading,
+.about--pre-stagger .about-body-text {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* Ready state for repeat visits (NO staggering, immediately visible without delay) */
+.about--ready .about-tag-badge,
+.about--ready .about-company-image-container,
+.about--ready .about-heading,
+.about--ready .about-body-text,
+.about--ready .about-section-heading-centered,
+.about--ready .about-section-subtext,
+.about--ready .about-card,
+.about--ready .about-location-title,
+.about--ready .about-map-container,
+.about--ready .about-address-card {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 1. Hero & Top Two-Column Entrance Stagger (Only on first visit) */
+.about--stagger .about-tag-badge {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+  will-change: transform, opacity;
+}
+
+.about--stagger .about-company-image-container {
+  animation: fadeUpStagger 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both;
+  will-change: transform, opacity;
+}
+
+.about--stagger .about-heading {
+  animation: fadeUpStagger 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+  will-change: transform, opacity;
+}
+
+.about--stagger .about-body-text {
+  animation: fadeUpStagger 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.44s both;
+  will-change: transform, opacity;
+}
+
+/* 2. Why Work With Us Stagger Reveal - ONLY active when .about--stagger is present */
+.about--stagger .about-why-section:not(.is-revealed) .about-section-heading-centered,
+.about--stagger .about-why-section:not(.is-revealed) .about-section-subtext,
+.about--stagger .about-why-section:not(.is-revealed) .about-card {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.about--stagger .about-why-section.is-revealed .about-section-heading-centered {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  will-change: transform, opacity;
+}
+
+.about--stagger .about-why-section.is-revealed .about-section-subtext {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+  will-change: transform, opacity;
+}
+
+.about--stagger .about-why-section.is-revealed .about-card {
+  animation: fadeUpStagger 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(0.22s + var(--card-index, 0) * 0.13s);
+  will-change: transform, opacity;
+}
+
+/* 3. Location Section Stagger Reveal - ONLY active when .about--stagger is present */
+.about--stagger .about-location-section:not(.is-revealed) .about-location-title,
+.about--stagger .about-location-section:not(.is-revealed) .about-section-subtext,
+.about--stagger .about-location-section:not(.is-revealed) .about-map-container,
+.about--stagger .about-location-section:not(.is-revealed) .about-address-card {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.about--stagger .about-location-section.is-revealed .about-location-title {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.about--stagger .about-location-section.is-revealed .about-section-subtext {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+}
+
+.about--stagger .about-location-section.is-revealed .about-map-container {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.24s both;
+}
+
+.about--stagger .about-location-section.is-revealed .about-address-card {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.36s both;
+}
+
+/* Prefers-reduced-motion for About */
+@media (prefers-reduced-motion: reduce) {
+  .about--pre-stagger .about-tag-badge,
+  .about--pre-stagger .about-company-image-container,
+  .about--pre-stagger .about-heading,
+  .about--pre-stagger .about-body-text,
+  .about--stagger .about-why-section:not(.is-revealed) .about-section-heading-centered,
+  .about--stagger .about-why-section:not(.is-revealed) .about-section-subtext,
+  .about--stagger .about-why-section:not(.is-revealed) .about-card,
+  .about--stagger .about-location-section:not(.is-revealed) .about-location-title,
+  .about--stagger .about-location-section:not(.is-revealed) .about-map-container,
+  .about--stagger .about-location-section:not(.is-revealed) .about-address-card {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .about--stagger .about-tag-badge,
+  .about--stagger .about-company-image-container,
+  .about--stagger .about-heading,
+  .about--stagger .about-body-text,
+  .about--stagger .about-why-section.is-revealed .about-section-heading-centered,
+  .about--stagger .about-why-section.is-revealed .about-section-subtext,
+  .about--stagger .about-why-section.is-revealed .about-card,
+  .about--stagger .about-location-section.is-revealed .about-location-title,
+  .about--stagger .about-location-section.is-revealed .about-map-container,
+  .about--stagger .about-location-section.is-revealed .about-address-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+

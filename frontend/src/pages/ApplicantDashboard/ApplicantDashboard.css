@@ -260,45 +260,164 @@
 }
 
 
-/* Responsive adjustments */
-@media (max-width: 960px) {
+/* ── Tablet & Medium-Screen Responsiveness (including iPad Pro 13 at 1032x1376) ── */
+@media (max-width: 1100px) {
+  .hero-section {
+    height: min(calc(100vh - 70px), 720px);
+    min-height: 540px;
+  }
+
+  .hero-image-bg {
+    object-position: 70% center;
+  }
+
+  .hero-overlay {
+    background: linear-gradient(
+      90deg,
+      rgba(10, 8, 14, 0.92) 0%,
+      rgba(10, 8, 14, 0.72) 48%,
+      rgba(10, 8, 14, 0.35) 80%,
+      rgba(0, 0, 0, 0.2) 100%
+    );
+  }
+
+  .hero-content {
+    padding: 0 40px;
+  }
+
+  .hero-text-block {
+    max-width: 580px;
+  }
+
+  .hero-title {
+    font-size: 52px;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 14px;
+  }
+
+  .hero-subtitle {
+    font-size: 19px;
+    line-height: 1.5;
+    margin-bottom: 30px;
+    max-width: 480px;
+  }
+
+  .hero-cta-main {
+    font-size: 16px;
+    padding: 14px 32px 14px 38px;
+  }
+
+  .hero-cta-accent {
+    width: 38px;
+    margin-left: -7px;
+  }
+
+  .portal-main-container {
+    padding: 36px 32px;
+  }
+
   .portal-grid {
     grid-template-columns: 1fr;
     gap: 24px;
   }
 
-  .hero-title {
-    font-size: 42px;
+  .brand-carousel-section {
+    padding: 48px 0;
   }
 
-  .dashboard-navbar {
-    padding: 0 24px;
+  .brand-carousel-title {
+    font-size: 28px;
+    margin-bottom: 24px;
   }
 
-  .hero-content {
-    padding: 0 24px;
+  .brand-card {
+    width: 135px;
+    height: 70px;
+    padding: 12px 16px;
+    border-radius: 14px;
   }
 
-  .portal-main-container {
-    padding: 32px 24px;
+  .brand-card-img {
+    max-height: 38px;
+  }
+
+  .how-to-apply-section {
+    padding: 56px 36px 64px 36px;
+  }
+
+  .section-title {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .section-subtitle {
+    font-size: 15.5px;
+    margin-bottom: 36px;
+  }
+
+  .steps-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 24px;
+    max-width: 760px;
+  }
+
+  .step-icon-circle {
+    width: 76px;
+    height: 76px;
+    margin-bottom: 16px;
+  }
+
+  .step-icon-circle svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .step-title {
+    font-size: 17px;
+    margin-bottom: 8px;
+  }
+
+  .step-desc {
+    font-size: 13.5px;
+    max-width: 280px;
+  }
+
+  .featured-jobs-section {
+    padding: 56px 36px;
+  }
+
+  .featured-jobs-header {
+    margin-bottom: 28px;
+  }
+
+  .jobs-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+    max-width: 960px;
+  }
+
+  .job-card {
+    padding: 20px 22px;
+  }
+
+  .job-card-title-text {
+    font-size: 18px;
+  }
+
+  .job-apply-btn {
+    padding: 8px 20px;
+    font-size: 13.5px;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 880px) {
   .dashboard-navbar-nav {
     display: none;
   }
 
-  .mobile-burger-btn {
-    display: flex;
-  }
-
-  .dashboard-navbar {
-    padding: 0 16px;
-  }
-
-  .dashboard-navbar-right {
-    gap: 10px;
+  .nav-auth-buttons {
+    display: none !important;
   }
 
   .hero-content {
@@ -332,21 +451,6 @@
 }
 
 @media (max-width: 640px) {
-  .brand-name {
-    font-size: 16px;
-  }
-  .brand-platform {
-    font-size: 11px;
-  }
-  .dashboard-navbar-logo-img {
-    height: 34px;
-  }
-  .dashboard-navbar-left {
-    gap: 10px;
-  }
-  .dashboard-navbar-right {
-    gap: 10px;
-  }
   .hero-title {
     font-size: 32px;
     line-height: 1.25;
@@ -550,7 +654,7 @@
 
 
 /* Responsive updates for new sections */
-@media (max-width: 960px) {
+@media (max-width: 880px) {
   .steps-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 24px;
@@ -710,29 +814,10 @@
 
 
 /* ── Responsive Breakpoints ── */
-@media (max-width: 768px) {
-  /* Navbar */
-  .dashboard-navbar {
-    height: 64px;
-    padding: 0 16px;
-  }
-
-  /* Hide desktop nav links, show burger */
-  .dashboard-navbar nav {
-    display: none;
-  }
-
-  .mobile-burger-btn {
-    display: flex;
-  }
-
-  /* Reduce brand text size on mobile */
-  .brand-name {
-    font-size: 15px;
-  }
-
-  .brand-platform {
-    font-size: 10px;
+@media (max-width: 880px) {
+  /* Navbar auth buttons hidden on mobile */
+  .nav-auth-buttons {
+    display: none !important;
   }
 
   /* Hero section */
@@ -812,5 +897,283 @@
 
   .hero-section {
     min-height: 400px;
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES (UI changes to black)
+══════════════════════════════════════════════════ */
+[data-theme="dark"] .dashboard-wrapper {
+  background: #000000 !important;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .brand-carousel-section {
+  background: #000000 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .brand-carousel-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .brand-card {
+  background: #11131a;
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .brand-card:hover {
+  background: #171a24;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .how-to-apply-section {
+  background: #07080c !important;
+}
+
+[data-theme="dark"] .section-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .section-subtitle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .step-icon-circle {
+  background: #151824 !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .step-icon-circle svg {
+  stroke: #ffffff !important;
+}
+
+[data-theme="dark"] .step-item:hover .step-icon-circle {
+  background: #1c2030 !important;
+  border-color: #e6007e !important;
+  color: #e6007e !important;
+}
+
+[data-theme="dark"] .step-item:hover .step-icon-circle svg {
+  stroke: #e6007e !important;
+}
+
+[data-theme="dark"] .step-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .step-desc {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .featured-jobs-section {
+  background: #0c0e14 !important;
+}
+
+[data-theme="dark"] .job-tab-btn {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .job-tab-btn:hover {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .job-tab-btn.active {
+  background: #181b26;
+  color: #e6007e;
+  border-color: rgba(230, 0, 126, 0.4);
+  box-shadow: 0 4px 12px rgba(230, 0, 126, 0.2);
+}
+
+[data-theme="dark"] .job-card {
+  background: #141722;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .job-card:hover {
+  background: #191d2c;
+  border-color: rgba(230, 0, 126, 0.4);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .job-card-title-text {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .job-card-type {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .portal-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .portal-subtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .portal-card {
+  background: #141722;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .portal-card-title {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .portal-empty-state {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   Staggered Fade-Up Entrance Animations for Applicant Dashboard
+   ========================================================================== */
+
+@keyframes fadeUpStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pre-stagger state (avoids flash of unstyled content on first visit) */
+.applicant-dashboard--pre-stagger .hero-title,
+.applicant-dashboard--pre-stagger .hero-subtitle,
+.applicant-dashboard--pre-stagger .hero-cta-btn,
+.applicant-dashboard--pre-stagger .brand-carousel-title,
+.applicant-dashboard--pre-stagger .brand-carousel-container {
+  opacity: 0;
+  transform: translateY(32px);
+}
+
+/* Ready state for subsequent visits (NO staggering, immediately visible without delay) */
+.applicant-dashboard--ready .hero-title,
+.applicant-dashboard--ready .hero-subtitle,
+.applicant-dashboard--ready .hero-cta-btn,
+.applicant-dashboard--ready .brand-carousel-title,
+.applicant-dashboard--ready .brand-carousel-container,
+.applicant-dashboard--ready .section-title,
+.applicant-dashboard--ready .section-subtitle,
+.applicant-dashboard--ready .step-item,
+.applicant-dashboard--ready .featured-jobs-header,
+.applicant-dashboard--ready .job-card,
+.applicant-dashboard--ready .how-to-apply-section .section-title,
+.applicant-dashboard--ready .how-to-apply-section .section-subtitle,
+.applicant-dashboard--ready .how-to-apply-section .step-item,
+.applicant-dashboard--ready .featured-jobs-section .featured-jobs-header,
+.applicant-dashboard--ready .featured-jobs-section .job-card {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 1. Hero Section Entrance Stagger */
+.applicant-dashboard--stagger .hero-title {
+  animation: fadeUpStagger 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.10s both;
+  will-change: transform, opacity;
+}
+
+.applicant-dashboard--stagger .hero-subtitle {
+  animation: fadeUpStagger 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both;
+  will-change: transform, opacity;
+}
+
+.applicant-dashboard--stagger .hero-cta-btn {
+  animation: fadeUpStagger 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.42s both;
+  will-change: transform, opacity;
+}
+
+/* 2. Brand Partners Carousel Stagger */
+.applicant-dashboard--stagger .brand-carousel-title {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.58s both;
+  will-change: transform, opacity;
+}
+
+.applicant-dashboard--stagger .brand-carousel-container {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.72s both;
+  will-change: transform, opacity;
+}
+
+/* 3. How to Apply Scroll Reveal Stagger - ONLY active during staggering mode */
+.applicant-dashboard--stagger .how-to-apply-section:not(.is-revealed) .section-title,
+.applicant-dashboard--stagger .how-to-apply-section:not(.is-revealed) .section-subtitle,
+.applicant-dashboard--stagger .how-to-apply-section:not(.is-revealed) .step-item {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.applicant-dashboard--stagger .how-to-apply-section.is-revealed .section-title {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  will-change: transform, opacity;
+}
+
+.applicant-dashboard--stagger .how-to-apply-section.is-revealed .section-subtitle {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both;
+  will-change: transform, opacity;
+}
+
+.applicant-dashboard--stagger .how-to-apply-section.is-revealed .step-item {
+  animation: fadeUpStagger 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(0.24s + var(--step-index, 0) * 0.12s);
+  will-change: transform, opacity;
+}
+
+/* 4. Featured Jobs Scroll Reveal Stagger - ONLY active during staggering mode */
+.applicant-dashboard--stagger .featured-jobs-section:not(.is-revealed) .featured-jobs-header,
+.applicant-dashboard--stagger .featured-jobs-section:not(.is-revealed) .job-card {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.applicant-dashboard--stagger .featured-jobs-section.is-revealed .featured-jobs-header {
+  animation: fadeUpStagger 0.75s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  will-change: transform, opacity;
+}
+
+.applicant-dashboard--stagger .featured-jobs-section.is-revealed .job-card {
+  animation: fadeUpStagger 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(0.2s + var(--job-index, 0) * 0.12s);
+  will-change: transform, opacity;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .applicant-dashboard--pre-stagger .hero-title,
+  .applicant-dashboard--pre-stagger .hero-subtitle,
+  .applicant-dashboard--pre-stagger .hero-cta-btn,
+  .applicant-dashboard--pre-stagger .brand-carousel-title,
+  .applicant-dashboard--pre-stagger .brand-carousel-container,
+  .applicant-dashboard--stagger .how-to-apply-section:not(.is-revealed) .section-title,
+  .applicant-dashboard--stagger .how-to-apply-section:not(.is-revealed) .section-subtitle,
+  .applicant-dashboard--stagger .how-to-apply-section:not(.is-revealed) .step-item,
+  .applicant-dashboard--stagger .featured-jobs-section:not(.is-revealed) .featured-jobs-header,
+  .applicant-dashboard--stagger .featured-jobs-section:not(.is-revealed) .job-card {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .applicant-dashboard--stagger .hero-title,
+  .applicant-dashboard--stagger .hero-subtitle,
+  .applicant-dashboard--stagger .hero-cta-btn,
+  .applicant-dashboard--stagger .brand-carousel-title,
+  .applicant-dashboard--stagger .brand-carousel-container,
+  .applicant-dashboard--stagger .how-to-apply-section.is-revealed .section-title,
+  .applicant-dashboard--stagger .how-to-apply-section.is-revealed .section-subtitle,
+  .applicant-dashboard--stagger .how-to-apply-section.is-revealed .step-item,
+  .applicant-dashboard--stagger .featured-jobs-section.is-revealed .featured-jobs-header,
+  .applicant-dashboard--stagger .featured-jobs-section.is-revealed .job-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

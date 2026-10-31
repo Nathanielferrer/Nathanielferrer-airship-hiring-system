@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import useScrollReveal from '../../../hooks/useScrollReveal';
 import { API_BASE_URL } from '../../../utils/apiConfig';
+
 /**
- * Dynamic Featured Jobs section fetching active vacancies from backend database.
+ * Dynamic Featured Jobs section fetching active vacancies from backend database
+ * with scroll-triggered staggered fade-up cards.
  */
-const FeaturedJobs = () => {
+const FeaturedJobs = ({ shouldStagger = false }) => {
   const navigate                  = useNavigate();
   const [jobs, setJobs]           = useState([]);
   const [loading, setLoading]     = useState(true);
   const [filterType, setFilterType] = useState('all');
+  const [sectionRef, isVisible]   = useScrollReveal({ threshold: 0.15 });
+  const isRevealed                = !shouldStagger || isVisible;
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -49,7 +53,11 @@ const FeaturedJobs = () => {
   });
 
   return (
-    <section className="featured-jobs-section" id="featured-jobs-section">
+    <section
+      ref={sectionRef}
+      className={`featured-jobs-section ${isRevealed ? 'is-revealed' : ''}`}
+      id="featured-jobs-section"
+    >
       <div className="featured-jobs-header">
         <h2 className="section-title">Featured Jobs</h2>
         <div className="job-tabs" role="tablist" aria-label="Filter featured jobs">
@@ -89,8 +97,8 @@ const FeaturedJobs = () => {
         </p>
       ) : (
         <div className="jobs-grid">
-          {filteredJobs.slice(0, 4).map(job => (
-            <div className="job-card" key={job.id}>
+          {filteredJobs.slice(0, 4).map((job, idx) => (
+            <div className="job-card" key={job.id} style={{ '--job-index': idx }}>
               <div className="job-card-content">
                 <h3 className="job-card-title-text">{job.title}</h3>
                 <span className="job-card-type">

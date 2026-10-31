@@ -153,7 +153,7 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
 
   const handlePassInitial = (appId, remarks = '', customName = '') => {
     const candidateName = customName || drawerApp?.candidate_name || 'Candidate';
-    handleUpdateStatus(appId, 'PASSED INITIAL', `Screening Passed. ${candidateName} moved to Interview Scheduling.`, remarks);
+    handleUpdateStatus(appId, 'PASSED INITIAL', `Passed Initial Interview. ${candidateName} moved to Interview Scheduling.`, remarks);
   };
 
   const confirmPass = (app) => {
@@ -162,17 +162,17 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
     setModalConfig({
       type: 'confirm',
       confirmType: 'pass',
-      title: 'Confirm Pass Initial Screening',
+      title: 'Confirm Pass Initial Interview',
       message: `Are you sure you want to pass ${candidateName}? They will be moved to the interview scheduling queue.`,
       onConfirm: async () => {
         setModalConfig(null); // Close the confirm modal first
         setLoadingScreenState({
           isOpen: true,
-          title: 'Passing Initial Screening...',
+          title: 'Passing Initial Interview...',
           subtitle: 'Updating status and moving candidate to interview queue...'
         });
         try {
-          await handleUpdateStatus(app.id, 'PASSED INITIAL', `Screening Passed. ${candidateName} moved to Interview Scheduling.`);
+          await handleUpdateStatus(app.id, 'PASSED INITIAL', `Passed Initial Interview. ${candidateName} moved to Interview Scheduling.`);
         } finally {
           setLoadingScreenState(prev => ({ ...prev, isOpen: false }));
         }
@@ -186,8 +186,8 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
     setModalConfig({
       type: 'confirm',
       confirmType: 'reject',
-      title: 'Confirm Reject Initial Screening',
-      message: `Are you sure you want to reject ${candidateName}? This will update their status to Screening Rejected and notify the applicant.`,
+      title: 'Confirm Reject Initial Interview',
+      message: `Are you sure you want to reject ${candidateName}? This will update their status to Initial Interview Rejected and notify the applicant.`,
       onConfirm: async () => {
         setModalConfig(null);
         setLoadingScreenState({
@@ -196,7 +196,7 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
           subtitle: 'Updating status and sending email notification...'
         });
         try {
-          await handleUpdateStatus(app.id, 'SCREENING_REJECTED', `Screening Rejected. ${candidateName}.`, '');
+          await handleUpdateStatus(app.id, 'INITIAL_INTERVIEW_REJECTED', `Initial Interview Rejected. ${candidateName}.`, '');
         } finally {
           setLoadingScreenState(prev => ({ ...prev, isOpen: false }));
         }
@@ -233,7 +233,7 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
       {/* Header Title Section */}
       <div className="admin-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="admin-header-title">Resume Screening</h1>
+          <h1 className="admin-header-title">Initial Interview</h1>
           <p style={{ color: '#64748b', fontSize: '13.5px', margin: '4px 0 0 0' }}>
             Review, evaluate, and transition candidate resumes through recruitment evaluation stages.
           </p>
@@ -365,13 +365,13 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
           </select>
 
           {/* Dedicated Sort Dropdown */}
-          <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+          <div className="admin-sort-wrapper" style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
             <i className="bx bx-sort-alt-2" style={{ position: 'absolute', left: '10px', fontSize: '16px', color: '#6366f1', pointerEvents: 'none' }}></i>
             <select
               className="admin-filter-select"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              style={{ paddingLeft: '32px', fontWeight: '600', color: '#1e293b' }}
+              style={{ paddingLeft: '32px', fontWeight: '600', color: '#1e293b', width: '100%' }}
               title="Sort Applications"
             >
               <option value="score_desc">Highest Match Score</option>
@@ -453,7 +453,8 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
           </div>
         ) : (
           <>
-            <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="admin-table-responsive">
+              <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th>Candidate Name</th>
@@ -470,9 +471,9 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
                   let badgeClass = 'admin-status-badge ';
                   let statusLabel = app.status;
 
-                  if (app.status === 'PASSED INITIAL' || app.status === 'PASSED INITIAL SCREENING' || app.status === 'PENDING SCHEDULED' || app.status === 'PENDING SCHEDULE') {
+                  if (app.status === 'PASSED INITIAL' || app.status === 'PASSED INITIAL SCREENING' || app.status === 'PASSED INITIAL INTERVIEW' || app.status === 'PENDING SCHEDULED' || app.status === 'PENDING SCHEDULE') {
                     badgeClass += 'passed-initial';
-                    statusLabel = 'PASSED INITIAL SCREENING';
+                    statusLabel = 'PASSED INITIAL INTERVIEW';
                   } else if (app.status === 'Passed Final Interview' || app.status === 'PASSED FINAL INTERVIEW') {
                     badgeClass += 'passed-initial';
                     statusLabel = 'PASSED FINAL INTERVIEW';
@@ -527,9 +528,9 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
                   } else if (app.status === 'pending' || app.status === 'review_required') {
                     badgeClass += 'pending';
                     statusLabel = 'PENDING REVIEW';
-                  } else if (app.status === 'SCREENING_REJECTED' || app.status === 'rejected') {
+                  } else if (app.status === 'INITIAL_INTERVIEW_REJECTED' || app.status === 'SCREENING_REJECTED' || app.status === 'rejected') {
                     badgeClass += 'rejected';
-                    statusLabel = 'SCREENING REJECTED';
+                    statusLabel = 'INITIAL INTERVIEW REJECTED';
                   } else if (app.status === 'Archived' || app.status === 'ARCHIVED') {
                     badgeClass += 'unresponsive';
                     statusLabel = 'ARCHIVED RECORD';
@@ -642,6 +643,7 @@ const ApplicantsTab = ({ showToast: externalShowToast }) => {
                 })}
               </tbody>
             </table>
+          </div>
 
             {/* Standard Pagination Footer (Always Visible) */}
             <div style={{

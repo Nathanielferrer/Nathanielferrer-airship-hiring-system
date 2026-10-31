@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import WeekdayCalendarPicker from '../../../components/WeekdayCalendarPicker/WeekdayCalendarPicker';
 
 import { API_BASE_URL } from '../../../utils/apiConfig';
 const ONBOARDING_REQUIREMENTS = [
@@ -550,26 +551,14 @@ const PreEmploymentDrawer = ({
                       <label style={{ display: 'block', fontSize: '11.5px', fontWeight: '800', color: '#334155', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Start Date <span style={{ color: '#e11d48' }}>*</span>
                       </label>
-                      <input
-                        type="date"
-                        ref={dateInputRef}
+                      <WeekdayCalendarPicker
                         value={startDate}
                         min={minDateStr}
-                        onChange={(e) => {
-                          e.target.setCustomValidity('');
-                          setStartDate(e.target.value);
+                        onChange={(val) => {
+                          setStartDate(val);
                         }}
-                        style={{
-                          width: '100%',
-                          padding: '8px 10px',
-                          borderRadius: '6px',
-                          border: '1.5px solid #cbd5e1',
-                          fontSize: '13px',
-                          fontWeight: '600',
-                          color: '#0f172a',
-                          background: '#ffffff',
-                          boxSizing: 'border-box'
-                        }}
+                        placeholder="Select start date..."
+                        required
                       />
                       <span style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px', display: 'block' }}>
                         Weekdays only (Monday to Friday)

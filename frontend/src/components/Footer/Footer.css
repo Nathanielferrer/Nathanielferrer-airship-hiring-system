@@ -15,6 +15,13 @@
   gap: 48px;
 }
 
+@media (max-width: 1100px) {
+  .footer-container {
+    gap: 32px;
+    padding: 40px 24px 32px 24px;
+  }
+}
+
 @media (max-width: 768px) {
   .footer-container {
     grid-template-columns: 1fr;

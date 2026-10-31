@@ -948,6 +948,8 @@ const Vacancy = () => {
                       src={selectedJob.image_path.startsWith('data:') || selectedJob.image_path.startsWith('http') ? selectedJob.image_path : `${API_BASE_URL}/${selectedJob.image_path}`}
                       alt={selectedJob.title || "Job Role"}
                       style={{objectFit: 'cover'}}
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   ) : (
@@ -985,37 +987,15 @@ const Vacancy = () => {
                   </div>
 
                   {/* Badges: Employment Type & Salary */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-                    <span style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      background: selectedJob.employment_type === 'Part Time' ? '#fef3c7' : '#eff6ff',
-                      color: selectedJob.employment_type === 'Part Time' ? '#b45309' : '#1d4ed8',
-                      border: selectedJob.employment_type === 'Part Time' ? '1px solid #fde68a' : '1px solid #bfdbfe',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      <i className="bx bx-time-five" style={{ fontSize: '14px' }} />
+                  <div className="vacancy-expanded-pill-row">
+                    <span className={`vacancy-type-badge ${selectedJob.employment_type === 'Part Time' ? 'part-time' : 'full-time'}`}>
+                      <i className="bx bx-time-five" />
                       <span>{selectedJob.employment_type || 'Full Time'}</span>
                     </span>
 
                     {selectedJob.salary && (
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        background: '#ecfdf5',
-                        color: '#047857',
-                        border: '1px solid #a7f3d0',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        <i className="bx bx-wallet" style={{ fontSize: '14px' }} />
+                      <span className="vacancy-salary-badge">
+                        <i className="bx bx-wallet" />
                         <span>₱ {selectedJob.salary}</span>
                       </span>
                     )}
@@ -1026,7 +1006,7 @@ const Vacancy = () => {
                   {selectedJob.description && (
                     <div style={{ marginBottom: '18px' }}>
                       <h3 className="vacancy-detail-heading">Job Description:</h3>
-                      <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-line' }}>
+                      <p className="vacancy-detail-p" style={{ whiteSpace: 'pre-line' }}>
                         {selectedJob.description}
                       </p>
                     </div>
@@ -1387,6 +1367,8 @@ const Vacancy = () => {
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                       alt={job.title}
                       className="vacancy-card-img"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
 
@@ -1413,21 +1395,13 @@ const Vacancy = () => {
                     </div>
 
                     {(job.employment_type || job.salary) && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0 10px 0', flexWrap: 'wrap' }}>
-                        <span style={{
-                          fontSize: '11px',
-                          fontWeight: '700',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          background: job.employment_type === 'Part Time' ? '#fef3c7' : '#eff6ff',
-                          color: job.employment_type === 'Part Time' ? '#b45309' : '#1d4ed8',
-                          border: job.employment_type === 'Part Time' ? '1px solid #fde68a' : '1px solid #bfdbfe'
-                        }}>
+                      <div className="vacancy-card-meta-badges">
+                        <span className={`vacancy-card-type-badge ${job.employment_type === 'Part Time' ? 'part-time' : 'full-time'}`}>
                           {job.employment_type || 'Full Time'}
                         </span>
                         {job.salary && (
-                          <span style={{ fontSize: '11.5px', color: '#047857', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                            <i className="bx bx-wallet" style={{ fontSize: '13px' }} /> ₱ {job.salary}
+                          <span className="vacancy-card-salary-badge">
+                            <i className="bx bx-wallet" /> ₱ {job.salary}
                           </span>
                         )}
                       </div>
@@ -1596,10 +1570,9 @@ const Vacancy = () => {
                     <label className="vacancy-form-label">Full Name</label>
                     <input
                       type="text"
-                      className="vacancy-form-input"
+                      className="vacancy-form-input vacancy-form-input-disabled"
                       value={fullName || 'Candidate'}
                       disabled
-                      style={{ backgroundColor: '#f8fafc', color: '#334155', cursor: 'default' }}
                     />
                   </div>
 
@@ -1628,10 +1601,9 @@ const Vacancy = () => {
                     </div>
                     <input
                       type="email"
-                      className="vacancy-form-input"
+                      className="vacancy-form-input vacancy-form-input-disabled"
                       value={email}
                       disabled
-                      style={{ backgroundColor: '#f8fafc', color: '#334155', cursor: 'default' }}
                     />
                   </div>
 
@@ -1746,36 +1718,14 @@ const Vacancy = () => {
 
                     {/* Pre-Screening Status & Verification Badges */}
                     {isPreScreening && (
-                      <div style={{
-                        marginTop: '10px',
-                        padding: '10px 14px',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        fontSize: '12.5px',
-                        color: '#475569'
-                      }}>
+                      <div className="vacancy-prescreen-box vacancy-prescreen-loading">
                         <i className='bx bx-loader-alt bx-spin' style={{ fontSize: '18px', color: '#0284c7' }}></i>
                         <span>Pre-screening resume identity... verifying candidate name.</span>
                       </div>
                     )}
 
                     {preScreenResult?.matched === true && (
-                      <div style={{
-                        marginTop: '10px',
-                        padding: '10px 14px',
-                        background: '#ecfdf5',
-                        border: '1px solid #a7f3d0',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        fontSize: '12.5px',
-                        color: '#065f46'
-                      }}>
+                      <div className="vacancy-prescreen-box vacancy-prescreen-success">
                         <i className='bx bx-check-circle' style={{ fontSize: '18px', color: '#059669', flexShrink: 0 }}></i>
                         <div>
                           <strong>Identity Verified:</strong> Resume matches registered account (<strong>{preScreenResult.accountName || fullName}</strong>).
@@ -1784,24 +1734,12 @@ const Vacancy = () => {
                     )}
 
                     {preScreenResult && !preScreenResult.matched && (
-                      <div style={{
-                        marginTop: '10px',
-                        padding: '11px 14px',
-                        background: '#fffbeb',
-                        border: '1px solid #fde68a',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '10px',
-                        fontSize: '12.5px',
-                        color: '#92400e',
-                        lineHeight: '1.45'
-                      }}>
+                      <div className="vacancy-prescreen-box vacancy-prescreen-warning">
                         <i className='bx bx-error-circle' style={{ fontSize: '18px', color: '#d97706', flexShrink: 0, marginTop: '2px' }}></i>
                         <div>
                           <strong style={{ display: 'block', marginBottom: '3px' }}>Resume Name Mismatch Detected</strong>
                           The uploaded resume appears to belong to <strong>"{preScreenResult.extractedName || 'different candidate'}"</strong>, which does not match your registered account name (<strong>"{preScreenResult.accountName || fullName}"</strong>).
-                          <div style={{ marginTop: '6px', fontSize: '12px', color: '#b45309' }}>
+                          <div style={{ marginTop: '6px', fontSize: '12px' }}>
                             Please upload your own resume or update your account name in <button type="button" onClick={() => { setIsModalOpen(false); navigate('/settings'); }} style={{ background: 'none', border: 'none', padding: 0, color: '#e6007e', textDecoration: 'underline', cursor: 'pointer', fontWeight: 600 }}>Settings</button> before submitting.
                           </div>
                         </div>

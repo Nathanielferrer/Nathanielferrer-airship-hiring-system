@@ -11,7 +11,7 @@ import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import { PageLoadingScreen } from '../../components/Loading';
 import useSessionGuard from '../../hooks/useSessionGuard';
 import useInactivityTimeout from '../../hooks/useInactivityTimeout';
-import logoImg from '../../assets/images/Logo Airship Express.png';
+import logoImg from '../../assets/images/Logo Airship Express.webp';
 import useToast from '../../hooks/useToast';
 import ToastContainer from '../../components/Toast/ToastNotification';
 import './AdminDashboard.css';

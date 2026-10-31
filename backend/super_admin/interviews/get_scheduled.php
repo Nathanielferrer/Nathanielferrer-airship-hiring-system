@@ -109,8 +109,13 @@ try {
             u.User_Lname
         FROM applications_tbl a
         LEFT JOIN users_tbl u ON a.user_id = u.user_id
-        WHERE a.is_archived = 0 
-          AND UPPER(a.status) IN (
+        WHERE (a.is_archived = 0 OR UPPER(a.status) IN (
+            'OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'OFFICIALLY HIRED & SIGNED', 
+            'OFFICIALLY HIRED & REQUIREMENTS COMPLETED',
+            'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 
+            'HIRED', 'PASSED FINAL APPROVAL', 'COMPLETED REQUIREMENTS', 'COMPLETED_REQUIREMENTS'
+        ))
+        AND UPPER(a.status) IN (
             'PRESIDENT APPROVED', 'APPROVED FOR JOB OFFER', 'APPROVED_FOR_JOB_OFFER', 'APPROVED',
             'JOB OFFER PENDING', 'JOB_OFFER_PENDING', 'JOB OFFER CREATED', 'JOB_OFFER_CREATED', 'JOB OFFER SENT', 'JOB_OFFER_SENT',
             'OFFER EXTENDED', 'OFFER_EXTENDED', 'JOB OFFER ACCEPTED', 'JOB_OFFER_ACCEPTED', 'OFFER ACCEPTED', 'OFFER_ACCEPTED',
@@ -121,20 +126,38 @@ try {
             'HIRED - PRE-EMPLOYMENT', 'HIRED_PRE_EMPLOYMENT', 'COMPLETED REQUIREMENTS', 'COMPLETED_REQUIREMENTS',
             'PASSED FINAL APPROVAL', 'PASSED_FINAL_APPROVAL', 'HIRED',
             'OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'OFFICIALLY HIRED & SIGNED', 'OFFICIALLY HIRED & REQUIREMENTS COMPLETED'
-          )
+        )
     ");
     $occupiedRows = $capStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $hiredStatuses = [
+        'OFFICIALLY HIRED', 'OFFICIALLY_HIRED', 'OFFICIALLY HIRED & SIGNED', 
+        'OFFICIALLY HIRED & REQUIREMENTS COMPLETED',
+        'CONTRACT SIGNED & ONBOARDED', 'CONTRACT_SIGNED_AND_ONBOARDED', 
+        'HIRED', 'PASSED FINAL APPROVAL', 'COMPLETED REQUIREMENTS', 'COMPLETED_REQUIREMENTS'
+    ];
 
     $jobOccupancy = [];
     foreach ($occupiedRows as $orow) {
         $jid = (int)$orow['job_id'];
         if (!isset($jobOccupancy[$jid])) {
             $jobOccupancy[$jid] = [
-                'count' => 0,
+                'total_occupied' => 0,
+                'hired_count' => 0,
+                'pipeline_count' => 0,
                 'holders' => []
             ];
         }
-        $jobOccupancy[$jid]['count']++;
+        $stUpper = strtoupper(trim($orow['status'] ?? ''));
+        $isHired = in_array($stUpper, $hiredStatuses);
+
+        $jobOccupancy[$jid]['total_occupied']++;
+        if ($isHired) {
+            $jobOccupancy[$jid]['hired_count']++;
+        } else {
+            $jobOccupancy[$jid]['pipeline_count']++;
+        }
+
         $candName = trim($orow['candidate_name'] ?: trim("{$orow['User_Fname']} {$orow['User_Lname']}")) ?: 'Candidate';
         $jobOccupancy[$jid]['holders'][] = [
             'application_id' => (int)$orow['application_id'],
@@ -145,13 +168,32 @@ try {
 
     foreach ($scheduled as &$row) {
         $jid = (int)$row['job_id'];
-        $totalSlots = max(1, (int)($row['job_availability'] ?? 1));
-        $occ = $jobOccupancy[$jid] ?? ['count' => 0, 'holders' => []];
-        $occupiedCount = $occ['count'];
-        $availableSlots = max(0, $totalSlots - $occupiedCount);
+        $rawAvail = max(0, (int)($row['job_availability'] ?? 0));
+        $jobDbStatus = strtolower($row['job_status'] ?? 'active');
+
+        $occ = $jobOccupancy[$jid] ?? [
+            'total_occupied' => 0, 
+            'hired_count' => 0, 
+            'pipeline_count' => 0, 
+            'holders' => []
+        ];
+        $hiredCount = $occ['hired_count'];
+        $pipelineCount = $occ['pipeline_count'];
+        $totalOccupied = $occ['total_occupied'];
+
+        // If the job is closed or has 0 raw availability, no slots are open.
+        // Otherwise, remaining openings = max(0, rawAvail - pipelineCount)
+        if ($jobDbStatus === 'closed' || $rawAvail <= 0) {
+            $availableSlots = 0;
+            $totalSlots = max(1, $totalOccupied, $rawAvail);
+        } else {
+            $availableSlots = max(0, $rawAvail - $pipelineCount);
+            // Total slots originally allocated = remaining available + candidates already hired
+            $totalSlots = max(1, $rawAvail + $hiredCount);
+        }
 
         $row['total_slots'] = $totalSlots;
-        $row['occupied_slots'] = $occupiedCount;
+        $row['occupied_slots'] = $totalOccupied;
         $row['available_slots'] = $availableSlots;
         $row['slot_holders'] = $occ['holders'];
 

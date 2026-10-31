@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import ConfirmModal from '../../../components/ConfirmModal/ConfirmModal';
+import WeekdayCalendarPicker from '../../../components/WeekdayCalendarPicker/WeekdayCalendarPicker';
 
 const formatTime12h = (t) => {
   if (!t) return '';
@@ -525,40 +526,14 @@ const OnboardingDrawer = ({
                       Signing Date <span style={{ color: '#e6007e' }}>*</span>
                     </label>
                   </div>
-                  <input
-                    ref={drawerDateRef}
-                    type="date"
+                  <WeekdayCalendarPicker
                     value={contractDate}
-                    onChange={(e) => {
-                      const val = e.target.value;
+                    onChange={(val) => {
                       setContractDate(val);
                       setScheduleError(null);
-                      if (val) {
-                        const day = new Date(val + 'T00:00:00').getDay();
-                        if (day === 0 || day === 6) {
-                          if (drawerDateRef.current) {
-                            drawerDateRef.current.setCustomValidity('Weekends are disabled. Contract signing can only be scheduled on weekdays (Monday to Friday).');
-                            setTimeout(() => drawerDateRef.current?.reportValidity(), 50);
-                          }
-                          return;
-                        }
-                      }
-                      if (drawerDateRef.current) drawerDateRef.current.setCustomValidity('');
                     }}
                     min={new Date().toISOString().split('T')[0]}
-                    style={{
-                      width: '100%',
-                      height: '42px',
-                      padding: '0 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      background: '#ffffff',
-                      color: '#0f172a',
-                      fontFamily: "'Inter', sans-serif"
-                    }}
+                    placeholder="Select signing date..."
                     required
                   />
                 </div>

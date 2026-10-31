@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import onlyLogoImg from '../../assets/images/only_logo.png'; // Brand logo icon
-import bgImage from '../../assets/images/log_bg.png';
-import './Register.css';
-
+import AuthLayout from './components/AuthLayout';
 import { API_BASE_URL } from '../../utils/apiConfig';
+
 const Register = () => {
   useEffect(() => {
-    document.title = 'Create Account - Hiring Management System';
+    document.title = 'Create Account - Airship Express Hiring Portal';
   }, []);
 
   const [formData, setFormData] = useState({
@@ -46,7 +44,7 @@ const Register = () => {
       setFormData(prev => ({ ...prev, [name]: cleaned }));
       return;
     }
-    // Cap the year portion to 4 digits max to prevent absurd years like 200423
+    // Cap year to 4 digits max to prevent invalid years
     if (name === 'User_Bday' && value) {
       const parts = value.split('-');
       if (parts[0] && parts[0].length > 4) {
@@ -59,19 +57,20 @@ const Register = () => {
       ...prev,
       [name]: value
     }));
+    if (error) setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate First Name (2 - 50 chars, letters, spaces, hyphen, apostrophe, period)
+    // Validate First Name (2 - 50 chars)
     const trimmedFname = (formData.User_Fname || '').trim();
     if (trimmedFname.length < 2 || trimmedFname.length > 50 || !/^[a-zA-Z\s\-'\.]+$/.test(trimmedFname)) {
       setError('First name must be between 2 and 50 characters (letters, spaces, hyphens, apostrophes, and periods only).');
       return;
     }
 
-    // Validate Last Name (2 - 50 chars, same rules)
+    // Validate Last Name (2 - 50 chars)
     const trimmedLname = (formData.User_Lname || '').trim();
     if (trimmedLname.length < 2 || trimmedLname.length > 50 || !/^[a-zA-Z\s\-'\.]+$/.test(trimmedLname)) {
       setError('Last name must be between 2 and 50 characters (letters, spaces, hyphens, apostrophes, and periods only).');
@@ -85,7 +84,7 @@ const Register = () => {
       return;
     }
 
-    // Validate Date of Birth: must be a real date, year between 1900 and now, minimum age 15
+    // Validate Date of Birth
     if (formData.User_Bday) {
       const bdayDate = new Date(formData.User_Bday);
       const bdayYear = bdayDate.getFullYear();
@@ -148,147 +147,69 @@ const Register = () => {
     }
   };
 
-  // Common wrapper components for matching visual style
-  const renderWrapper = (children, isCentered = false) => (
-    <div 
-      className="register-page-wrapper" 
-      style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
-        overflowY: 'auto', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: isCentered ? 'center' : 'flex-start', 
-        padding: isCentered ? '75px 24px 75px 24px' : '110px 24px 40px 24px', 
-        fontFamily: "'Poppins', 'Inter', sans-serif", 
-        zIndex: 9999, 
-        boxSizing: 'border-box', 
-        msOverflowStyle: 'none', 
-        scrollbarWidth: 'none' 
-      }}
-    >
-      <style>{`
-        .register-page-wrapper::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-      
-      {/* Fixed Background Image */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          backgroundImage: `url(${bgImage})`, 
-          backgroundSize: 'cover', 
-          backgroundPosition: 'center', 
-          backgroundRepeat: 'no-repeat',
-          zIndex: 1
-        }} 
-      />
-      
-      {/* Fixed Dark Tint Overlay Layer */}
-      <div 
-        style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          backgroundColor: 'rgba(0, 0, 0, 0.45)', 
-          zIndex: 2 
-        }} 
-      />
-
-      {/* Brand Navbar */}
-      <header className="register-navbar" style={{ zIndex: 100 }}>
-        <div className="register-navbar-brand">
-          <img src={onlyLogoImg} alt="Airship Express Logo" className="brand-logo-only" />
-          <div className="brand-text-stack">
-            <span className="brand-melons">AIRSHIP</span>
-            <span className="brand-lemons">EXPRESS</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Content wrapper to ensure it renders on top of the fixed background */}
-      <div style={{ 
-        position: 'relative', 
-        zIndex: 3, 
-        width: '100%', 
-        display: 'flex', 
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: isCentered ? 'auto 0' : '0'
-      }}>
-        {children}
-      </div>
-    </div>
-  );
-
+  // If successfully registered, show clear confirmation
   if (success) {
-    return renderWrapper(
-      <div className="register-glass-card success-card animate-fade-in" style={{ textAlign: 'center' }}>
-        <div className="success-icon" style={{ color: '#16a34a', width: '60px', height: '60px', margin: '0 auto 16px' }}>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-check-circle" style={{ width: '100%', height: '100%' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        </div>
-        <h2 className="register-title">Registration Successful!</h2>
-        <p className="register-subtitle" style={{ marginBottom: '20px' }}>
-          Please check your email (<strong>{formData.User_Email}</strong>) to verify your account.
-        </p>
-        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px', lineHeight: '1.5' }}>
-          Once verified, you will be able to log in to your dashboard.
-        </p>
-        <div style={{ marginTop: '24px', width: '100%', boxSizing: 'border-box' }}>
-          <Link to="/login" className="register-submit-button" style={{ textDecoration: 'none', width: '100%', boxSizing: 'border-box' }}>
-            Go to Login
+    return (
+      <AuthLayout>
+        <div className="auth-success-box">
+          <div className="auth-success-icon-wrap" aria-hidden="true">
+            <i className="bx bx-check-circle" />
+          </div>
+          <h2 className="auth-success-title">Registration Successful!</h2>
+          <p className="auth-success-desc">
+            Please check your email (<strong>{formData.User_Email}</strong>) to verify your account.
+            Once verified, you will be able to log in to your dashboard.
+          </p>
+          <Link to="/login" className="auth-primary-btn" style={{ textDecoration: 'none' }}>
+            Go to Login <i className="bx bx-right-arrow-alt auth-btn-arrow" />
           </Link>
         </div>
-      </div>,
-      true
+      </AuthLayout>
     );
   }
 
-  return renderWrapper(
-    <div className="register-glass-card">
-      <div className="register-header-group">
-        <h2 className="register-title">Create Account</h2>
-        <p className="register-subtitle">Join our team. Build your future today!</p>
+  return (
+    <AuthLayout isScrollable={true}>
+      {/* Form Header */}
+      <div className="auth-form-header">
+        <h2 className="auth-title">Create Your Account</h2>
+        <p className="auth-subtitle">Join our team. Build your future today!</p>
       </div>
 
+      {/* Error Alert */}
       {error && (
-        <div className="register-alert register-alert-error">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="register-alert-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <div className="auth-alert auth-alert-error" role="alert">
+          <i className="bx bx-error-circle auth-alert-icon" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="register-form">
-        <div className="register-form-row register-form-row-name">
-          <div className="register-form-group">
-            <label htmlFor="User_Fname" className="register-label">First Name</label>
+      {/* Registration Form */}
+      <form onSubmit={handleSubmit} className="auth-form" noValidate>
+        {/* Row 1 – Personal Information: First Name, M.I., Last Name */}
+        <div className="auth-form-row">
+          <div className="auth-input-group">
+            <label htmlFor="User_Fname" className="auth-label">
+              First Name
+            </label>
             <input
               type="text"
               id="User_Fname"
               name="User_Fname"
               value={formData.User_Fname}
               onChange={handleChange}
-              className="register-input"
+              className="auth-input"
               minLength={2}
               maxLength={50}
               placeholder="First Name"
+              autoComplete="given-name"
               required
             />
           </div>
-          <div className="register-form-group register-form-group-mi">
-            <label htmlFor="User_MInitial" className="register-label">
-              M.I. <span style={{ textTransform: 'none', fontWeight: 'normal', color: '#64748b', fontSize: '10px' }}>(Opt)</span>
+
+          <div className="auth-input-group auth-form-col-mi">
+            <label htmlFor="User_MInitial" className="auth-label">
+              M.I. <span className="auth-label-opt">(Opt)</span>
             </label>
             <input
               type="text"
@@ -296,175 +217,193 @@ const Register = () => {
               name="User_MInitial"
               value={formData.User_MInitial}
               onChange={handleChange}
-              className="register-input"
+              className="auth-input"
               maxLength={1}
               placeholder="M"
+              autoComplete="additional-name"
+              style={{ textAlign: 'center' }}
             />
           </div>
-          <div className="register-form-group">
-            <label htmlFor="User_Lname" className="register-label">Last Name</label>
+
+          <div className="auth-input-group">
+            <label htmlFor="User_Lname" className="auth-label">
+              Last Name
+            </label>
             <input
               type="text"
               id="User_Lname"
               name="User_Lname"
               value={formData.User_Lname}
               onChange={handleChange}
-              className="register-input"
+              className="auth-input"
               minLength={2}
               maxLength={50}
               placeholder="Last Name"
+              autoComplete="family-name"
               required
             />
           </div>
         </div>
 
-        <div className="register-form-group">
-          <label htmlFor="User_Email" className="register-label">Email Address</label>
-          <input
-            type="email"
-            id="User_Email"
-            name="User_Email"
-            value={formData.User_Email}
-            onChange={handleChange}
-            className="register-input"
-            maxLength={254}
-            required
-          />
-        </div>
-
-        <div className="register-form-row">
-          <div className="register-form-group">
-            <label htmlFor="User_Bday" className="register-label">Date of Birth</label>
-            <input
-              type="date"
-              id="User_Bday"
-              name="User_Bday"
-              value={formData.User_Bday}
-              onChange={handleChange}
-              className="register-input"
-              min="1900-01-01"
-              max={new Date().toISOString().split('T')[0]}
-              required
-            />
-          </div>
-          <div className="register-form-group">
-            <label htmlFor="User_Gender" className="register-label">Gender</label>
-            <select
-              id="User_Gender"
-              name="User_Gender"
-              value={formData.User_Gender}
-              onChange={handleChange}
-              className="register-input"
-              required
-            >
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="register-form-group">
-          <label htmlFor="User_Pass" className="register-label">
-            Password <span style={{ textTransform: 'none', fontWeight: 'normal', color: '#64748b', fontSize: '10.5px' }}>(8-64 characters)</span>
+        {/* Row 2 – Email Address */}
+        <div className="auth-input-group">
+          <label htmlFor="User_Email" className="auth-label">
+            Email Address
           </label>
-          {/* Input field with Eye Visibility toggle icon */}
-          <div className="password-input-container">
+          <div className="auth-input-wrapper">
+            <i className="bx bx-envelope auth-input-icon" aria-hidden="true" />
+            <input
+              type="email"
+              id="User_Email"
+              name="User_Email"
+              value={formData.User_Email}
+              onChange={handleChange}
+              className="auth-input has-left-icon"
+              placeholder="Enter your email address"
+              maxLength={254}
+              autoComplete="email"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Row 3 – Personal Details: Date of Birth & Gender */}
+        <div className="auth-form-row">
+          <div className="auth-input-group">
+            <label htmlFor="User_Bday" className="auth-label">
+              Date of Birth
+            </label>
+            <div className="auth-input-wrapper">
+              <i className="bx bx-calendar auth-input-icon" aria-hidden="true" />
+              <input
+                type="date"
+                id="User_Bday"
+                name="User_Bday"
+                value={formData.User_Bday}
+                onChange={handleChange}
+                className="auth-input has-left-icon"
+                min="1900-01-01"
+                max={new Date().toISOString().split('T')[0]}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="auth-input-group">
+            <label htmlFor="User_Gender" className="auth-label">
+              Gender
+            </label>
+            <div className="auth-input-wrapper">
+              <i className="bx bx-user auth-input-icon" aria-hidden="true" />
+              <select
+                id="User_Gender"
+                name="User_Gender"
+                value={formData.User_Gender}
+                onChange={handleChange}
+                className="auth-input has-left-icon"
+                style={{ cursor: 'pointer' }}
+                required
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 4 – Password with Dynamic Validation Indicator */}
+        <div className="auth-input-group">
+          <label htmlFor="User_Pass" className="auth-label">
+            Password <span className="auth-label-opt">(8-64 characters)</span>
+          </label>
+          <div className="auth-input-wrapper">
+            <i className="bx bx-lock-alt auth-input-icon" aria-hidden="true" />
             <input
               type={showPassword ? 'text' : 'password'}
               id="User_Pass"
               name="User_Pass"
               value={formData.User_Pass}
               onChange={handleChange}
-              className="register-input"
+              className="auth-input has-left-icon has-right-btn"
               minLength={8}
               maxLength={64}
-              style={{ paddingRight: '44px' }}
+              placeholder="Enter your password"
+              autoComplete="new-password"
               required
             />
             <button
               type="button"
-              className="password-toggle-btn"
+              className="auth-password-toggle"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
             >
-              {showPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye-off"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              )}
+              <i className={`bx ${showPassword ? 'bx-hide' : 'bx-show'}`} />
             </button>
           </div>
 
-          {/* Real-time Password Strength checklist - always visible to guide the user */}
-          <div className="password-requirements-grid">
-            <div className={`requirement-item ${passChecks.length ? 'met' : 'unmet'}`}>
-              <svg className="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                {passChecks.length ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-              </svg>
-              <span>8-64 Characters</span>
+          {/* Two-Column Dynamic Password Requirements Checklist */}
+          <div className="auth-password-requirements">
+            <div className={`auth-req-item ${passChecks.length ? 'is-met' : ''}`}>
+              <i className={`bx ${passChecks.length ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+              <span>8–64 Characters</span>
             </div>
-            <div className={`requirement-item ${passChecks.uppercase ? 'met' : 'unmet'}`}>
-              <svg className="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                {passChecks.uppercase ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-              </svg>
-              <span>Uppercase (A-Z)</span>
+            <div className={`auth-req-item ${passChecks.uppercase ? 'is-met' : ''}`}>
+              <i className={`bx ${passChecks.uppercase ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+              <span>Uppercase (A–Z)</span>
             </div>
-            <div className={`requirement-item ${passChecks.lowercase ? 'met' : 'unmet'}`}>
-              <svg className="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                {passChecks.lowercase ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-              </svg>
-              <span>Lowercase (a-z)</span>
+            <div className={`auth-req-item ${passChecks.lowercase ? 'is-met' : ''}`}>
+              <i className={`bx ${passChecks.lowercase ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
+              <span>Lowercase (a–z)</span>
             </div>
-            <div className={`requirement-item ${passChecks.numSpecial ? 'met' : 'unmet'}`}>
-              <svg className="requirement-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                {passChecks.numSpecial ? <polyline points="20 6 9 17 4 12" /> : <circle cx="12" cy="12" r="3" />}
-              </svg>
+            <div className={`auth-req-item ${passChecks.numSpecial ? 'is-met' : ''}`}>
+              <i className={`bx ${passChecks.numSpecial ? 'bx-check-circle' : 'bx-circle'} auth-req-icon`} />
               <span>Number & Special</span>
             </div>
           </div>
         </div>
 
-        {/* Confirm Password Field */}
-        <div className="register-form-group">
-          <label htmlFor="User_Pass_Confirm" className="register-label">
+        {/* Row 5 – Confirm Password */}
+        <div className="auth-input-group">
+          <label htmlFor="User_Pass_Confirm" className="auth-label">
             Confirm Password
           </label>
-          <div className="password-input-container">
+          <div className="auth-input-wrapper">
+            <i className="bx bx-lock auth-input-icon" aria-hidden="true" />
             <input
               type={showConfirmPassword ? 'text' : 'password'}
               id="User_Pass_Confirm"
               name="User_Pass_Confirm"
               value={confirmPass}
               onChange={(e) => setConfirmPass(e.target.value)}
-              className="register-input"
+              className="auth-input has-left-icon has-right-btn"
               minLength={8}
               maxLength={64}
-              style={{ paddingRight: '44px' }}
+              placeholder="Confirm your password"
+              autoComplete="new-password"
               required
             />
             <button
               type="button"
-              className="password-toggle-btn"
+              className="auth-password-toggle"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
             >
-              {showConfirmPassword ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye-off"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-eye"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              )}
+              <i className={`bx ${showConfirmPassword ? 'bx-hide' : 'bx-show'}`} />
             </button>
           </div>
-          {/* Mismatch indicator */}
+
+          {/* Password Match Status */}
           {confirmPass.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '12px', fontWeight: '600' }}>
               {passwordsMatch ? (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                  <i className="bx bx-check-circle" style={{ color: '#16a34a', fontSize: '15px' }} />
                   <span style={{ color: '#16a34a' }}>Passwords match</span>
                 </>
               ) : (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  <i className="bx bx-x-circle" style={{ color: '#dc2626', fontSize: '15px' }} />
                   <span style={{ color: '#dc2626' }}>Passwords do not match</span>
                 </>
               )}
@@ -472,24 +411,31 @@ const Register = () => {
           )}
         </div>
 
+        {/* Full-width Magenta Gradient Button */}
         <button
           type="submit"
-          className="register-submit-button"
+          className="auth-primary-btn"
           disabled={loading || !isFormValid}
         >
-          {loading ? 'Registering...' : 'Register'}
+          {loading ? (
+            'Creating Account...'
+          ) : (
+            <>
+              Create Account <i className="bx bx-right-arrow-alt auth-btn-arrow" />
+            </>
+          )}
         </button>
       </form>
 
-      <p className="register-footer">
+      {/* Bottom Navigation */}
+      <p className="auth-bottom-nav">
         Already have an account?{' '}
-        <Link to="/login" className="register-signin-link">
-          Sign In
+        <Link to="/login" className="auth-link-magenta">
+          Sign In <i className="bx bx-right-arrow-alt" />
         </Link>
       </p>
-    </div>
+    </AuthLayout>
   );
 };
 
 export default Register;
-

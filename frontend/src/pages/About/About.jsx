@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import companyImg from '../../assets/images/Company Picture.png';
+import companyImg from '../../assets/images/Company Picture.webp';
 import ApplicantNavbar from '../../components/ApplicantNavbar/ApplicantNavbar';
 import ConfirmModal from '../../components/ConfirmModal/ConfirmModal';
 import LoadingScreen from '../../components/LoadingScreen/LoadingScreen';
 import Footer from '../../components/Footer/Footer';
+import useScrollReveal from '../../hooks/useScrollReveal';
 import './About.css';
 
 import { API_BASE_URL } from '../../utils/apiConfig';
@@ -20,6 +21,36 @@ const About = () => {
   });
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  // Stagger animation state: only triggers if user is a guest visiting the website for the very first time
+  // If user already visited the website or already visited About, do NOT stagger!
+  const [shouldStagger] = useState(() => {
+    try {
+      const alreadyVisitedSite = localStorage.getItem('airship_guest_visited') === 'true' ||
+                                 sessionStorage.getItem('airship_guest_visited') === 'true';
+      const alreadyVisitedAbout = localStorage.getItem('airship_about_visited') === 'true' ||
+                                  sessionStorage.getItem('airship_about_visited') === 'true';
+      const savedUser = localStorage.getItem('hiring_user');
+      if (alreadyVisitedSite || alreadyVisitedAbout || savedUser) {
+        return false;
+      }
+      // First visit ever: mark as visited synchronously
+      localStorage.setItem('airship_guest_visited', 'true');
+      sessionStorage.setItem('airship_guest_visited', 'true');
+      localStorage.setItem('airship_about_visited', 'true');
+      sessionStorage.setItem('airship_about_visited', 'true');
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  const [hasAnimated, setHasAnimated] = useState(!shouldStagger);
+  const [whyRef, whyVisible] = useScrollReveal({ threshold: 0.12 });
+  const [locRef, locVisible] = useScrollReveal({ threshold: 0.12 });
+
+  const isWhyRevealed = !shouldStagger || whyVisible;
+  const isLocRevealed = !shouldStagger || locVisible;
+
   // Navbar states matching Vacancy / Dashboard
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const dropdownRef = useRef(null);
@@ -32,11 +63,18 @@ const About = () => {
     document.title = 'About Us - Airship Express';
     const savedUser = localStorage.getItem('hiring_user');
     if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      } catch {}
     }
-    window.scrollTo(0, 0);
-  }, []);
+    if (shouldStagger) {
+      const raf = requestAnimationFrame(() => {
+        setHasAnimated(true);
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [shouldStagger]);
 
   useEffect(() => {
     if (user) {
@@ -183,8 +221,12 @@ const About = () => {
     });
   };
 
+  const wrapperClass = shouldStagger
+    ? (hasAnimated ? 'about--stagger' : 'about--pre-stagger')
+    : 'about--ready';
+
   return (
-    <div className="about-wrapper">
+    <div className={`about-wrapper ${shouldStagger ? 'animate-fade-in' : ''} ${wrapperClass}`}>
       <ApplicantNavbar
         user={user}
         activePage="about"
@@ -201,25 +243,29 @@ const About = () => {
         dropdownRef={dropdownRef}
       />
 
-      {/* Hero Badge Intro */}
-      <section className="about-hero-section">
-        <div className="about-tag-badge">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          <span>Established 2016</span>
-        </div>
-      </section>
-
       {/* Main Content Section - Two Columns with Divider */}
       <section className="about-two-col-section">
         {/* Left Column (Image) */}
         <div className="about-col-left">
           <div className="about-company-image-container">
-            <img src={companyImg} alt="Airship Express Operations and Team" className="about-company-img" />
+            <img
+              src={companyImg}
+              alt="Airship Express Operations and Team"
+              className="about-company-img"
+              loading="lazy"
+              decoding="async"
+              width="800"
+              height="450"
+            />
           </div>
         </div>
 
         {/* Right Column (Text) */}
         <div className="about-col-right">
+          <div className="about-tag-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Established 2016</span>
+          </div>
           <h1 className="about-heading">ABOUT AIRSHIP EXPRESS</h1>
           <p className="about-body-text">
             Airship Express is a logistics and courier company established in 2016. The company provides shipping services and accepts parcel drop-offs through various courier partners. Since its establishment, Airship Express has continuously expanded its services to provide reliable and efficient logistics solutions to its customers.
@@ -228,7 +274,11 @@ const About = () => {
       </section>
 
       {/* Second Section: Why Work With Us */}
-      <section id="why-work-with-us" className="about-why-section">
+      <section
+        ref={whyRef}
+        id="why-work-with-us"
+        className={`about-why-section ${isWhyRevealed ? 'is-revealed' : ''}`}
+      >
         <div className="about-section-container">
           <h2 className="about-section-heading-centered">WHY WORK WITH US</h2>
           <p className="about-section-subtext">
@@ -237,7 +287,7 @@ const About = () => {
 
           <div className="about-cards-grid">
             {/* Card 1: Innovation First */}
-            <div className="about-card">
+            <div className="about-card" style={{ '--card-index': 0 }}>
               <div className="about-card-icon-wrapper">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
               </div>
@@ -248,7 +298,7 @@ const About = () => {
             </div>
 
             {/* Card 2: Career Growth */}
-            <div className="about-card">
+            <div className="about-card" style={{ '--card-index': 1 }}>
               <div className="about-card-icon-wrapper">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
               </div>
@@ -259,7 +309,7 @@ const About = () => {
             </div>
 
             {/* Card 3: Efficiency and Reliability */}
-            <div className="about-card">
+            <div className="about-card" style={{ '--card-index': 2 }}>
               <div className="about-card-icon-wrapper">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
               </div>
@@ -273,7 +323,10 @@ const About = () => {
       </section>
 
       {/* Third Section: Location Iframe */}
-      <section className="about-location-section">
+      <section
+        ref={locRef}
+        className={`about-location-section ${isLocRevealed ? 'is-revealed' : ''}`}
+      >
         <h2 className="about-location-title">FIND US AT <span>OUR HEADQUARTERS</span></h2>
         <p className="about-section-subtext" style={{ marginBottom: '10px' }}>
           Visit our main office or reach out to our logistics coordination center in Manila.

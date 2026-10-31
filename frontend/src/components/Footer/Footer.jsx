@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoImg from '../../assets/images/Logo Airship Express.png';
+import logoImg from '../../assets/images/Logo Airship Express.webp';
 import './Footer.css';
 
 /**
@@ -27,7 +27,15 @@ const Footer = () => {
         {/* Brand Section */}
         <div className="footer-brand-col">
           <div className="footer-brand-header">
-            <img src={logoImg} alt="Airship Express" className="footer-logo-img" />
+            <img
+              src={logoImg}
+              alt="Airship Express"
+              className="footer-logo-img"
+              loading="lazy"
+              decoding="async"
+              width="150"
+              height="38"
+            />
             <span className="footer-brand-title">AIRSHIP EXPRESS</span>
           </div>
           <p className="footer-brand-tagline">

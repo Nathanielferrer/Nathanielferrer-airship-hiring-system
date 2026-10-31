@@ -179,10 +179,22 @@ try {
             j.title AS job_title,
             u.User_Fname,
             u.User_Lname,
-            u.User_Email
+            u.User_Email,
+            COALESCE(inv.scheduled_date, slot.slot_date) AS interview_date,
+            COALESCE(inv.scheduled_time, slot.start_time) AS start_time
         FROM applications_tbl a
         LEFT JOIN jobs_tbl j ON j.job_id = a.job_id
         LEFT JOIN users_tbl u ON u.user_id = a.user_id
+        LEFT JOIN (
+            SELECT application_id, scheduled_date, scheduled_time
+            FROM interviews_tbl
+            WHERE interview_id IN (SELECT MAX(interview_id) FROM interviews_tbl GROUP BY application_id)
+        ) inv ON inv.application_id = a.application_id
+        LEFT JOIN (
+            SELECT application_id, slot_date, start_time
+            FROM interview_slots_tbl
+            WHERE slot_id IN (SELECT MAX(slot_id) FROM interview_slots_tbl WHERE application_id IS NOT NULL GROUP BY application_id)
+        ) slot ON slot.application_id = a.application_id
         WHERE a.application_id = ?
     ");
 
@@ -202,6 +214,27 @@ try {
                 exit();
             }
             continue;
+        }
+
+        // Prevent evaluation if interview schedule is in the future
+        $finalInterviewEvaluationActions = [
+            'PASS_FINAL_INTERVIEW', 'Passed Final Interview',
+            'FAIL_FINAL_INTERVIEW', 'Failed Final Interview',
+            'Candidate No Show', 'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW', 'NO SHOW', 'NO_SHOW'
+        ];
+        if (in_array($result, $finalInterviewEvaluationActions) && !empty($candData['interview_date'])) {
+            $schedDate = $candData['interview_date'];
+            $schedTime = !empty($candData['start_time']) ? $candData['start_time'] : '00:00:00';
+            $schedTimestamp = strtotime($schedDate . ' ' . $schedTime);
+            if ($schedTimestamp && $schedTimestamp > time()) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode([
+                    "status" => "error",
+                    "message" => "Cannot evaluate candidate before their scheduled interview date and time ({$schedDate} {$schedTime})."
+                ]);
+                exit();
+            }
         }
 
     $candName = trim($candData['candidate_name'] ?? '') ?: trim(($candData['User_Fname'] ?? '') . ' ' . ($candData['User_Lname'] ?? '')) ?: "Application #{$application_id}";
@@ -653,6 +686,22 @@ try {
                     if ($jobData && (int)$jobData['availability'] <= 0) {
                         $closeStmt = $pdo->prepare("UPDATE jobs_tbl SET status = 'Closed', availability = 0 WHERE job_id = ?");
                         $closeStmt->execute([$jobId]);
+
+                        // Auto-archive terminal applications for this filled job so they are moved to Audit Records
+                        $autoArchStmt = $pdo->prepare("
+                            UPDATE applications_tbl 
+                            SET is_archived = 1 
+                            WHERE job_id = ? 
+                            AND UPPER(status) IN (
+                                'REJECTED', 'SCREENING_REJECTED', 'INITIAL_INTERVIEW_REJECTED', 'INITIAL INTERVIEW REJECTED',
+                                'FAILED FINAL INTERVIEW', 'FAILED_FINAL_INTERVIEW', 'FAILED INTERVIEW', 'INTERVIEW_FAILED',
+                                'FAILED FINAL APPROVAL', 'FAILED_FINAL_APPROVAL', 'CANDIDATE NO SHOW', 'CANDIDATE_NO_SHOW',
+                                'DECLINED - UNRESPONSIVE', 'UNRESPONSIVE', 'SCHEDULING EXPIRED', 'SCHEDULING_EXPIRED',
+                                'CANDIDATE WITHDREW', 'CANDIDATE_WITHDREW', 'OFFER DECLINED', 'OFFER_DECLINED',
+                                'OFFER EXPIRED', 'OFFER_EXPIRED', 'FAILED PRE-EMPLOYMENT', 'FAILED_PRE_EMPLOYMENT'
+                            )
+                        ");
+                        $autoArchStmt->execute([$jobId]);
                     }
                 }
 

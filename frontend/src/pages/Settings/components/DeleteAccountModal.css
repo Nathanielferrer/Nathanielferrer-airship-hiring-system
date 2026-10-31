@@ -313,3 +313,141 @@
   opacity: 0.7;
   box-shadow: none;
 }
+
+/* ══════════════════════════════════════════════════
+   DARK MODE STYLES FOR DELETE ACCOUNT MODAL
+   ══════════════════════════════════════════════════ */
+[data-theme="dark"] .delete-account-card,
+.dark-theme .delete-account-card {
+  background: #111420 !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #ffffff !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75) !important;
+}
+
+[data-theme="dark"] .delete-account-header,
+.dark-theme .delete-account-header {
+  background: linear-gradient(180deg, #1c1014 0%, #111420 100%) !important;
+  border-bottom-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+[data-theme="dark"] .delete-account-close-btn,
+.dark-theme .delete-account-close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .delete-account-close-btn:hover:not(:disabled),
+.dark-theme .delete-account-close-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .delete-account-title,
+.dark-theme .delete-account-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .delete-account-subtitle,
+.dark-theme .delete-account-subtitle {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .delete-account-body,
+.dark-theme .delete-account-body {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .delete-account-body p,
+.dark-theme .delete-account-body p {
+  color: #cbd5e1 !important;
+}
+
+/* Warning Info Card - "This action is permanent and cannot be undone" */
+[data-theme="dark"] .delete-account-warning-card,
+[data-theme="dark"] .delete-account-warning-box,
+.dark-theme .delete-account-warning-card,
+.dark-theme .delete-account-warning-box {
+  background: #241318 !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .delete-account-warning-title,
+.dark-theme .delete-account-warning-title {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .delete-account-warning-title i,
+.dark-theme .delete-account-warning-title i {
+  color: #ef4444 !important;
+}
+
+[data-theme="dark"] .delete-account-warning-list,
+.dark-theme .delete-account-warning-list {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .delete-account-warning-list li strong,
+.dark-theme .delete-account-warning-list li strong {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .delete-account-warning-list code,
+.dark-theme .delete-account-warning-list code {
+  background: #181b28 !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+}
+
+[data-theme="dark"] .delete-account-alert-error,
+.dark-theme .delete-account-alert-error {
+  background: #241318 !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .delete-account-label,
+.dark-theme .delete-account-label {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .delete-account-input,
+.dark-theme .delete-account-input {
+  background: #181b28 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .delete-account-pass-toggle,
+.dark-theme .delete-account-pass-toggle {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .delete-account-pass-toggle:hover,
+.dark-theme .delete-account-pass-toggle:hover {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .delete-account-field-hint,
+.dark-theme .delete-account-field-hint {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .delete-account-footer,
+.dark-theme .delete-account-footer {
+  background: #0d0f18 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .delete-account-btn-cancel,
+.dark-theme .delete-account-btn-cancel {
+  background: #1e2230 !important;
+  color: #cbd5e1 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .delete-account-btn-cancel:hover:not(:disabled),
+.dark-theme .delete-account-btn-cancel:hover:not(:disabled) {
+  background: #282d40 !important;
+  color: #ffffff !important;
+}
